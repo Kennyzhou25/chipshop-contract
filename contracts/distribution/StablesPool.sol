@@ -4,15 +4,15 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 // Note that this pool has no minter key of BSD (rewards).
-// Instead, the governance will call BSD.distributeRewards and send reward to this pool at the beginning.
-contract StablesPool is Ownable {
+// Instead, the governance will call BSD.distributeReward and send reward to this pool at the beginning.
+contract StablesPool {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+
+    address public governance;
 
     // Info of each user.
     struct UserInfo {
@@ -69,10 +69,11 @@ contract StablesPool is Ownable {
         uint256 _startBlock,
         address[] memory _lpTokens
     ) public {
+        require(block.number < _startBlock, "late");
+        require(_lpTokens.length == poolLength, "Need exactly 5 lpToken address");
         if (_bsd != address(0)) bsd = IERC20(_bsd);
         bsdPerBlock = ASSIGNED_REWARD_AMOUNT.div(BLOCKS_PER_WEEK * 4);
         startBlock = _startBlock; // supposed to be 11,458,000 (Tue Dec 15 2020 14:00:00 GMT+0)
-        require(_lpTokens.length == poolLength, "Need exactly 5 lpToken address");
         for (uint256 i = 0; i < poolLength; ++i) {
             _addPool(_lpTokens[i]);
         }
@@ -184,13 +185,14 @@ contract StablesPool is Ownable {
         }
     }
 
-    // This function allows governance to take unsupported tokens out of the contract. This is in an effort to make someone whole, should they seriously mess up.
-    // There is no guarantee governance will vote to return these. It also allows for removal of airdropped tokens.
-    function governanceRecoverUnsupported(
-        IERC20 _token,
-        uint256 amount,
-        address to
-    ) external onlyOwner {
+    function setGovernance(address _governance) external {
+        require(msg.sender == governance, "!governance");
+        require(_governance != address(0), "zero");
+        governance = _governance;
+    }
+
+    function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external {
+        require(msg.sender == governance, "!governance");
         if (block.number < endBlock + BLOCKS_PER_WEEK * 8) {
             // do not allow to drain lpToken if less than 2 months after farming
             require(_token != bsd, "!bsd");

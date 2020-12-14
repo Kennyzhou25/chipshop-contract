@@ -16,7 +16,10 @@
       }
     },
     {
-      "files": "*.js",
+      "files": [
+        "*.js",
+        "*.ts"
+      ],
       "options": {
         "singleQuote": true
       }

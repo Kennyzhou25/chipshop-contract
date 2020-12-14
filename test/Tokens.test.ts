@@ -88,8 +88,8 @@ describe("Tokens", () => {
             token = await Share.connect(operator).deploy();
         });
 
-        it("distributeRewards", async () => {
-            await token.connect(operator).distributeRewards(rewardPool.address, rewardPool.address);
+        it("distributeReward", async () => {
+            await token.connect(operator).distributeReward(rewardPool.address);
             await expect(token.connect(rewardPool).transfer(operator.address, ETH))
                 .to.emit(token, "Transfer")
                 .withArgs(rewardPool.address, operator.address, ETH);

@@ -1,14 +1,15 @@
-pragma solidity ^0.6.0;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
+
 import "../owner/Operator.sol";
 
-contract MockDai is ERC20Burnable, Operator {
+contract MockERC20 is ERC20Burnable, Operator {
     /**
      * @notice Constructs the Basis Dollar ERC-20 contract.
      */
-    constructor() public ERC20("DAI", "DAI") {
-        _mint(msg.sender, 10000 * 10**18);
+    constructor(string memory name, string memory symbol, uint8 _decimals) public ERC20(name, symbol) {
+        _setupDecimals(_decimals);
     }
 
     /**

@@ -82,7 +82,7 @@ describe("Timelock", () => {
             await token.connect(operator).transferOperator(treasury.address);
             await token.connect(operator).transferOwnership(treasury.address);
         }
-        await share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address);
+        await share.connect(operator).distributeReward(rewardPool.address);
         await share.connect(rewardPool).transfer(treasury.address, ETH);
         await share.connect(operator).transferOperator(treasury.address);
         await share.connect(operator).transferOwnership(treasury.address);

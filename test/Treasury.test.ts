@@ -101,7 +101,7 @@ describe("Treasury", () => {
                 await token.connect(operator).transferOperator(treasury.address);
                 await token.connect(operator).transferOwnership(treasury.address);
             }
-            await share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address);
+            await share.connect(operator).distributeReward(rewardPool.address);
             await share.connect(rewardPool).transfer(treasury.address, ETH);
             await share.connect(operator).transferOperator(treasury.address);
             await share.connect(operator).transferOwnership(treasury.address);
@@ -118,9 +118,9 @@ describe("Treasury", () => {
                     .to.emit(dollar, "Transfer")
                     .withArgs(newTreasury.address, ZERO_ADDR, ETH)
                     .to.emit(dollar, "Transfer")
-                    .withArgs(ZERO_ADDR, newTreasury.address, ETH.mul(1001));
+                    .withArgs(ZERO_ADDR, newTreasury.address, ETH.mul(10001));
 
-                expect(await newTreasury.getReserve()).to.eq(ETH.mul(1001));
+                expect(await newTreasury.getReserve()).to.eq(ETH.mul(10001));
             });
 
             it("should fail if newTreasury is not the operator of core contracts", async () => {
@@ -170,7 +170,7 @@ describe("Treasury", () => {
             beforeEach("transfer permissions", async () => {
                 await dollar.mint(operator.address, INITIAL_BSD_AMOUNT);
                 await dollar.mint(treasury.address, INITIAL_BSD_AMOUNT);
-                await share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address);
+                await share.connect(operator).distributeReward(rewardPool.address);
                 await share.connect(rewardPool).transfer(operator.address, INITIAL_BSS_AMOUNT);
                 for await (const contract of [dollar, bond, share, boardroom]) {
                     await contract.connect(operator).transferOperator(treasury.address);
@@ -270,7 +270,7 @@ describe("Treasury", () => {
 
                     it("if dollar price below $1+ε", async () => {
                         await oracle.setPrice(ETH.mul(104).div(100));
-                        await expect(treasury.allocateSeigniorage()).to.revertedWith("Treasury: there is no seigniorage to be allocated");
+                        await treasury.allocateSeigniorage();
                     });
 
                     it("if seigniorage already allocated in this epoch", async () => {
@@ -371,7 +371,7 @@ describe("Treasury", () => {
                     await bond.connect(ant).approve(treasury.address, ETH);
                     await expect(treasury.connect(ant).redeemBonds(ETH, dollarPrice)).to.emit(treasury, "RedeemedBonds").withArgs(ant.address, ETH);
 
-                    expect(await treasury.getReserve()).to.eq(ETH.mul(1000));
+                    expect(await treasury.getReserve()).to.eq(ETH.mul(10000));
                     expect(await bond.balanceOf(ant.address)).to.eq(ZERO); // 1:1
                     expect(await dollar.balanceOf(ant.address)).to.eq(ETH);
                 });

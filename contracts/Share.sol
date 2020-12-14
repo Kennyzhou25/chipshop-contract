@@ -10,10 +10,9 @@ import "./owner/Operator.sol";
 contract Share is ERC20Burnable, Operator {
     using SafeMath for uint256;
 
-    uint256 public constant BSD_USDC_REWARD_POOL_ALLOCATION = 500000 ether;
-    uint256 public constant BSS_USDC_REWARD_POOL_ALLOCATION = 300000 ether;
+    uint256 public constant FARMING_POOL_REWARD_ALLOCATION = 800000 ether;
     uint256 public constant TREASURY_FUND_POOL_ALLOCATION = 100000 ether;
-    uint256 public constant DEV_FUND_POOL_ALLOCATION = 100000 ether;
+    uint256 public constant DEV_FUND_POOL_ALLOCATION = 99999 ether;
 
     uint256 public constant VESTING_DURATION = 365 days;
     uint256 public startTime = 1608040800; // Tuesday, December 15, 2020 2:00:00 PM UTC
@@ -76,13 +75,11 @@ contract Share is ERC20Burnable, Operator {
     /**
      * @notice distribute to reward pool (only once)
      */
-    function distributeRewards(address _bsdRewardPool, address _bssRewardPool) external onlyOperator {
+    function distributeReward(address _farmingIncentiveFund) external onlyOperator {
         require(!rewardPoolDistributed, "only can distribute once");
-        require(_bsdRewardPool != address(0), "!_bsdRewardPool");
-        require(_bssRewardPool != address(0), "!_bssRewardPool");
+        require(_farmingIncentiveFund != address(0), "!_farmingIncentiveFund");
         rewardPoolDistributed = true;
-        _mint(_bsdRewardPool, BSD_USDC_REWARD_POOL_ALLOCATION);
-        _mint(_bssRewardPool, BSS_USDC_REWARD_POOL_ALLOCATION);
+        _mint(_farmingIncentiveFund, FARMING_POOL_REWARD_ALLOCATION);
     }
 
     function burn(uint256 amount) public override onlyOperator {

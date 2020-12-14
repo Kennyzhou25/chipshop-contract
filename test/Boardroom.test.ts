@@ -47,7 +47,7 @@ describe("Boardroom", () => {
     describe("#stake", () => {
         it("should work correctly", async () => {
             await Promise.all([
-                share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address),
+                share.connect(operator).distributeReward(rewardPool.address),
                 share.connect(rewardPool).transfer(whale.address, STAKE_AMOUNT),
                 share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
             ]);
@@ -69,7 +69,7 @@ describe("Boardroom", () => {
     describe("#withdraw", () => {
         beforeEach("stake", async () => {
             await Promise.all([
-                share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address),
+                share.connect(operator).distributeReward(rewardPool.address),
                 share.connect(rewardPool).transfer(whale.address, STAKE_AMOUNT),
                 share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
             ]);
@@ -99,7 +99,7 @@ describe("Boardroom", () => {
     describe("#exit", async () => {
         beforeEach("stake", async () => {
             await Promise.all([
-                share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address),
+                share.connect(operator).distributeReward(rewardPool.address),
                 share.connect(rewardPool).transfer(whale.address, STAKE_AMOUNT),
                 share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
             ]);
@@ -117,7 +117,7 @@ describe("Boardroom", () => {
     describe("#allocateSeigniorage", () => {
         beforeEach("stake", async () => {
             await Promise.all([
-                share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address),
+                share.connect(operator).distributeReward(rewardPool.address),
                 share.connect(rewardPool).transfer(whale.address, STAKE_AMOUNT),
                 share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
             ]);
@@ -147,7 +147,7 @@ describe("Boardroom", () => {
     describe("#claimDividends", () => {
         beforeEach("stake", async () => {
             await Promise.all([
-                share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address),
+                share.connect(operator).distributeReward(rewardPool.address),
                 share.connect(rewardPool).transfer(whale.address, STAKE_AMOUNT),
                 share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
 

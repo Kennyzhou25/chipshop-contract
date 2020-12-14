@@ -30,7 +30,7 @@ contract Treasury is ContractGuard, Operator {
 
     /* ========= CONSTANT VARIABLES ======== */
 
-    uint256 public constant PERIOD = 1 days;
+    uint256 public constant PERIOD = 12 hours;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -54,6 +54,7 @@ contract Treasury is ContractGuard, Operator {
     uint256 public dollarPriceCeiling;
     uint256 private bondDepletionFloor;
     uint256 private seigniorageSaved = 0;
+    uint256 private maxPercentageToExpand = 115e16; // Upto 1.15x supply for expansion
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -76,7 +77,7 @@ contract Treasury is ContractGuard, Operator {
         dollarPriceOne = 10**18;
         dollarPriceCeiling = uint256(105).mul(dollarPriceOne).div(10**2);
 
-        bondDepletionFloor = uint256(1000).mul(dollarPriceOne);
+        bondDepletionFloor = uint256(10000).mul(dollarPriceOne);
     }
 
     /* =================== Modifier =================== */
@@ -150,8 +151,8 @@ contract Treasury is ContractGuard, Operator {
         // burn all of it's balance
         IBasisAsset(dollar).burn(IERC20(dollar).balanceOf(address(this)));
 
-        // mint only 1001 dollar to itself
-        IBasisAsset(dollar).mint(address(this), 1001 ether);
+        // mint only 10,001 dollar to itself
+        IBasisAsset(dollar).mint(address(this), bondDepletionFloor.add(1 ether));
 
         // set seigniorageSaved to it's balance
         seigniorageSaved = IERC20(dollar).balanceOf(address(this));
@@ -207,6 +208,17 @@ contract Treasury is ContractGuard, Operator {
         emit BoughtBonds(msg.sender, amount);
     }
 
+    function redeemAmount(uint256 _bondAmount) public view returns (uint256 _dollarAmount) {
+        uint256 _dollarPrice = getDollarPrice();
+        if (_dollarPrice > dollarPriceCeiling) {
+            uint256 _percentage = _dollarPrice.sub(dollarPriceOne);
+            if (_percentage > maxPercentageToExpand) {
+                _percentage = maxPercentageToExpand;
+            }
+            _dollarAmount = _dollarPrice.mul(_percentage).div(1e18); // give more premium up to 15%
+        }
+    }
+
     function redeemBonds(uint256 amount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
         require(amount > 0, "Treasury: cannot redeem bonds with zero amount");
 
@@ -216,12 +228,17 @@ contract Treasury is ContractGuard, Operator {
             dollarPrice > dollarPriceCeiling, // price > $1.05
             "Treasury: dollarPrice not eligible for bond purchase"
         );
-        require(IERC20(dollar).balanceOf(address(this)) >= amount, "Treasury: treasury has no more budget");
+        uint256 _percentage = dollarPrice.sub(dollarPriceOne);
+        if (_percentage > maxPercentageToExpand) {
+            _percentage = maxPercentageToExpand;
+        }
+        uint256 _redeemAmount = dollarPrice.mul(_percentage).div(1e18); // give more premium up to 15%
+        require(IERC20(dollar).balanceOf(address(this)) >= _redeemAmount, "Treasury: treasury has no more budget");
 
-        seigniorageSaved = seigniorageSaved.sub(Math.min(seigniorageSaved, amount));
+        seigniorageSaved = seigniorageSaved.sub(Math.min(seigniorageSaved, _redeemAmount));
 
         IBasisAsset(bond).burnFrom(msg.sender, amount);
-        IERC20(dollar).safeTransfer(msg.sender, amount);
+        IERC20(dollar).safeTransfer(msg.sender, _redeemAmount);
         _updateDollarPrice();
 
         emit RedeemedBonds(msg.sender, amount);
@@ -230,21 +247,25 @@ contract Treasury is ContractGuard, Operator {
     function allocateSeigniorage() external onlyOneBlock checkCondition checkEpoch checkOperator {
         _updateDollarPrice();
         uint256 dollarPrice = getDollarPrice();
-        require(dollarPrice > dollarPriceCeiling, "Treasury: there is no seigniorage to be allocated");
+        if (dollarPrice > dollarPriceCeiling) {
+            // there is some seigniorage to be allocated
+            uint256 dollarSupply = IERC20(dollar).totalSupply().sub(seigniorageSaved);
+            uint256 _percentage = dollarPrice.sub(dollarPriceOne);
+            if (_percentage > maxPercentageToExpand) {
+                _percentage = maxPercentageToExpand;
+            }
+            uint256 seigniorage = dollarSupply.mul(_percentage).div(1e18);
 
-        uint256 dollarSupply = IERC20(dollar).totalSupply().sub(seigniorageSaved);
-        uint256 percentage = dollarPrice.sub(dollarPriceOne);
-        uint256 seigniorage = dollarSupply.mul(percentage).div(1e18);
-
-        if (seigniorageSaved > bondDepletionFloor) {
-            IBasisAsset(dollar).mint(address(this), seigniorage);
-            IERC20(dollar).safeApprove(boardroom, seigniorage);
-            IBoardroom(boardroom).allocateSeigniorage(seigniorage);
-            emit BoardroomFunded(now, seigniorage);
-        } else {
-            seigniorageSaved = seigniorageSaved.add(seigniorage);
-            IBasisAsset(dollar).mint(address(this), seigniorage);
-            emit TreasuryFunded(now, seigniorage);
+            if (seigniorageSaved > bondDepletionFloor) {
+                IBasisAsset(dollar).mint(address(this), seigniorage);
+                IERC20(dollar).safeApprove(boardroom, seigniorage);
+                IBoardroom(boardroom).allocateSeigniorage(seigniorage);
+                emit BoardroomFunded(now, seigniorage);
+            } else {
+                seigniorageSaved = seigniorageSaved.add(seigniorage);
+                IBasisAsset(dollar).mint(address(this), seigniorage);
+                emit TreasuryFunded(now, seigniorage);
+            }
         }
     }
 

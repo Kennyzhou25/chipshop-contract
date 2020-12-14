@@ -87,7 +87,7 @@ describe("ContractGuard", () => {
     });
 
     it("#actionBoardroom", async () => {
-        await share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address);
+        await share.connect(operator).distributeReward(rewardPool.address);
         await share.connect(rewardPool).transfer(tester.address, ETH);
         await expect(tester.connect(fraud).actionBoardroom(share.address, ETH)).to.revertedWith("ContractGuard: one block, one function");
     });

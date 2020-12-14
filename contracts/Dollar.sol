@@ -15,7 +15,7 @@ contract Dollar is ERC20Burnable, Operator {
      * @notice Constructs the Basis Dollar ERC-20 contract.
      */
     constructor() public ERC20("Basis Dollar", "BSD") {
-        // Mints 1 Basis Dollar to contract creator for initial pools deployment
+        // Mints 1 Basis Dollar to contract creator for initial pool setup
         _mint(msg.sender, 1 ether);
     }
 
@@ -44,7 +44,7 @@ contract Dollar is ERC20Burnable, Operator {
     /**
      * @notice distribute to reward pool (only once)
      */
-    function distributeRewards(address _stablesPool) external onlyOperator {
+    function distributeReward(address _stablesPool) external onlyOperator {
         require(!rewardPoolDistributed, "only can distribute once");
         require(_stablesPool != address(0), "!_stablesPool");
         rewardPoolDistributed = true;
