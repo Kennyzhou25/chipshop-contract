@@ -2,13 +2,13 @@
 
 pragma solidity 0.6.12;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import './lib/Safe112.sol';
-import './owner/Operator.sol';
-import './utils/ContractGuard.sol';
-import './interfaces/IBasisAsset.sol';
+import "./lib/Safe112.sol";
+import "./owner/Operator.sol";
+import "./utils/ContractGuard.sol";
+import "./interfaces/IBasisAsset.sol";
 
 contract ShareWrapper {
     using SafeMath for uint256;
@@ -35,10 +35,7 @@ contract ShareWrapper {
 
     function withdraw(uint256 amount) public virtual {
         uint256 directorShare = _balances[msg.sender];
-        require(
-            directorShare >= amount,
-            'Boardroom: withdraw request greater than staked amount'
-        );
+        require(directorShare >= amount, "Boardroom: withdraw request greater than staked amount");
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = directorShare.sub(amount);
         share.safeTransfer(msg.sender, amount);
@@ -77,20 +74,13 @@ contract Boardroom is ShareWrapper, ContractGuard, Operator {
         dollar = _dollar;
         share = _share;
 
-        BoardSnapshot memory genesisSnapshot = BoardSnapshot({
-            time: block.number,
-            rewardReceived: 0,
-            rewardPerShare: 0
-        });
+        BoardSnapshot memory genesisSnapshot = BoardSnapshot({time: block.number, rewardReceived: 0, rewardPerShare: 0});
         boardHistory.push(genesisSnapshot);
     }
 
     /* ========== Modifiers =============== */
     modifier directorExists {
-        require(
-            balanceOf(msg.sender) > 0,
-            'Boardroom: The director does not exist'
-        );
+        require(balanceOf(msg.sender) > 0, "Boardroom: The director does not exist");
         _;
     }
 
@@ -116,19 +106,11 @@ contract Boardroom is ShareWrapper, ContractGuard, Operator {
         return boardHistory[latestSnapshotIndex()];
     }
 
-    function getLastSnapshotIndexOf(address director)
-        public
-        view
-        returns (uint256)
-    {
+    function getLastSnapshotIndexOf(address director) public view returns (uint256) {
         return directors[director].lastSnapshotIndex;
     }
 
-    function getLastSnapshotOf(address director)
-        internal
-        view
-        returns (BoardSnapshot memory)
-    {
+    function getLastSnapshotOf(address director) internal view returns (BoardSnapshot memory) {
         return boardHistory[getLastSnapshotIndexOf(director)];
     }
 
@@ -142,33 +124,19 @@ contract Boardroom is ShareWrapper, ContractGuard, Operator {
         uint256 latestRPS = getLatestSnapshot().rewardPerShare;
         uint256 storedRPS = getLastSnapshotOf(director).rewardPerShare;
 
-        return
-            balanceOf(director).mul(latestRPS.sub(storedRPS)).div(1e18).add(
-                directors[director].rewardEarned
-            );
+        return balanceOf(director).mul(latestRPS.sub(storedRPS)).div(1e18).add(directors[director].rewardEarned);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function stake(uint256 amount)
-        public
-        override
-        onlyOneBlock
-        updateReward(msg.sender)
-    {
-        require(amount > 0, 'Boardroom: Cannot stake 0');
+    function stake(uint256 amount) public override onlyOneBlock updateReward(msg.sender) {
+        require(amount > 0, "Boardroom: Cannot stake 0");
         super.stake(amount);
         emit Staked(msg.sender, amount);
     }
 
-    function withdraw(uint256 amount)
-        public
-        override
-        onlyOneBlock
-        directorExists
-        updateReward(msg.sender)
-    {
-        require(amount > 0, 'Boardroom: Cannot withdraw 0');
+    function withdraw(uint256 amount) public override onlyOneBlock directorExists updateReward(msg.sender) {
+        require(amount > 0, "Boardroom: Cannot withdraw 0");
         super.withdraw(amount);
         emit Withdrawn(msg.sender, amount);
     }
@@ -187,16 +155,9 @@ contract Boardroom is ShareWrapper, ContractGuard, Operator {
         }
     }
 
-    function allocateSeigniorage(uint256 amount)
-        external
-        onlyOneBlock
-        onlyOperator
-    {
-        require(amount > 0, 'Boardroom: Cannot allocate 0');
-        require(
-            totalSupply() > 0,
-            'Boardroom: Cannot allocate when totalSupply is 0'
-        );
+    function allocateSeigniorage(uint256 amount) external onlyOneBlock onlyOperator {
+        require(amount > 0, "Boardroom: Cannot allocate 0");
+        require(totalSupply() > 0, "Boardroom: Cannot allocate when totalSupply is 0");
 
         // Create & add new snapshot
         uint256 prevRPS = getLatestSnapshot().rewardPerShare;

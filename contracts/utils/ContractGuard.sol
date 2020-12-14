@@ -12,14 +12,8 @@ contract ContractGuard {
     }
 
     modifier onlyOneBlock() {
-        require(
-            !checkSameOriginReentranted(),
-            'ContractGuard: one block, one function'
-        );
-        require(
-            !checkSameSenderReentranted(),
-            'ContractGuard: one block, one function'
-        );
+        require(!checkSameOriginReentranted(), "ContractGuard: one block, one function");
+        require(!checkSameSenderReentranted(), "ContractGuard: one block, one function");
 
         _;
 

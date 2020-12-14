@@ -64,7 +64,11 @@ contract StablesPool is Ownable {
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event RewardPaid(address indexed user, uint256 amount);
 
-    constructor(address _bsd, uint256 _startBlock, address[] memory _lpTokens) public {
+    constructor(
+        address _bsd,
+        uint256 _startBlock,
+        address[] memory _lpTokens
+    ) public {
         if (_bsd != address(0)) bsd = IERC20(_bsd);
         bsdPerBlock = ASSIGNED_REWARD_AMOUNT.div(BLOCKS_PER_WEEK * 4);
         startBlock = _startBlock; // supposed to be 11,458,000 (Tue Dec 15 2020 14:00:00 GMT+0)
@@ -182,7 +186,11 @@ contract StablesPool is Ownable {
 
     // This function allows governance to take unsupported tokens out of the contract. This is in an effort to make someone whole, should they seriously mess up.
     // There is no guarantee governance will vote to return these. It also allows for removal of airdropped tokens.
-    function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external onlyOwner {
+    function governanceRecoverUnsupported(
+        IERC20 _token,
+        uint256 amount,
+        address to
+    ) external onlyOwner {
         if (block.number < endBlock + BLOCKS_PER_WEEK * 8) {
             // do not allow to drain lpToken if less than 2 months after farming
             require(_token != bsd, "!bsd");

@@ -1,6 +1,6 @@
 pragma solidity ^0.6.0;
 
-import './Babylonian.sol';
+import "./Babylonian.sol";
 
 // a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))
 library FixedPoint {
@@ -31,38 +31,23 @@ library FixedPoint {
     }
 
     // divide a UQ112x112 by a uint112, returning a UQ112x112
-    function div(uq112x112 memory self, uint112 x)
-        internal
-        pure
-        returns (uq112x112 memory)
-    {
-        require(x != 0, 'FixedPoint: DIV_BY_ZERO');
+    function div(uq112x112 memory self, uint112 x) internal pure returns (uq112x112 memory) {
+        require(x != 0, "FixedPoint: DIV_BY_ZERO");
         return uq112x112(self._x / uint224(x));
     }
 
     // multiply a UQ112x112 by a uint, returning a UQ144x112
     // reverts on overflow
-    function mul(uq112x112 memory self, uint256 y)
-        internal
-        pure
-        returns (uq144x112 memory)
-    {
+    function mul(uq112x112 memory self, uint256 y) internal pure returns (uq144x112 memory) {
         uint256 z;
-        require(
-            y == 0 || (z = uint256(self._x) * y) / y == uint256(self._x),
-            'FixedPoint: MULTIPLICATION_OVERFLOW'
-        );
+        require(y == 0 || (z = uint256(self._x) * y) / y == uint256(self._x), "FixedPoint: MULTIPLICATION_OVERFLOW");
         return uq144x112(z);
     }
 
     // returns a UQ112x112 which represents the ratio of the numerator to the denominator
     // equivalent to encode(numerator).div(denominator)
-    function fraction(uint112 numerator, uint112 denominator)
-        internal
-        pure
-        returns (uq112x112 memory)
-    {
-        require(denominator > 0, 'FixedPoint: DIV_BY_ZERO');
+    function fraction(uint112 numerator, uint112 denominator) internal pure returns (uq112x112 memory) {
+        require(denominator > 0, "FixedPoint: DIV_BY_ZERO");
         return uq112x112((uint224(numerator) << RESOLUTION) / denominator);
     }
 
@@ -77,21 +62,13 @@ library FixedPoint {
     }
 
     // take the reciprocal of a UQ112x112
-    function reciprocal(uq112x112 memory self)
-        internal
-        pure
-        returns (uq112x112 memory)
-    {
-        require(self._x != 0, 'FixedPoint: ZERO_RECIPROCAL');
+    function reciprocal(uq112x112 memory self) internal pure returns (uq112x112 memory) {
+        require(self._x != 0, "FixedPoint: ZERO_RECIPROCAL");
         return uq112x112(uint224(Q224 / self._x));
     }
 
     // square root of a UQ112x112
-    function sqrt(uq112x112 memory self)
-        internal
-        pure
-        returns (uq112x112 memory)
-    {
+    function sqrt(uq112x112 memory self) internal pure returns (uq112x112 memory) {
         return uq112x112(uint224(Babylonian.sqrt(uint256(self._x)) << 56));
     }
 }

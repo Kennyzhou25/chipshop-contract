@@ -2,10 +2,10 @@
 
 pragma solidity 0.6.12;
 
-import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol';
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 
-import './owner/Operator.sol';
+import "./owner/Operator.sol";
 
 contract Share is ERC20Burnable, Operator {
     using SafeMath for uint256;
@@ -30,7 +30,7 @@ contract Share is ERC20Burnable, Operator {
 
     bool public rewardPoolDistributed = false;
 
-    constructor() public ERC20('Basis Share', 'BSS') {
+    constructor() public ERC20("Basis Share", "BSS") {
         _mint(msg.sender, 1 ether); // mint 1 Basis Share for initial pools deployment
         devFund = msg.sender;
     }

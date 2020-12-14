@@ -1,10 +1,10 @@
 pragma solidity ^0.6.0;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import '../Treasury.sol';
-import '../Boardroom.sol';
-import '../owner/Operator.sol';
+import "../Treasury.sol";
+import "../Boardroom.sol";
+import "../owner/Operator.sol";
 
 contract Tester is Operator {
     Treasury public treasury;

@@ -42,8 +42,8 @@ contract Dollar is ERC20Burnable, Operator {
     }
 
     /**
-      * @notice distribute to reward pool (only once)
-      */
+     * @notice distribute to reward pool (only once)
+     */
     function distributeRewards(address _stablesPool) external onlyOperator {
         require(!rewardPoolDistributed, "only can distribute once");
         require(_stablesPool != address(0), "!_stablesPool");

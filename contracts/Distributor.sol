@@ -2,7 +2,7 @@
 
 pragma solidity 0.6.12;
 
-import './interfaces/IDistributor.sol';
+import "./interfaces/IDistributor.sol";
 
 contract Distributor {
     IDistributor[] public distributors;
