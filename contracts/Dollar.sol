@@ -3,15 +3,20 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
+
 import "./owner/Operator.sol";
 
 contract Dollar is ERC20Burnable, Operator {
+    uint256 public constant STABLES_POOL_REWARD_ALLOCATION = 500000 ether;
+
+    bool public rewardPoolDistributed = false;
+
     /**
      * @notice Constructs the Basis Dollar ERC-20 contract.
      */
     constructor() public ERC20("Basis Dollar", "BSD") {
         // Mints 1 Basis Dollar to contract creator for initial pools deployment
-        _mint(msg.sender, 1 * 10**18);
+        _mint(msg.sender, 1 ether);
     }
 
     /**
@@ -34,5 +39,15 @@ contract Dollar is ERC20Burnable, Operator {
 
     function burnFrom(address account, uint256 amount) public override onlyOperator {
         super.burnFrom(account, amount);
+    }
+
+    /**
+      * @notice distribute to reward pool (only once)
+      */
+    function distributeRewards(address _stablesPool) external onlyOperator {
+        require(!rewardPoolDistributed, "only can distribute once");
+        require(_stablesPool != address(0), "!_stablesPool");
+        rewardPoolDistributed = true;
+        _mint(_stablesPool, STABLES_POOL_REWARD_ALLOCATION);
     }
 }

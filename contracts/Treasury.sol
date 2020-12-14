@@ -1,4 +1,6 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -129,7 +131,7 @@ contract Treasury is ContractGuard, Operator {
     }
 
     // oracle
-    function getCashPrice() public view returns (uint256 dollarPrice) {
+    function getDollarPrice() public view returns (uint256 dollarPrice) {
         try IOracle(dollarOracle).consult(dollar, 1e18) returns (uint256 price) {
             return price;
         } catch {
@@ -182,14 +184,14 @@ contract Treasury is ContractGuard, Operator {
 
     /* ========== MUTABLE FUNCTIONS ========== */
 
-    function _updateCashPrice() internal {
+    function _updateDollarPrice() internal {
         try IOracle(dollarOracle).update() {} catch {}
     }
 
     function buyBonds(uint256 amount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
         require(amount > 0, "Treasury: cannot purchase bonds with zero amount");
 
-        uint256 dollarPrice = getCashPrice();
+        uint256 dollarPrice = getDollarPrice();
         require(dollarPrice == targetPrice, "Treasury: dollar price moved");
         require(
             dollarPrice < dollarPriceOne, // price < $1
@@ -200,7 +202,7 @@ contract Treasury is ContractGuard, Operator {
 
         IBasisAsset(dollar).burnFrom(msg.sender, amount);
         IBasisAsset(bond).mint(msg.sender, amount.mul(1e18).div(bondPrice));
-        _updateCashPrice();
+        _updateDollarPrice();
 
         emit BoughtBonds(msg.sender, amount);
     }
@@ -208,7 +210,7 @@ contract Treasury is ContractGuard, Operator {
     function redeemBonds(uint256 amount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
         require(amount > 0, "Treasury: cannot redeem bonds with zero amount");
 
-        uint256 dollarPrice = getCashPrice();
+        uint256 dollarPrice = getDollarPrice();
         require(dollarPrice == targetPrice, "Treasury: dollar price moved");
         require(
             dollarPrice > dollarPriceCeiling, // price > $1.05
@@ -220,14 +222,14 @@ contract Treasury is ContractGuard, Operator {
 
         IBasisAsset(bond).burnFrom(msg.sender, amount);
         IERC20(dollar).safeTransfer(msg.sender, amount);
-        _updateCashPrice();
+        _updateDollarPrice();
 
         emit RedeemedBonds(msg.sender, amount);
     }
 
     function allocateSeigniorage() external onlyOneBlock checkCondition checkEpoch checkOperator {
-        _updateCashPrice();
-        uint256 dollarPrice = getCashPrice();
+        _updateDollarPrice();
+        uint256 dollarPrice = getDollarPrice();
         require(dollarPrice > dollarPriceCeiling, "Treasury: there is no seigniorage to be allocated");
 
         uint256 dollarSupply = IERC20(dollar).totalSupply().sub(seigniorageSaved);

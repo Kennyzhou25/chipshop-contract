@@ -1,4 +1,4 @@
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 
 contract ContractGuard {
     mapping(uint256 => mapping(address => bool)) private _status;

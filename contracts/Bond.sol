@@ -2,10 +2,11 @@
 
 pragma solidity 0.6.12;
 
-import './owner/Operator.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol';
 
-contract Bond is ERC20Burnable, Ownable, Operator {
+import './owner/Operator.sol';
+
+contract Bond is ERC20Burnable, Operator {
     /**
      * @notice Constructs the Basis Bond ERC-20 contract.
      */

@@ -1,4 +1,6 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.6.12;
 
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol';
@@ -26,10 +28,10 @@ contract Share is ERC20Burnable, Operator {
     uint256 public treasuryFundLastClaimed = startTime;
     uint256 public devFundLastClaimed = startTime;
 
-    bool public rewardPoolDistributed;
+    bool public rewardPoolDistributed = false;
 
     constructor() public ERC20('Basis Share', 'BSS') {
-        _mint(msg.sender, 1 * 10**18); // mint 1 Basis Share for initial pools deployment
+        _mint(msg.sender, 1 ether); // mint 1 Basis Share for initial pools deployment
         devFund = msg.sender;
     }
 

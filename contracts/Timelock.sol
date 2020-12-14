@@ -1,4 +1,6 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.6.12;
 
 /*
  * Copyright 2020 Compound Labs, Inc.

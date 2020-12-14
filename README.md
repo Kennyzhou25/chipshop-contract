@@ -59,4 +59,4 @@ Contribution guidelines are [here](./CONTRIBUTING.md)
 For security concerns, please submit an issue [here](https://github.com/Basis-Dollar/basisdollar-contracts/issues/new).
 
 
-_© Copyright 2020, Basis Cash_
+_© Copyright 2020, Basis Dollar_
