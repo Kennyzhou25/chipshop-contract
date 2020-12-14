@@ -31,7 +31,7 @@ async function main() {
 
   // Fetch existing contracts
   // === token
-  const cash = await ethers.getContractAt('Cash', OLD.Cash);
+  const dollar = await ethers.getContractAt('Dollar', OLD.Dollar);
   const bond = await ethers.getContractAt('Bond', OLD.Bond);
   const share = await ethers.getContractAt('Share', OLD.Share);
 
@@ -57,7 +57,7 @@ async function main() {
 
   // const newOracle = await Oracle.connect(operator).deploy(
   //   UNI_FACTORY,
-  //   cash.address,
+  //   dollar.address,
   //   DAI,
   //   ORACLE_START_DATE,
   //   override
@@ -68,7 +68,7 @@ async function main() {
   // );
 
   const newBoardroom = await Boardroom.connect(operator).deploy(
-    cash.address,
+    dollar.address,
     share.address,
     override
   );
@@ -78,7 +78,7 @@ async function main() {
   );
 
   const newTreasury = await Treasury.connect(operator).deploy(
-    cash.address,
+    dollar.address,
     bond.address,
     share.address,
     oracle.address,
@@ -93,7 +93,7 @@ async function main() {
 
   console.log('\n===================================================\n');
 
-  console.log('=> RBAC\n');
+  console.log('=> RBSD\n');
 
   tx = await newBoardroom
     .connect(operator)

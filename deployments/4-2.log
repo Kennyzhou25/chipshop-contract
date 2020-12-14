@@ -11,7 +11,7 @@ Deploy new Treasury => 0x4e153d084c28F20411D6EA01f7A18E0Ec45E19d3
 
 ===================================================
 
-=> RBAC
+=> RBSD
 
 Waiting tx 0xb3a5ee4f629b53ae43bc85fc1589f4b8319cab90e95737a0b9ff504303cdd4fa. action = boardroom.transferOperator
 Waiting tx 0x02d7d3dd6321e6d891b7e9c3cba8b06ba7e9ddd2438f0789011d96d4a2f2af34. action = boardroom.transferOwnership

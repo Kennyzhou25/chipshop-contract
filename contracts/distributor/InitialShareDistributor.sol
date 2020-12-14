@@ -1,4 +1,6 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.6.12;
 
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -9,7 +11,7 @@ import '../interfaces/IRewardDistributionRecipient.sol';
 contract InitialShareDistributor is IDistributor {
     using SafeMath for uint256;
 
-    event Distributed(address pool, uint256 cashAmount);
+    event Distributed(address pool, uint256 dollarAmount);
 
     bool public once = true;
 

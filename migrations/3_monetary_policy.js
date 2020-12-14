@@ -2,7 +2,7 @@ const contract = require('@truffle/contract');
 const { POOL_START_DATE } = require('./pools');
 const knownContracts = require('./known-contracts');
 
-const Cash = artifacts.require('Cash');
+const Dollar = artifacts.require('Dollar');
 const Bond = artifacts.require('Bond');
 const Share = artifacts.require('Share');
 const IERC20 = artifacts.require('IERC20');
@@ -35,43 +35,43 @@ async function migration(deployer, network, accounts) {
     ? await IERC20.at(knownContracts.DAI[network])
     : await MockDai.deployed();
 
-  // 2. provide liquidity to BAC-DAI and BAS-DAI pair
-  // if you don't provide liquidity to BAC-DAI and BAS-DAI pair after step 1 and before step 3,
+  // 2. provide liquidity to BSD-DAI and BSS-DAI pair
+  // if you don't provide liquidity to BSD-DAI and BSS-DAI pair after step 1 and before step 3,
   //  creating Oracle will fail with NO_RESERVES error.
   const unit = web3.utils.toBN(10 ** 18).toString();
   const max = web3.utils.toBN(10 ** 18).muln(10000).toString();
 
-  const cash = await Cash.deployed();
+  const dollar = await Dollar.deployed();
   const share = await Share.deployed();
 
   console.log('Approving Uniswap on tokens for liquidity');
   await Promise.all([
-    approveIfNot(cash, accounts[0], uniswapRouter.address, max),
+    approveIfNot(dollar, accounts[0], uniswapRouter.address, max),
     approveIfNot(share, accounts[0], uniswapRouter.address, max),
     approveIfNot(dai, accounts[0], uniswapRouter.address, max),
   ]);
 
-  // WARNING: msg.sender must hold enough DAI to add liquidity to BAC-DAI & BAS-DAI pools
+  // WARNING: msg.sender must hold enough DAI to add liquidity to BSD-DAI & BSS-DAI pools
   // otherwise transaction will revert
   console.log('Adding liquidity to pools');
   await uniswapRouter.addLiquidity(
-    cash.address, dai.address, unit, unit, unit, unit, accounts[0], deadline(),
+    dollar.address, dai.address, unit, unit, unit, unit, accounts[0], deadline(),
   );
   await uniswapRouter.addLiquidity(
     share.address, dai.address, unit, unit, unit, unit, accounts[0],  deadline(),
   );
 
-  console.log(`DAI-BAC pair address: ${await uniswap.getPair(dai.address, cash.address)}`);
-  console.log(`DAI-BAS pair address: ${await uniswap.getPair(dai.address, share.address)}`);
+  console.log(`DAI-BSD pair address: ${await uniswap.getPair(dai.address, dollar.address)}`);
+  console.log(`DAI-BSS pair address: ${await uniswap.getPair(dai.address, share.address)}`);
 
   // Deploy boardroom
-  await deployer.deploy(Boardroom, cash.address, share.address);
+  await deployer.deploy(Boardroom, dollar.address, share.address);
 
   // 2. Deploy oracle for the pair between bac and dai
   await deployer.deploy(
     Oracle,
     uniswap.address,
-    cash.address,
+    dollar.address,
     dai.address,
   );
 
@@ -82,7 +82,7 @@ async function migration(deployer, network, accounts) {
 
   await deployer.deploy(
     Treasury,
-    cash.address,
+    dollar.address,
     Bond.address,
     Share.address,
     Oracle.address,

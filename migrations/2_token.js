@@ -2,7 +2,7 @@
 
 // Token
 // deployed first
-const Cash = artifacts.require('Cash')
+const Dollar = artifacts.require('Dollar')
 const Bond = artifacts.require('Bond')
 const Share = artifacts.require('Share')
 const MockDai = artifacts.require('MockDai');
@@ -18,7 +18,7 @@ module.exports = migration
 // ============ Deploy Functions ============
 
 async function deployToken(deployer, network, accounts) {
-  await deployer.deploy(Cash);
+  await deployer.deploy(Dollar);
   await deployer.deploy(Bond);
   await deployer.deploy(Share);
 

@@ -38,7 +38,7 @@ describe('Timelock', () => {
   });
 
   let Bond: ContractFactory;
-  let Cash: ContractFactory;
+  let Dollar: ContractFactory;
   let Share: ContractFactory;
   let Timelock: ContractFactory;
   let Treasury: ContractFactory;
@@ -46,7 +46,7 @@ describe('Timelock', () => {
 
   before('fetch contract factories', async () => {
     Bond = await ethers.getContractFactory('Bond');
-    Cash = await ethers.getContractFactory('Cash');
+    Dollar = await ethers.getContractFactory('Dollar');
     Share = await ethers.getContractFactory('Share');
     Timelock = await ethers.getContractFactory('Timelock');
     Treasury = await ethers.getContractFactory('Treasury');
@@ -54,7 +54,7 @@ describe('Timelock', () => {
   });
 
   let bond: Contract;
-  let cash: Contract;
+  let dollar: Contract;
   let share: Contract;
   let timelock: Contract;
   let treasury: Contract;
@@ -64,7 +64,7 @@ describe('Timelock', () => {
 
   beforeEach('deploy contracts', async () => {
     bond = await Bond.connect(operator).deploy();
-    cash = await Cash.connect(operator).deploy();
+    dollar = await Dollar.connect(operator).deploy();
     share = await Share.connect(operator).deploy();
     timelock = await Timelock.connect(operator).deploy(
       operator.address,
@@ -72,12 +72,12 @@ describe('Timelock', () => {
     );
 
     boardroom = await Boardroom.connect(operator).deploy(
-      cash.address,
+      dollar.address,
       share.address
     );
 
     treasury = await Treasury.connect(operator).deploy(
-      cash.address,
+      dollar.address,
       bond.address,
       share.address,
       ZERO_ADDR,
@@ -85,7 +85,7 @@ describe('Timelock', () => {
       (await latestBlocktime(provider)) + 5 * DAY
     );
 
-    for await (const token of [cash, bond, share]) {
+    for await (const token of [dollar, bond, share]) {
       await token.connect(operator).mint(treasury.address, ETH);
       await token.connect(operator).transferOperator(treasury.address);
       await token.connect(operator).transferOwnership(treasury.address);
@@ -102,7 +102,7 @@ describe('Timelock', () => {
 
     beforeEach('deploy new treasury', async () => {
       newTreasury = await Treasury.connect(operator).deploy(
-        cash.address,
+        dollar.address,
         bond.address,
         share.address,
         ZERO_ADDR,
@@ -138,7 +138,7 @@ describe('Timelock', () => {
         .to.emit(treasury, 'Migration')
         .withArgs(newTreasury.address);
 
-      for await (const token of [cash, bond, share]) {
+      for await (const token of [dollar, bond, share]) {
         expect(await token.balanceOf(newTreasury.address)).to.eq(ETH);
         expect(await token.owner()).to.eq(newTreasury.address);
         expect(await token.operator()).to.eq(newTreasury.address);

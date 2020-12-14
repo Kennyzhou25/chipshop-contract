@@ -9,7 +9,7 @@ Waiting tx 0xeacc6069ab4940a621b6abfa8a15a1a393ef4c8e5b841a6de2be67f8845af77b. a
 
 ===================================================
 
-=> RBAC
+=> RBSD
 
 Waiting tx 0xf608cc7073aecd052ca0367e17c56273ab35c59337c93018ffd5068b42815312. action = boardroom.transferOperator
 Waiting tx 0x26cb56121da9ca6cab18e4a96481bd5738c5b0919dc753891331f9d13d20f4c1. action = boardroom.transferOwnership

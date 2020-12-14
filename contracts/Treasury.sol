@@ -1,22 +1,22 @@
 pragma solidity ^0.6.0;
 
-import '@openzeppelin/contracts/math/Math.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
-import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
+import "@openzeppelin/contracts/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import './lib/Babylonian.sol';
-import './lib/FixedPoint.sol';
-import './lib/Safe112.sol';
-import './owner/Operator.sol';
-import './utils/ContractGuard.sol';
-import './interfaces/IBasisAsset.sol';
-import './interfaces/IOracle.sol';
-import './interfaces/IBoardroom.sol';
+import "./lib/Babylonian.sol";
+import "./lib/FixedPoint.sol";
+import "./lib/Safe112.sol";
+import "./owner/Operator.sol";
+import "./utils/ContractGuard.sol";
+import "./interfaces/IBasisAsset.sol";
+import "./interfaces/IOracle.sol";
+import "./interfaces/IBoardroom.sol";
 
 /**
- * @title Basis Cash Treasury contract
- * @notice Monetary policy logic to adjust supplies of basis cash assets
+ * @title Basis Dollar Treasury contract
+ * @notice Monetary policy logic to adjust supplies of basis dollar assets
  * @author Summer Smith & Rick Sanchez
  */
 contract Treasury is ContractGuard, Operator {
@@ -41,53 +41,53 @@ contract Treasury is ContractGuard, Operator {
     uint256 public epoch = 0;
 
     // core components
-    address private cash;
+    address private dollar;
     address private bond;
     address private share;
     address private boardroom;
-    address private cashOracle;
+    address private dollarOracle;
 
     // price
-    uint256 public cashPriceOne;
-    uint256 public cashPriceCeiling;
+    uint256 public dollarPriceOne;
+    uint256 public dollarPriceCeiling;
     uint256 private bondDepletionFloor;
     uint256 private seigniorageSaved = 0;
 
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _cash,
+        address _dollar,
         address _bond,
         address _share,
-        address _cashOracle,
+        address _dollarOracle,
         address _boardroom,
         uint256 _startTime
     ) public {
-        cash = _cash;
+        dollar = _dollar;
         bond = _bond;
         share = _share;
-        cashOracle = _cashOracle;
+        dollarOracle = _dollarOracle;
         boardroom = _boardroom;
 
         startTime = _startTime;
 
-        cashPriceOne = 10**18;
-        cashPriceCeiling = uint256(105).mul(cashPriceOne).div(10**2);
+        dollarPriceOne = 10**18;
+        dollarPriceCeiling = uint256(105).mul(dollarPriceOne).div(10**2);
 
-        bondDepletionFloor = uint256(1000).mul(cashPriceOne);
+        bondDepletionFloor = uint256(1000).mul(dollarPriceOne);
     }
 
     /* =================== Modifier =================== */
 
     modifier checkCondition {
-        require(!migrated, 'Treasury: migrated');
-        require(now >= startTime, 'Treasury: not started yet');
+        require(!migrated, "Treasury: migrated");
+        require(now >= startTime, "Treasury: not started yet");
 
         _;
     }
 
     modifier checkEpoch {
-        require(now >= nextEpochPoint(), 'Treasury: not opened yet');
+        require(now >= nextEpochPoint(), "Treasury: not opened yet");
 
         _;
 
@@ -96,18 +96,18 @@ contract Treasury is ContractGuard, Operator {
 
     modifier checkOperator {
         require(
-            IBasisAsset(cash).operator() == address(this) &&
+            IBasisAsset(dollar).operator() == address(this) &&
                 IBasisAsset(bond).operator() == address(this) &&
                 IBasisAsset(share).operator() == address(this) &&
                 Operator(boardroom).operator() == address(this),
-            'Treasury: need more permission'
+            "Treasury: need more permission"
         );
 
         _;
     }
 
     modifier notInitialized {
-        require(!initialized, 'Treasury: already initialized');
+        require(!initialized, "Treasury: already initialized");
 
         _;
     }
@@ -129,11 +129,11 @@ contract Treasury is ContractGuard, Operator {
     }
 
     // oracle
-    function getCashPrice() public view returns (uint256 cashPrice) {
-        try IOracle(cashOracle).consult(cash, 1e18) returns (uint256 price) {
+    function getCashPrice() public view returns (uint256 dollarPrice) {
+        try IOracle(dollarOracle).consult(dollar, 1e18) returns (uint256 price) {
             return price;
         } catch {
-            revert('Treasury: failed to consult cash price from the oracle');
+            revert("Treasury: failed to consult dollar price from the oracle");
         }
     }
 
@@ -146,25 +146,25 @@ contract Treasury is ContractGuard, Operator {
 
     function initialize() public notInitialized checkOperator {
         // burn all of it's balance
-        IBasisAsset(cash).burn(IERC20(cash).balanceOf(address(this)));
+        IBasisAsset(dollar).burn(IERC20(dollar).balanceOf(address(this)));
 
-        // mint only 1001 cash to itself
-        IBasisAsset(cash).mint(address(this), 1001 ether);
+        // mint only 1001 dollar to itself
+        IBasisAsset(dollar).mint(address(this), 1001 ether);
 
         // set seigniorageSaved to it's balance
-        seigniorageSaved = IERC20(cash).balanceOf(address(this));
+        seigniorageSaved = IERC20(dollar).balanceOf(address(this));
 
         initialized = true;
         emit Initialized(msg.sender, block.number);
     }
 
     function migrate(address target) public onlyOperator checkOperator {
-        require(!migrated, 'Treasury: migrated');
+        require(!migrated, "Treasury: migrated");
 
-        // cash
-        Operator(cash).transferOperator(target);
-        Operator(cash).transferOwnership(target);
-        IERC20(cash).transfer(target, IERC20(cash).balanceOf(address(this)));
+        // dollar
+        Operator(dollar).transferOperator(target);
+        Operator(dollar).transferOwnership(target);
+        IERC20(dollar).transfer(target, IERC20(dollar).balanceOf(address(this)));
 
         // bond
         Operator(bond).transferOperator(target);
@@ -183,89 +183,65 @@ contract Treasury is ContractGuard, Operator {
     /* ========== MUTABLE FUNCTIONS ========== */
 
     function _updateCashPrice() internal {
-        try IOracle(cashOracle).update()  {} catch {}
+        try IOracle(dollarOracle).update() {} catch {}
     }
 
-    function buyBonds(uint256 amount, uint256 targetPrice)
-        external
-        onlyOneBlock
-        checkCondition
-        checkOperator
-    {
-        require(amount > 0, 'Treasury: cannot purchase bonds with zero amount');
+    function buyBonds(uint256 amount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
+        require(amount > 0, "Treasury: cannot purchase bonds with zero amount");
 
-        uint256 cashPrice = getCashPrice();
-        require(cashPrice == targetPrice, 'Treasury: cash price moved');
+        uint256 dollarPrice = getCashPrice();
+        require(dollarPrice == targetPrice, "Treasury: dollar price moved");
         require(
-            cashPrice < cashPriceOne, // price < $1
-            'Treasury: cashPrice not eligible for bond purchase'
+            dollarPrice < dollarPriceOne, // price < $1
+            "Treasury: dollarPrice not eligible for bond purchase"
         );
 
-        uint256 bondPrice = cashPrice;
+        uint256 bondPrice = dollarPrice;
 
-        IBasisAsset(cash).burnFrom(msg.sender, amount);
+        IBasisAsset(dollar).burnFrom(msg.sender, amount);
         IBasisAsset(bond).mint(msg.sender, amount.mul(1e18).div(bondPrice));
         _updateCashPrice();
 
         emit BoughtBonds(msg.sender, amount);
     }
 
-    function redeemBonds(uint256 amount, uint256 targetPrice)
-        external
-        onlyOneBlock
-        checkCondition
-        checkOperator
-    {
-        require(amount > 0, 'Treasury: cannot redeem bonds with zero amount');
+    function redeemBonds(uint256 amount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
+        require(amount > 0, "Treasury: cannot redeem bonds with zero amount");
 
-        uint256 cashPrice = getCashPrice();
-        require(cashPrice == targetPrice, 'Treasury: cash price moved');
+        uint256 dollarPrice = getCashPrice();
+        require(dollarPrice == targetPrice, "Treasury: dollar price moved");
         require(
-            cashPrice > cashPriceCeiling, // price > $1.05
-            'Treasury: cashPrice not eligible for bond purchase'
+            dollarPrice > dollarPriceCeiling, // price > $1.05
+            "Treasury: dollarPrice not eligible for bond purchase"
         );
-        require(
-            IERC20(cash).balanceOf(address(this)) >= amount,
-            'Treasury: treasury has no more budget'
-        );
+        require(IERC20(dollar).balanceOf(address(this)) >= amount, "Treasury: treasury has no more budget");
 
-        seigniorageSaved = seigniorageSaved.sub(
-            Math.min(seigniorageSaved, amount)
-        );
+        seigniorageSaved = seigniorageSaved.sub(Math.min(seigniorageSaved, amount));
 
         IBasisAsset(bond).burnFrom(msg.sender, amount);
-        IERC20(cash).safeTransfer(msg.sender, amount);
+        IERC20(dollar).safeTransfer(msg.sender, amount);
         _updateCashPrice();
 
         emit RedeemedBonds(msg.sender, amount);
     }
 
-    function allocateSeigniorage()
-        external
-        onlyOneBlock
-        checkCondition
-        checkEpoch
-        checkOperator
-    {
+    function allocateSeigniorage() external onlyOneBlock checkCondition checkEpoch checkOperator {
         _updateCashPrice();
-        uint256 cashPrice = getCashPrice();
-        require(
-            cashPrice > cashPriceCeiling,
-            'Treasury: there is no seigniorage to be allocated'
-        );
+        uint256 dollarPrice = getCashPrice();
+        require(dollarPrice > dollarPriceCeiling, "Treasury: there is no seigniorage to be allocated");
 
-        uint256 cashSupply = IERC20(cash).totalSupply().sub(seigniorageSaved);
-        uint256 percentage = cashPrice.sub(cashPriceOne);
-        uint256 seigniorage = cashSupply.mul(percentage).div(1e18);
+        uint256 dollarSupply = IERC20(dollar).totalSupply().sub(seigniorageSaved);
+        uint256 percentage = dollarPrice.sub(dollarPriceOne);
+        uint256 seigniorage = dollarSupply.mul(percentage).div(1e18);
 
         if (seigniorageSaved > bondDepletionFloor) {
-            IBasisAsset(cash).mint(address(this), seigniorage);
-            IERC20(cash).safeApprove(boardroom, seigniorage);
+            IBasisAsset(dollar).mint(address(this), seigniorage);
+            IERC20(dollar).safeApprove(boardroom, seigniorage);
             IBoardroom(boardroom).allocateSeigniorage(seigniorage);
             emit BoardroomFunded(now, seigniorage);
         } else {
             seigniorageSaved = seigniorageSaved.add(seigniorage);
-            IBasisAsset(cash).mint(address(this), seigniorage);
+            IBasisAsset(dollar).mint(address(this), seigniorage);
             emit TreasuryFunded(now, seigniorage);
         }
     }

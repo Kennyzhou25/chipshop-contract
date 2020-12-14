@@ -18,30 +18,31 @@ describe('Boardroom', () => {
   let operator: SignerWithAddress;
   let whale: SignerWithAddress;
   let abuser: SignerWithAddress;
+  let rewardPool: SignerWithAddress;
 
   before('provider & accounts setting', async () => {
-    [operator, whale, abuser] = await ethers.getSigners();
+    [operator, whale, abuser, rewardPool] = await ethers.getSigners();
   });
 
-  let Cash: ContractFactory;
+  let Dollar: ContractFactory;
   let Share: ContractFactory;
   let Boardroom: ContractFactory;
 
   before('fetch contract factories', async () => {
-    Cash = await ethers.getContractFactory('Cash');
+    Dollar = await ethers.getContractFactory('Dollar');
     Share = await ethers.getContractFactory('Share');
     Boardroom = await ethers.getContractFactory('Boardroom');
   });
 
-  let cash: Contract;
+  let dollar: Contract;
   let share: Contract;
   let boardroom: Contract;
 
   beforeEach('deploy contracts', async () => {
-    cash = await Cash.connect(operator).deploy();
+    dollar = await Dollar.connect(operator).deploy();
     share = await Share.connect(operator).deploy();
     boardroom = await Boardroom.connect(operator).deploy(
-      cash.address,
+      dollar.address,
       share.address
     );
   });
@@ -49,7 +50,8 @@ describe('Boardroom', () => {
   describe('#stake', () => {
     it('should work correctly', async () => {
       await Promise.all([
-        share.connect(operator).mint(whale.address, STAKE_AMOUNT),
+        share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address),
+        share.connect(rewardPool).transfer(whale.address, STAKE_AMOUNT),
         share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
       ]);
 
@@ -76,7 +78,8 @@ describe('Boardroom', () => {
   describe('#withdraw', () => {
     beforeEach('stake', async () => {
       await Promise.all([
-        share.connect(operator).mint(whale.address, STAKE_AMOUNT),
+        share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address),
+        share.connect(rewardPool).transfer(whale.address, STAKE_AMOUNT),
         share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
       ]);
       await boardroom.connect(whale).stake(STAKE_AMOUNT);
@@ -115,7 +118,8 @@ describe('Boardroom', () => {
   describe('#exit', async () => {
     beforeEach('stake', async () => {
       await Promise.all([
-        share.connect(operator).mint(whale.address, STAKE_AMOUNT),
+        share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address),
+        share.connect(rewardPool).transfer(whale.address, STAKE_AMOUNT),
         share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
       ]);
       await boardroom.connect(whale).stake(STAKE_AMOUNT);
@@ -134,15 +138,16 @@ describe('Boardroom', () => {
   describe('#allocateSeigniorage', () => {
     beforeEach('stake', async () => {
       await Promise.all([
-        share.connect(operator).mint(whale.address, STAKE_AMOUNT),
+        share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address),
+        share.connect(rewardPool).transfer(whale.address, STAKE_AMOUNT),
         share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
       ]);
       await boardroom.connect(whale).stake(STAKE_AMOUNT);
     });
 
     it('should allocate seigniorage to stakers', async () => {
-      await cash.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
-      await cash
+      await dollar.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
+      await dollar
         .connect(operator)
         .approve(boardroom.address, SEIGNIORAGE_AMOUNT);
 
@@ -173,18 +178,19 @@ describe('Boardroom', () => {
   describe('#claimDividends', () => {
     beforeEach('stake', async () => {
       await Promise.all([
-        share.connect(operator).mint(whale.address, STAKE_AMOUNT),
+        share.connect(operator).distributeRewards(rewardPool.address, rewardPool.address),
+        share.connect(rewardPool).transfer(whale.address, STAKE_AMOUNT),
         share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
 
-        share.connect(operator).mint(abuser.address, STAKE_AMOUNT),                    
+        share.connect(rewardPool).transfer(abuser.address, STAKE_AMOUNT),
         share.connect(abuser).approve(boardroom.address, STAKE_AMOUNT), 
       ]);
       await boardroom.connect(whale).stake(STAKE_AMOUNT);
     });
 
     it('should claim devidends', async () => {
-      await cash.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
-      await cash
+      await dollar.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
+      await dollar
         .connect(operator)
         .approve(boardroom.address, SEIGNIORAGE_AMOUNT);
       await boardroom.connect(operator).allocateSeigniorage(SEIGNIORAGE_AMOUNT);
@@ -196,8 +202,8 @@ describe('Boardroom', () => {
     });
 
    it('should claim devidends correctly even after other person stakes after snapshot', async () => {
-      await cash.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
-      await cash
+      await dollar.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
+      await dollar
         .connect(operator)
         .approve(boardroom.address, SEIGNIORAGE_AMOUNT);
       await boardroom.connect(operator).allocateSeigniorage(SEIGNIORAGE_AMOUNT);
