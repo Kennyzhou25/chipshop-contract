@@ -208,17 +208,6 @@ contract Treasury is ContractGuard, Operator {
         emit BoughtBonds(msg.sender, amount);
     }
 
-    function redeemAmount(uint256 _bondAmount) public view returns (uint256 _dollarAmount) {
-        uint256 _dollarPrice = getDollarPrice();
-        if (_dollarPrice > dollarPriceCeiling) {
-            uint256 _percentage = _dollarPrice.sub(dollarPriceOne);
-            if (_percentage > maxPercentageToExpand) {
-                _percentage = maxPercentageToExpand;
-            }
-            _dollarAmount = _dollarPrice.mul(_percentage).div(1e18); // give more premium up to 15%
-        }
-    }
-
     function redeemBonds(uint256 amount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
         require(amount > 0, "Treasury: cannot redeem bonds with zero amount");
 
@@ -228,17 +217,13 @@ contract Treasury is ContractGuard, Operator {
             dollarPrice > dollarPriceCeiling, // price > $1.05
             "Treasury: dollarPrice not eligible for bond purchase"
         );
-        uint256 _percentage = dollarPrice.sub(dollarPriceOne);
-        if (_percentage > maxPercentageToExpand) {
-            _percentage = maxPercentageToExpand;
-        }
-        uint256 _redeemAmount = dollarPrice.mul(_percentage).div(1e18); // give more premium up to 15%
-        require(IERC20(dollar).balanceOf(address(this)) >= _redeemAmount, "Treasury: treasury has no more budget");
+        require(IERC20(dollar).balanceOf(address(this)) >= amount, "Treasury: treasury has no more budget");
 
-        seigniorageSaved = seigniorageSaved.sub(Math.min(seigniorageSaved, _redeemAmount));
+        seigniorageSaved = seigniorageSaved.sub(Math.min(seigniorageSaved, amount));
 
         IBasisAsset(bond).burnFrom(msg.sender, amount);
-        IERC20(dollar).safeTransfer(msg.sender, _redeemAmount);
+        IERC20(dollar).safeTransfer(msg.sender, amount);
+
         _updateDollarPrice();
 
         emit RedeemedBonds(msg.sender, amount);

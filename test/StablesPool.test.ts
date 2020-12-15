@@ -87,7 +87,6 @@ describe('StablesPool', () => {
     describe('#constructor', () => {
         it('should works correctly', async () => {
             expect(await pool.bsdPerBlock()).to.eq(utils.parseEther(String('2.688172043010752688'))); // 500000.0 / (46500.0 * 4.0)
-            expect(await pool.startBlock()).to.eq(10);
         });
     });
 

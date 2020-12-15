@@ -29,16 +29,19 @@ contract Share is ERC20Burnable, Operator {
 
     bool public rewardPoolDistributed = false;
 
-    constructor() public ERC20("Basis Share", "BSS") {
+    constructor() public ERC20("Basis Dollar Share", "BSDS") {
         _mint(msg.sender, 1 ether); // mint 1 Basis Share for initial pools deployment
         devFund = msg.sender;
     }
 
-    function setTreasuryFund(address _treasuryFund) external onlyOperator {
+    function setTreasuryFund(address _treasuryFund) external {
+        require(msg.sender == devFund, "!dev");
         treasuryFund = _treasuryFund;
     }
 
-    function setDevFund(address _devFund) external onlyOperator {
+    function setDevFund(address _devFund) external {
+        require(msg.sender == devFund, "!dev");
+        require(_devFund != address(0), "zero");
         devFund = _devFund;
     }
 

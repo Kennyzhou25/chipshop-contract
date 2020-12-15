@@ -254,7 +254,7 @@ describe("Treasury", () => {
                     expect(await treasury.nextEpochPoint()).to.eq(startTime);
                     await treasury.allocateSeigniorage();
                     expect(await treasury.epoch()).to.eq(BigNumber.from(1));
-                    expect(await treasury.nextEpochPoint()).to.eq(startTime.add(DAY));
+                    expect(await treasury.nextEpochPoint()).to.eq(startTime.add(DAY / 2));
                 });
 
                 describe("should fail", () => {
@@ -371,7 +371,7 @@ describe("Treasury", () => {
                     await bond.connect(ant).approve(treasury.address, ETH);
                     await expect(treasury.connect(ant).redeemBonds(ETH, dollarPrice)).to.emit(treasury, "RedeemedBonds").withArgs(ant.address, ETH);
 
-                    expect(await treasury.getReserve()).to.eq(ETH.mul(10000));
+                    expect(await treasury.getReserve()).to.eq(utils.parseEther('10000'));
                     expect(await bond.balanceOf(ant.address)).to.eq(ZERO); // 1:1
                     expect(await dollar.balanceOf(ant.address)).to.eq(ETH);
                 });
@@ -380,16 +380,16 @@ describe("Treasury", () => {
                     const dollarPrice = ETH.mul(106).div(100);
                     await oracle.setPrice(dollarPrice);
 
-                    await dollar.connect(operator).transfer(treasury.address, ETH); // $1002
+                    await dollar.connect(operator).transfer(treasury.address, ETH); // $10002
 
                     const treasuryBalance = await dollar.balanceOf(treasury.address);
                     await bond.connect(operator).transfer(ant.address, treasuryBalance);
                     await bond.connect(ant).approve(treasury.address, treasuryBalance);
-                    await treasury.connect(ant).redeemBonds(treasuryBalance, dollarPrice);
+                    await treasury.connect(ant).redeemBonds(treasuryBalance.mul(100).div(115).sub(ETH), dollarPrice);
 
-                    expect(await treasury.getReserve()).to.eq(ZERO);
-                    expect(await bond.balanceOf(ant.address)).to.eq(ZERO);
-                    expect(await dollar.balanceOf(ant.address)).to.eq(treasuryBalance); // 1:1
+                    expect(await treasury.getReserve()).to.eq(utils.parseEther('1304.608695652173913044'));
+                    expect(await bond.balanceOf(ant.address)).to.eq(utils.parseEther('1305.608695652173913044'));
+                    expect(await dollar.balanceOf(ant.address)).to.eq(utils.parseEther('8696.391304347826086956'));
                 });
 
                 it("should fail if price changed", async () => {

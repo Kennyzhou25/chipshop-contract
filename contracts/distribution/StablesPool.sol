@@ -40,7 +40,7 @@ contract StablesPool {
     }
 
     // The BSD TOKEN!
-    IERC20 public bsd = IERC20(0x0000000000000000000000000000000000000000);
+    IERC20 public bsd = IERC20(0x003e0af2916e598Fa5eA5Cb2Da4EDfdA9aEd9Fde);
 
     // BSD tokens created per block.
     uint256 public bsdPerBlock;
@@ -70,12 +70,20 @@ contract StablesPool {
         address[] memory _lpTokens
     ) public {
         require(block.number < _startBlock, "late");
-        require(_lpTokens.length == poolLength, "Need exactly 5 lpToken address");
         if (_bsd != address(0)) bsd = IERC20(_bsd);
         bsdPerBlock = ASSIGNED_REWARD_AMOUNT.div(BLOCKS_PER_WEEK * 4);
-        startBlock = _startBlock; // supposed to be 11,458,000 (Tue Dec 15 2020 14:00:00 GMT+0)
-        for (uint256 i = 0; i < poolLength; ++i) {
-            _addPool(_lpTokens[i]);
+        startBlock = _startBlock; // supposed to be 11,465,000 (Wed Dec 16 2020 15:00:00 UTC)
+        if (_lpTokens.length == 0) {
+            _addPool(address(0x6B175474E89094C44Da98b954EedeAC495271d0F)); // DAI
+            _addPool(address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)); // USDC
+            _addPool(address(0xdAC17F958D2ee523a2206206994597C13D831ec7)); // USDT
+            _addPool(address(0x4Fabb145d64652a948d72533023f6E7A623C7C53)); // BUSD
+            _addPool(address(0x36F3FD68E7325a35EB768F1AedaAe9EA0689d723)); // ESD
+        } else {
+            require(_lpTokens.length == poolLength, "Need exactly 5 lpToken address");
+            for (uint256 i = 0; i < poolLength; ++i) {
+                _addPool(_lpTokens[i]);
+            }
         }
     }
 
@@ -193,8 +201,8 @@ contract StablesPool {
 
     function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external {
         require(msg.sender == governance, "!governance");
-        if (block.number < endBlock + BLOCKS_PER_WEEK * 8) {
-            // do not allow to drain lpToken if less than 2 months after farming
+        if (block.number < endBlock + BLOCKS_PER_WEEK * 12) {
+            // do not allow to drain lpToken if less than 3 months after farming
             require(_token != bsd, "!bsd");
             for (uint256 pid = 0; pid < poolLength; ++pid) {
                 PoolInfo storage pool = poolInfo[pid];
