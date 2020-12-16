@@ -6,8 +6,8 @@ const Share = artifacts.require('Share');
 const Oracle = artifacts.require('Oracle');
 const MockDai = artifacts.require('MockDai');
 
-const DAIBSDLPToken_BSSPool = artifacts.require('DAIBSDLPTokenSharePool');
-const DAIBSSLPToken_BSSPool = artifacts.require('DAIBSSLPTokenSharePool');
+const DAIBSDLPToken_BSDSPool = artifacts.require('DAIBSDLPTokenSharePool');
+const DAIBSDSLPToken_BSDSPool = artifacts.require('DAIBSDSLPTokenSharePool');
 
 const UniswapV2Factory = artifacts.require('UniswapV2Factory');
 
@@ -20,6 +20,6 @@ module.exports = async (deployer, network, accounts) => {
     const dai_bac_lpt = await oracle.pairFor(uniswapFactory.address, Dollar.address, dai.address);
     const dai_bas_lpt = await oracle.pairFor(uniswapFactory.address, Share.address, dai.address);
 
-    await deployer.deploy(DAIBSDLPToken_BSSPool, Share.address, dai_bac_lpt, POOL_START_DATE);
-    await deployer.deploy(DAIBSSLPToken_BSSPool, Share.address, dai_bas_lpt, POOL_START_DATE);
+    await deployer.deploy(DAIBSDLPToken_BSDSPool, Share.address, dai_bac_lpt, POOL_START_DATE);
+    await deployer.deploy(DAIBSDSLPToken_BSDSPool, Share.address, dai_bas_lpt, POOL_START_DATE);
 };

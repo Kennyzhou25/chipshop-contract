@@ -42,9 +42,6 @@ contract StablesPool {
     // The BSD TOKEN!
     IERC20 public bsd = IERC20(0x003e0af2916e598Fa5eA5Cb2Da4EDfdA9aEd9Fde);
 
-    // BSD tokens created per block.
-    uint256 public bsdPerBlock;
-
     // Info of each pool.
     PoolInfo[] public poolInfo;
 
@@ -52,12 +49,18 @@ contract StablesPool {
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
 
     uint256 public startBlock;
-    uint256 public endBlock;
 
     uint256 public poolLength = 5; // DAI, USDC, USDT, BUSD, ESD
 
-    uint256 public constant ASSIGNED_REWARD_AMOUNT = 500000 ether;
     uint256 public constant BLOCKS_PER_WEEK = 46500;
+
+    uint256[] public epochTotalRewards = [200000 ether, 150000 ether, 100000 ether, 50000 ether];
+
+    // Block number when each epoch ends.
+    uint[4] public epochEndBlocks;
+
+    // Reward per block for each of 4 epochs (last item is equal to 0 - for sanity).
+    uint[5] public epochBsdPerBlock;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -71,8 +74,16 @@ contract StablesPool {
     ) public {
         require(block.number < _startBlock, "late");
         if (_bsd != address(0)) bsd = IERC20(_bsd);
-        bsdPerBlock = ASSIGNED_REWARD_AMOUNT.div(BLOCKS_PER_WEEK * 4);
         startBlock = _startBlock; // supposed to be 11,465,000 (Wed Dec 16 2020 15:00:00 UTC)
+        epochEndBlocks[0] = startBlock + BLOCKS_PER_WEEK;
+        uint256 i;
+        for (i = 1; i <= 3; ++i) {
+            epochEndBlocks[i] = epochEndBlocks[i - 1] + BLOCKS_PER_WEEK;
+        }
+        for (i = 0; i <= 3; ++i) {
+            epochBsdPerBlock[i] = epochTotalRewards[i].div(BLOCKS_PER_WEEK);
+        }
+        epochBsdPerBlock[4] = 0;
         if (_lpTokens.length == 0) {
             _addPool(address(0x6B175474E89094C44Da98b954EedeAC495271d0F)); // DAI
             _addPool(address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)); // USDC
@@ -81,7 +92,7 @@ contract StablesPool {
             _addPool(address(0x36F3FD68E7325a35EB768F1AedaAe9EA0689d723)); // ESD
         } else {
             require(_lpTokens.length == poolLength, "Need exactly 5 lpToken address");
-            for (uint256 i = 0; i < poolLength; ++i) {
+            for (i = 0; i < poolLength; ++i) {
                 _addPool(_lpTokens[i]);
             }
         }
@@ -99,6 +110,23 @@ contract StablesPool {
         );
     }
 
+    // Return reward multiplier over the given _from to _to block.
+    function getGeneratedReward(uint256 _from, uint256 _to) public view returns (uint256) {
+        for (uint8 epochId = 4; epochId >= 1; --epochId) {
+            if (_to >= epochEndBlocks[epochId - 1]) {
+                if (_from >= epochEndBlocks[epochId - 1]) return _to.sub(_from).mul(epochBsdPerBlock[epochId]);
+                uint256 _generatedReward = _to.sub(epochEndBlocks[epochId - 1]).mul(epochBsdPerBlock[epochId]);
+                if (epochId == 1) return _generatedReward.add(epochEndBlocks[0].sub(_from).mul(epochBsdPerBlock[0]));
+                for (epochId = epochId - 1; epochId >= 1; --epochId) {
+                    if (_from >= epochEndBlocks[epochId - 1]) return _generatedReward.add(epochEndBlocks[epochId].sub(_from).mul(epochBsdPerBlock[epochId]));
+                    _generatedReward = _generatedReward.add(epochEndBlocks[epochId].sub(epochEndBlocks[epochId - 1]).mul(epochBsdPerBlock[epochId]));
+                }
+                return _generatedReward.add(epochEndBlocks[0].sub(_from).mul(epochBsdPerBlock[0]));
+            }
+        }
+        return _to.sub(_from).mul(epochBsdPerBlock[0]);
+    }
+
     // View function to see pending BSDs on frontend.
     function pendingBasisDollar(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
@@ -106,9 +134,8 @@ contract StablesPool {
         uint256 accBsdPerShare = pool.accBsdPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 _numBlocks = block.number.sub(pool.lastRewardBlock);
-            uint256 _bsdReward = _numBlocks.mul(bsdPerBlock).div(poolLength);
-            accBsdPerShare = accBsdPerShare.add(_bsdReward.mul(1e18).div(lpSupply));
+            uint256 _generatedReward = getGeneratedReward(pool.lastRewardBlock, block.number);
+            accBsdPerShare = accBsdPerShare.add(_generatedReward.div(poolLength).mul(1e18).div(lpSupply));
         }
         return user.amount.mul(accBsdPerShare).div(1e18).sub(user.rewardDebt);
     }
@@ -124,9 +151,8 @@ contract StablesPool {
             pool.lastRewardBlock = block.number;
             return;
         }
-        uint256 _numBlocks = block.number.sub(pool.lastRewardBlock);
-        uint256 _bsdReward = _numBlocks.mul(bsdPerBlock).div(poolLength);
-        pool.accBsdPerShare = pool.accBsdPerShare.add(_bsdReward.mul(1e18).div(lpSupply));
+        uint256 _generatedReward = getGeneratedReward(pool.lastRewardBlock, block.number);
+        pool.accBsdPerShare = pool.accBsdPerShare.add(_generatedReward.div(poolLength).mul(1e18).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
@@ -201,7 +227,7 @@ contract StablesPool {
 
     function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external {
         require(msg.sender == governance, "!governance");
-        if (block.number < endBlock + BLOCKS_PER_WEEK * 12) {
+        if (block.number < epochEndBlocks[3] + BLOCKS_PER_WEEK * 12) {
             // do not allow to drain lpToken if less than 3 months after farming
             require(_token != bsd, "!bsd");
             for (uint256 pid = 0; pid < poolLength; ++pid) {

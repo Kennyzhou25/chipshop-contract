@@ -33,8 +33,8 @@ async function migration(deployer, network, accounts) {
 
     const dai = network === 'mainnet' ? await IERC20.at(knownContracts.DAI[network]) : await MockDai.deployed();
 
-    // 2. provide liquidity to BSD-DAI and BSS-DAI pair
-    // if you don't provide liquidity to BSD-DAI and BSS-DAI pair after step 1 and before step 3,
+    // 2. provide liquidity to BSD-DAI and BSDS-DAI pair
+    // if you don't provide liquidity to BSD-DAI and BSDS-DAI pair after step 1 and before step 3,
     //  creating Oracle will fail with NO_RESERVES error.
     const unit = web3.utils.toBN(10 ** 18).toString();
     const max = web3.utils
@@ -52,14 +52,14 @@ async function migration(deployer, network, accounts) {
         approveIfNot(dai, accounts[0], uniswapRouter.address, max),
     ]);
 
-    // WARNING: msg.sender must hold enough DAI to add liquidity to BSD-DAI & BSS-DAI pools
+    // WARNING: msg.sender must hold enough DAI to add liquidity to BSD-DAI & BSDS-DAI pools
     // otherwise transaction will revert
     console.log('Adding liquidity to pools');
     await uniswapRouter.addLiquidity(dollar.address, dai.address, unit, unit, unit, unit, accounts[0], deadline());
     await uniswapRouter.addLiquidity(share.address, dai.address, unit, unit, unit, unit, accounts[0], deadline());
 
     console.log(`DAI-BSD pair address: ${await uniswap.getPair(dai.address, dollar.address)}`);
-    console.log(`DAI-BSS pair address: ${await uniswap.getPair(dai.address, share.address)}`);
+    console.log(`DAI-BSDS pair address: ${await uniswap.getPair(dai.address, share.address)}`);
 
     // Deploy boardroom
     await deployer.deploy(Boardroom, dollar.address, share.address);

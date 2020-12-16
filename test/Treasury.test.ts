@@ -14,8 +14,8 @@ const ETH = utils.parseEther("1");
 const ZERO = BigNumber.from(0);
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 const INITIAL_BSD_AMOUNT = utils.parseEther("50000");
-const INITIAL_BSS_AMOUNT = utils.parseEther("10000");
-const INITIAL_BSB_AMOUNT = utils.parseEther("50000");
+const INITIAL_BSDS_AMOUNT = utils.parseEther("10000");
+const INITIAL_BSDB_AMOUNT = utils.parseEther("50000");
 
 async function latestBlocktime(provider: Provider): Promise<number> {
     const {timestamp} = await provider.getBlock("latest");
@@ -171,7 +171,7 @@ describe("Treasury", () => {
                 await dollar.mint(operator.address, INITIAL_BSD_AMOUNT);
                 await dollar.mint(treasury.address, INITIAL_BSD_AMOUNT);
                 await share.connect(operator).distributeReward(rewardPool.address);
-                await share.connect(rewardPool).transfer(operator.address, INITIAL_BSS_AMOUNT);
+                await share.connect(rewardPool).transfer(operator.address, INITIAL_BSDS_AMOUNT);
                 for await (const contract of [dollar, bond, share, boardroom]) {
                     await contract.connect(operator).transferOperator(treasury.address);
                 }
@@ -287,7 +287,7 @@ describe("Treasury", () => {
     describe("bonds", async () => {
         beforeEach("transfer permissions", async () => {
             await dollar.mint(operator.address, INITIAL_BSD_AMOUNT);
-            await bond.mint(operator.address, INITIAL_BSB_AMOUNT);
+            await bond.mint(operator.address, INITIAL_BSDB_AMOUNT);
             for await (const contract of [dollar, bond, share, boardroom]) {
                 await contract.connect(operator).transferOperator(treasury.address);
             }
