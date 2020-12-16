@@ -1,18 +1,18 @@
-// SPDX-License-Identifier: MIT
+pragma solidity ^0.6.0;
 
-pragma solidity 0.6.12;
+import '@openzeppelin/contracts/math/Math.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 
-import "@openzeppelin/contracts/math/Math.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-
-import "./lib/Babylonian.sol";
-import "./owner/Operator.sol";
-import "./utils/ContractGuard.sol";
-import "./interfaces/IBasisAsset.sol";
-import "./interfaces/IOracle.sol";
-import "./interfaces/IBoardroom.sol";
+import './lib/Babylonian.sol';
+import './lib/FixedPoint.sol';
+import './lib/Safe112.sol';
+import './owner/Operator.sol';
+import './utils/ContractGuard.sol';
+import './interfaces/IBasisAsset.sol';
+import './interfaces/IOracle.sol';
+import './interfaces/IBoardroom.sol';
 
 /**
  * @title Basis Dollar Treasury contract
@@ -65,14 +65,10 @@ contract Treasury is ContractGuard {
 
     /* =================== BDIPs (BasisDollar Improvement Proposals) =================== */
 
-    // BDIP01
-    uint256 public bdip01SharedIncentiveForLpEpochs;
-    uint256 public bdip01SharedIncentiveForLpPercent;
-    address[] public bdip01LiquidityPools;
+        startTime = _startTime;
 
-    // BDIP02
-    uint256 public bdip02BootstrapEpochs;
-    uint256 public bdip02BootstrapSupplyExpansionPercent;
+        cashPriceOne = 10**18;
+        cashPriceCeiling = uint256(105).mul(cashPriceOne).div(10**2);
 
     /* =================== Events =================== */
 
@@ -103,7 +99,6 @@ contract Treasury is ContractGuard {
         _;
 
         epoch = epoch.add(1);
-        epochSupplyContractionLeft = IERC20(dollar).totalSupply().mul(maxSupplyContractionPercent).div(10000);
     }
 
     modifier checkOperator {
@@ -141,8 +136,8 @@ contract Treasury is ContractGuard {
     }
 
     // oracle
-    function getDollarPrice() public view returns (uint256 dollarPrice) {
-        try IOracle(dollarOracle).consult(dollar, 1e18) returns (uint256 price) {
+    function getCashPrice() public view returns (uint256 cashPrice) {
+        try IOracle(cashOracle).consult(cash, 1e18) returns (uint256 price) {
             return price;
         } catch {
             revert("Treasury: failed to consult dollar price from the oracle");
@@ -379,4 +374,11 @@ contract Treasury is ContractGuard {
             }
         }
     }
+
+    event Initialized(address indexed executor, uint256 at);
+    event Migration(address indexed target);
+    event RedeemedBonds(address indexed from, uint256 amount);
+    event BoughtBonds(address indexed from, uint256 amount);
+    event TreasuryFunded(uint256 timestamp, uint256 seigniorage);
+    event BoardroomFunded(uint256 timestamp, uint256 seigniorage);
 }
