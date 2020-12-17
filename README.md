@@ -67,6 +67,8 @@ Read the official [Basis Dollar Documentation](https://docs.basisdollar.fi) for 
 
 To chat with us & stay up to date, join our [Telegram](https://t.me/basisdollar).
 
+Join us on [Discord](https://discord.gg/HhxrRVXy7W)
+
 Contribution guidelines are [here](./CONTRIBUTING.md)
 
 For security concerns, please submit an issue [here](https://github.com/Basis-Dollar/basisdollar-contracts/issues/new).
