@@ -61,7 +61,7 @@ There exists three types of assets in the Basis Dollar system.
 - **Expansion**: When the price($BSD) > ($1 + epsilon), users can trade in 1 $BSDB for 1 $BSD. This allows bonds to be redeemed always at a premium to the purchase price. 
 - **Seigniorage Allocation**: If there are no more bonds to be redeemed, (i.e. bond Supply is negligibly small), more $BSD is minted totalSupply($BSD) * (price($BSD) - 1), and placed in a pool for $BSDS holders to claim pro-rata in a 24 hour period. 
 
-Read the official [Basis Dollar Documentation](docs.basisdollar.fi) for more details.
+Read the official [Basis Dollar Documentation](https://docs.basisdollar.fi) for more details.
 
 ## How to Contribute
 
