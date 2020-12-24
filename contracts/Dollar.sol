@@ -7,15 +7,15 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "./owner/Operator.sol";
 
 contract Dollar is ERC20Burnable, Operator {
-    uint256 public constant STABLES_POOL_REWARD_ALLOCATION = 500000 ether;
+    uint256 public constant INITIAL_DISTRIBUTION = 210000 ether;
 
     bool public rewardPoolDistributed = false;
 
     /**
-     * @notice Constructs the Basis Dollar ERC-20 contract.
+     * @notice Constructs the bDollar ERC-20 contract.
      */
-    constructor() public ERC20("Basis Dollar", "BSD") {
-        // Mints 1 Basis Dollar to contract creator for initial pool setup
+    constructor() public ERC20("bDollar", "BDO") {
+        // Mints 1 bDollar to contract creator for initial pool setup
         _mint(msg.sender, 1 ether);
     }
 
@@ -33,7 +33,7 @@ contract Dollar is ERC20Burnable, Operator {
         return balanceAfter > balanceBefore;
     }
 
-    function burn(uint256 amount) public override onlyOperator {
+    function burn(uint256 amount) public override {
         super.burn(amount);
     }
 
@@ -44,10 +44,10 @@ contract Dollar is ERC20Burnable, Operator {
     /**
      * @notice distribute to reward pool (only once)
      */
-    function distributeReward(address _stablesPool) external onlyOperator {
+    function distributeReward(address _distributionPool) external onlyOperator {
         require(!rewardPoolDistributed, "only can distribute once");
-        require(_stablesPool != address(0), "!_stablesPool");
+        require(_distributionPool != address(0), "!_distributionPool");
         rewardPoolDistributed = true;
-        _mint(_stablesPool, STABLES_POOL_REWARD_ALLOCATION);
+        _mint(_distributionPool, INITIAL_DISTRIBUTION);
     }
 }

@@ -6,7 +6,7 @@ import "../owner/Operator.sol";
 
 contract MockERC20 is ERC20Burnable, Operator {
     /**
-     * @notice Constructs the Basis Dollar ERC-20 contract.
+     * @notice Constructs the bDollar ERC-20 contract.
      */
     constructor(string memory name, string memory symbol, uint8 _decimals) public ERC20(name, symbol) {
         _setupDecimals(_decimals);
