@@ -1,4 +1,4 @@
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 
 contract ContractGuard {
     mapping(uint256 => mapping(address => bool)) private _status;
@@ -12,14 +12,8 @@ contract ContractGuard {
     }
 
     modifier onlyOneBlock() {
-        require(
-            !checkSameOriginReentranted(),
-            'ContractGuard: one block, one function'
-        );
-        require(
-            !checkSameSenderReentranted(),
-            'ContractGuard: one block, one function'
-        );
+        require(!checkSameOriginReentranted(), "ContractGuard: one block, one function");
+        require(!checkSameSenderReentranted(), "ContractGuard: one block, one function");
 
         _;
 

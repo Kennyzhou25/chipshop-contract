@@ -1,6 +1,8 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
 
-import './interfaces/IDistributor.sol';
+pragma solidity 0.6.12;
+
+import "./interfaces/IDistributor.sol";
 
 contract Distributor {
     IDistributor[] public distributors;

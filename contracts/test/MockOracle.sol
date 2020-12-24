@@ -1,8 +1,8 @@
 pragma solidity ^0.6.0;
 
-import '@openzeppelin/contracts/math/SafeMath.sol';
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import '../interfaces/IOracle.sol';
+import "../interfaces/IOracle.sol";
 
 contract MockOracle is IOracle {
     using SafeMath for uint256;
@@ -19,16 +19,11 @@ contract MockOracle is IOracle {
     }
 
     function update() external override {
-        require(!error, 'Oracle: mocked error');
+        require(!error, "Oracle: mocked error");
         emit Updated(0, 0);
     }
 
-    function consult(address, uint256 amountIn)
-        external
-        override
-        view
-        returns (uint256)
-    {
+    function consult(address, uint256 amountIn) external view override returns (uint256) {
         return price.mul(amountIn).div(1e18);
     }
 

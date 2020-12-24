@@ -1,8 +1,4 @@
-const {
-  basPools,
-  INITIAL_BAS_FOR_DAI_BAC,
-  INITIAL_BAS_FOR_DAI_BAS,
-} = require('./pools');
+const {basPools, INITIAL_BSDS_FOR_DAI_BSD, INITIAL_BSDS_FOR_DAI_BSDS} = require('./pools');
 
 // Pools
 // deployed first
@@ -12,34 +8,34 @@ const InitialShareDistributor = artifacts.require('InitialShareDistributor');
 // ============ Main Migration ============
 
 async function migration(deployer, network, accounts) {
-  const unit = web3.utils.toBN(10 ** 18);
-  const totalBalanceForDAIBAC = unit.muln(INITIAL_BAS_FOR_DAI_BAC)
-  const totalBalanceForDAIBAS = unit.muln(INITIAL_BAS_FOR_DAI_BAS)
-  const totalBalance = totalBalanceForDAIBAC.add(totalBalanceForDAIBAS);
+    const unit = web3.utils.toBN(10 ** 18);
+    const totalBalanceForDAIBSD = unit.muln(INITIAL_BSDS_FOR_DAI_BSD);
+    const totalBalanceForDAIBSDS = unit.muln(INITIAL_BSDS_FOR_DAI_BSDS);
+    const totalBalance = totalBalanceForDAIBSD.add(totalBalanceForDAIBSDS);
 
-  const share = await Share.deployed();
+    const share = await Share.deployed();
 
-  const lpPoolDAIBAC = artifacts.require(basPools.DAIBAC.contractName);
-  const lpPoolDAIBAS = artifacts.require(basPools.DAIBAS.contractName);
+    const lpPoolDAIBSD = artifacts.require(basPools.DAIBSD.contractName);
+    const lpPoolDAIBSDS = artifacts.require(basPools.DAIBSDS.contractName);
 
-  await deployer.deploy(
-    InitialShareDistributor,
-    share.address,
-    lpPoolDAIBAC.address,
-    totalBalanceForDAIBAC.toString(),
-    lpPoolDAIBAS.address,
-    totalBalanceForDAIBAS.toString(),
-  );
-  const distributor = await InitialShareDistributor.deployed();
+    await deployer.deploy(
+        InitialShareDistributor,
+        share.address,
+        lpPoolDAIBSD.address,
+        totalBalanceForDAIBSD.toString(),
+        lpPoolDAIBSDS.address,
+        totalBalanceForDAIBSDS.toString()
+    );
+    const distributor = await InitialShareDistributor.deployed();
 
-  await share.mint(distributor.address, totalBalance.toString());
-  console.log(`Deposited ${INITIAL_BAS_FOR_DAI_BAC} BAS to InitialShareDistributor.`);
+    await share.mint(distributor.address, totalBalance.toString());
+    console.log(`Deposited ${INITIAL_BSDS_FOR_DAI_BSD} BSDS to InitialShareDistributor.`);
 
-  console.log(`Setting distributor to InitialShareDistributor (${distributor.address})`);
-  await lpPoolDAIBAC.deployed().then(pool => pool.setRewardDistribution(distributor.address));
-  await lpPoolDAIBAS.deployed().then(pool => pool.setRewardDistribution(distributor.address));
+    console.log(`Setting distributor to InitialShareDistributor (${distributor.address})`);
+    await lpPoolDAIBSD.deployed().then((pool) => pool.setRewardDistribution(distributor.address));
+    await lpPoolDAIBSDS.deployed().then((pool) => pool.setRewardDistribution(distributor.address));
 
-  await distributor.distribute();
+    await distributor.distribute();
 }
 
 module.exports = migration;
