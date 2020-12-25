@@ -91,14 +91,14 @@ describe('BdoRewardPool.test', () => {
         it('should works correctly', async () => {
             expect(String(await pool.startBlock())).to.eq('10');
             expect(String(await pool.epochEndBlocks(2))).to.eq(String(201600 * 3 + 10));
-            expect(String(await pool.epochTotalRewards(0))).to.eq(utils.parseEther('100000'));
-            expect(String(await pool.epochBdoPerBlock(0))).to.eq(utils.parseEther('0.496031746031746031'));
-            expect(String(await pool.epochBdoPerBlock(1))).to.eq(utils.parseEther('0.322420634920634920'));
-            expect(String(await pool.epochBdoPerBlock(2))).to.eq(utils.parseEther('0.223214285714285714'));
+            expect(String(await pool.epochTotalRewards(0))).to.eq(utils.parseEther('80000'));
+            expect(String(await pool.epochBdoPerBlock(0))).to.eq(utils.parseEther('0.396825396825396825'));
+            expect(String(await pool.epochBdoPerBlock(1))).to.eq(utils.parseEther('0.297619047619047619'));
+            expect(String(await pool.epochBdoPerBlock(2))).to.eq(utils.parseEther('0.198412698412698412'));
             expect(String(await pool.epochBdoPerBlock(3))).to.eq('0');
-            expect(String(await pool.getGeneratedReward(10, 11))).to.eq(utils.parseEther('0.496031746031746031'));
-            expect(String(await pool.getGeneratedReward(20, 30))).to.eq(utils.parseEther('4.96031746031746031'));
-            expect(String(await pool.getGeneratedReward(604809, 604810))).to.eq(utils.parseEther('0.223214285714285714'));
+            expect(String(await pool.getGeneratedReward(10, 11))).to.eq(utils.parseEther('0.396825396825396825'));
+            expect(String(await pool.getGeneratedReward(20, 30))).to.eq(utils.parseEther('3.96825396825396825'));
+            expect(String(await pool.getGeneratedReward(604809, 604810))).to.eq(utils.parseEther('0.198412698412698412'));
         });
     });
 
@@ -128,13 +128,13 @@ describe('BdoRewardPool.test', () => {
 
         it('pendingBDO()', async () => {
             await advanceBlock(provider);
-            expect(await pool.pendingBDO(0, bob.address)).to.eq(utils.parseEther('0.7816257816257816'));
+            expect(await pool.pendingBDO(0, bob.address)).to.eq(utils.parseEther('0.6253006253006253'));
             expect(await pool.pendingBDO(2, bob.address)).to.eq(utils.parseEther('0'));
-            expect(await pool.pendingBDO(0, carol.address)).to.eq(utils.parseEther('0.84175084175084172'));
-            expect(await pool.pendingBDO(2, carol.address)).to.eq(utils.parseEther('0.135281385281385281'));
-            expect(await pool.pendingBDO(0, david.address)).to.eq(utils.parseEther('0.18037518037518037'));
+            expect(await pool.pendingBDO(0, carol.address)).to.eq(utils.parseEther('0.673400673400673400'));
+            expect(await pool.pendingBDO(2, carol.address)).to.eq(utils.parseEther('0.108225108225108225'));
+            expect(await pool.pendingBDO(0, david.address)).to.eq(utils.parseEther('0.144300144300144300'));
             expect(await pool.pendingBDO(2, david.address)).to.eq(utils.parseEther('0'));
-            expect(await pool.pendingBDO(1, david.address)).to.eq(utils.parseEther('0.09018759018759018'));
+            expect(await pool.pendingBDO(1, david.address)).to.eq(utils.parseEther('0.07215007215007215'));
         });
 
         it('carol withdraw 20 DAI', async () => {
@@ -143,7 +143,7 @@ describe('BdoRewardPool.test', () => {
             let _beforeDAI = await dai.balanceOf(carol.address);
             await expect(async () => {
                 await pool.connect(carol).withdraw(0, utils.parseEther('20'));
-            }).to.changeTokenBalances(dollar, [carol, pool], [utils.parseEther('1.38287638287638284'), utils.parseEther('-1.38287638287638284')]);
+            }).to.changeTokenBalances(dollar, [carol, pool], [utils.parseEther('1.1063011063011063'), utils.parseEther('-1.1063011063011063')]);
             let _afterDAI = await dai.balanceOf(carol.address);
             expect(_afterDAI.sub(_beforeDAI)).to.eq(utils.parseEther('20'));
         });

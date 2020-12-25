@@ -50,4 +50,8 @@ contract Dollar is ERC20Burnable, Operator {
         rewardPoolDistributed = true;
         _mint(_distributionPool, INITIAL_DISTRIBUTION);
     }
+
+    function governanceRecoverUnsupported(IERC20 _token, uint256 _amount, address _to) external onlyOperator {
+        _token.transfer(_to, _amount);
+    }
 }
