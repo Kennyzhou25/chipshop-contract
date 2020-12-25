@@ -7,11 +7,12 @@ bDollar is a lightweight implementation of the [Basis Protocol](basis.io) on Eth
 ## Contract Addresses
 | Contract  | Address |
 | ------------- | ------------- |
-| bDollar (BDO) | [](https://etherscan.io/token/) |
-| bDollar Share (sBDO) | [](https://etherscan.io/token/) |
-| bDollar Bond (bBDO) | [](https://etherscan.io/token/) |
-| BdoRewardPool | [](https://etherscan.io/address/#code) |
-| Timelock 24h | [](https://etherscan.io/address/#code) |
+| bDollar (BDO) | [0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454](https://bscscan.com/token/0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454) |
+| bDollar Share (sBDO) | [](https://bscscan.com/token/) |
+| bDollar Bond (bBDO) | [](https://bscscan.com/token/) |
+| BdoRewardPool | [0x7A4cFC24841c799832fFF4E5038BBA14c0e73ced](https://bscscan.com/address/0x7A4cFC24841c799832fFF4E5038BBA14c0e73ced#code) |
+| ShareRewardPool | [](https://bscscan.com/address/#code) |
+| Timelock 24h | [0x92a082Ad5A942140bCC791081F775900d0A514D9](https://bscscan.com/address/0x92a082Ad5A942140bCC791081F775900d0A514D9#code) |
 
 ## Audit
 [Sushiswap - by PeckShield](https://github.com/peckshield/publications/blob/master/audit_reports/PeckShield-Audit-Report-SushiSwap-v1.0.pdf)
@@ -48,8 +49,20 @@ There exists three types of assets in the bDollar system.
 - **bDollar Bonds ($bBDO)**: IOUs issued by the system to buy back bDollar when price($BDO) < $1. Bonds are sold at a meaningful discount to price($BDO), and redeemed at $1 when price($BDO) normalizes to $1. 
 - **bDollar Shares ($sBDO)**: receives surplus seigniorage (seigniorage left remaining after all the bonds have been redeemed).
 
+## Conclusion
+
+bDollar is the latest product of the Bearn.Fi ecosystem as we are strong supporters of algorithmic stablecoins in particular and DeFi in general. However, bDollar is an experiment, and participants should take great caution and learn more about the seigniorage concept to avoid any potential loss.
+
+#### Community channels:
+
+- Telegram: https://t.me/Bearn_Fi
+- Discord: https://discord.gg/j2TRcSHRe3
+- Medium: https://medium.com/@bearn.defi
+- Twitter: https://twitter.com/BearnFi
+- GitHub: https://github.com/bearn-defi/bdollar-smartcontracts
+
 ## Disclaimer
 
 Use at your own risk. This product is perpetually in beta.
 
-_© Copyright 2020, bDollar_
+_© Copyright 2020, [bDollar.Fi](https://bdollar.fi)_

@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-// Note that this pool has no minter key of BDO or sBDO (rewards).
-// Instead, the governance will call BDO (or sBDO) distributeReward method and send reward to this pool at the beginning.
+// Note that this pool has no minter key of BDO (rewards).
+// Instead, the governance will call BDO distributeReward method and send reward to this pool at the beginning.
 contract BdoRewardPool {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -30,7 +30,7 @@ contract BdoRewardPool {
         bool isStarted; // if lastRewardBlock has passed
     }
 
-    IERC20 public bdo;
+    IERC20 public bdo = IERC20(0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454);
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -46,7 +46,7 @@ contract BdoRewardPool {
 
     uint256 public constant BLOCKS_PER_WEEK = 201600; // 86400 * 7 / 3;
 
-    uint256[] public epochTotalRewards = [100000 ether, 65000 ether, 45000 ether];
+    uint256[] public epochTotalRewards = [80000 ether, 60000 ether, 40000 ether];
 
     // Block number when each epoch ends.
     uint[3] public epochEndBlocks;
@@ -65,7 +65,7 @@ contract BdoRewardPool {
     ) public {
         require(block.number < _startBlock, "late");
         if (_bdo != address(0)) bdo = IERC20(_bdo);
-        startBlock = _startBlock; // supposed to be 11,465,000 (Wed Dec 16 2020 15:00:00 UTC)
+        startBlock = _startBlock; // supposed to be 3,410,000 (Fri Dec 25 2020 15:00:00 UTC)
         epochEndBlocks[0] = startBlock + BLOCKS_PER_WEEK;
         uint256 i;
         for (i = 1; i <= 2; ++i) {
@@ -79,14 +79,14 @@ contract BdoRewardPool {
     }
 
     modifier onlyOperator() {
-        require(operator == msg.sender, "BDORewardPool: caller is not the operator");
+        require(operator == msg.sender, "BdoRewardPool: caller is not the operator");
         _;
     }
 
     function checkPoolDuplicate(IERC20 _lpToken) internal view {
         uint256 length = poolInfo.length;
         for (uint256 pid = 0; pid < length; ++pid) {
-            require(poolInfo[pid].lpToken != _lpToken, "BDORewardPool: existing pool?");
+            require(poolInfo[pid].lpToken != _lpToken, "BdoRewardPool: existing pool?");
         }
     }
 
@@ -250,10 +250,11 @@ contract BdoRewardPool {
     function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
+        uint256 _amount = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
-        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, _pid, user.amount);
+        pool.lpToken.safeTransfer(msg.sender, _amount);
+        emit EmergencyWithdraw(msg.sender, _pid, _amount);
     }
 
     // Safe bdo transfer function, just in case if rounding error causes pool to not have enough BDOs.
@@ -261,9 +262,9 @@ contract BdoRewardPool {
         uint256 _bdoBal = bdo.balanceOf(address(this));
         if (_bdoBal > 0) {
             if (_amount > _bdoBal) {
-                bdo.transfer(_to, _bdoBal);
+                bdo.safeTransfer(_to, _bdoBal);
             } else {
-                bdo.transfer(_to, _amount);
+                bdo.safeTransfer(_to, _amount);
             }
         }
     }
@@ -273,8 +274,8 @@ contract BdoRewardPool {
     }
 
     function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external onlyOperator {
-        if (block.number < epochEndBlocks[2] + BLOCKS_PER_WEEK * 52) {
-            // do not allow to drain lpToken if less than 1 year after farming
+        if (block.number < epochEndBlocks[2] + BLOCKS_PER_WEEK * 26) {
+            // do not allow to drain lpToken if less than 6 months after farming
             require(_token != bdo, "!bdo");
             uint256 length = poolInfo.length;
             for (uint256 pid = 0; pid < length; ++pid) {

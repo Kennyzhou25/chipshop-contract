@@ -5,9 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "../owner/Operator.sol";
 
 contract MockERC20 is ERC20Burnable, Operator {
-    /**
-     * @notice Constructs the bDollar ERC-20 contract.
-     */
     constructor(string memory name, string memory symbol, uint8 _decimals) public ERC20(name, symbol) {
         _setupDecimals(_decimals);
     }
@@ -24,5 +21,10 @@ contract MockERC20 is ERC20Burnable, Operator {
         uint256 balanceAfter = balanceOf(recipient_);
 
         return balanceAfter > balanceBefore;
+    }
+
+    function faucet(uint256 amt) public returns (bool) {
+        _mint(msg.sender, amt);
+        return true;
     }
 }
