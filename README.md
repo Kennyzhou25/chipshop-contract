@@ -1,6 +1,6 @@
 # bDollar
 
-[![Twitter Follow](https://img.shields.io/twitter/follow/BearnFi?label=Follow)](https://twitter.com/BearnFi)
+[![Twitter Follow](https://img.shields.io/twitter/follow/bDollar_Fi?label=Follow)](https://twitter.com/bDollar_Fi)
 
 bDollar is a lightweight implementation of the [Basis Protocol](basis.io) on Ethereum.
 
@@ -8,10 +8,10 @@ bDollar is a lightweight implementation of the [Basis Protocol](basis.io) on Eth
 | Contract  | Address |
 | ------------- | ------------- |
 | bDollar (BDO) | [0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454](https://bscscan.com/token/0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454) |
-| bDollar Share (sBDO) | [](https://bscscan.com/token/) |
-| bDollar Bond (bBDO) | [](https://bscscan.com/token/) |
+| bDollar Share (sBDO) | [0x0d9319565be7f53CeFE84Ad201Be3f40feAE2740](https://bscscan.com/token/0x0d9319565be7f53CeFE84Ad201Be3f40feAE2740) |
+| bDollar Bond (bBDO) | [0x9586b02B09bd68A7cD4aa9167a61B78F43092063](https://bscscan.com/token/0x9586b02B09bd68A7cD4aa9167a61B78F43092063) |
 | BdoRewardPool | [0x7A4cFC24841c799832fFF4E5038BBA14c0e73ced](https://bscscan.com/address/0x7A4cFC24841c799832fFF4E5038BBA14c0e73ced#code) |
-| ShareRewardPool | [](https://bscscan.com/address/#code) |
+| ShareRewardPool | [0x948dB1713D4392EC04C86189070557C5A8566766](https://bscscan.com/address/0x948dB1713D4392EC04C86189070557C5A8566766#code) |
 | Timelock 24h | [0x92a082Ad5A942140bCC791081F775900d0A514D9](https://bscscan.com/address/0x92a082Ad5A942140bCC791081F775900d0A514D9#code) |
 
 ## Audit
