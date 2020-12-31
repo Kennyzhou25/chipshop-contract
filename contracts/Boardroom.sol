@@ -127,8 +127,8 @@ contract Boardroom is ShareWrapper, ContractGuard {
         BoardSnapshot memory genesisSnapshot = BoardSnapshot({time : block.number, rewardReceived : 0, rewardPerShare : 0});
         boardHistory.push(genesisSnapshot);
 
-        withdrawLockupEpochs = 5; // Lock for 4 epochs before release withdraw
-        rewardLockupEpochs = 3; // Lock for 2 epochs before release claimReward
+        withdrawLockupEpochs = 6; // Lock for 6 epochs (36h) before release withdraw
+        rewardLockupEpochs = 3; // Lock for 3 epochs (18h) before release claimReward
 
         initialized = true;
         operator = msg.sender;
@@ -140,7 +140,7 @@ contract Boardroom is ShareWrapper, ContractGuard {
     }
 
     function setLockUp(uint256 _withdrawLockupEpochs, uint256 _rewardLockupEpochs) external onlyOperator {
-        require(_withdrawLockupEpochs >= _rewardLockupEpochs && _withdrawLockupEpochs <= 14, "_withdrawLockupEpochs: out of range"); // <= 1 week
+        require(_withdrawLockupEpochs >= _rewardLockupEpochs && _withdrawLockupEpochs <= 56, "_withdrawLockupEpochs: out of range"); // <= 2 week
         withdrawLockupEpochs = _withdrawLockupEpochs;
         rewardLockupEpochs = _rewardLockupEpochs;
     }
@@ -171,6 +171,14 @@ contract Boardroom is ShareWrapper, ContractGuard {
 
     function canClaimReward(address director) external view returns (bool) {
         return directors[director].epochTimerStart.add(rewardLockupEpochs) <= treasury.epoch();
+    }
+
+    function epoch() external view returns (uint256) {
+        return treasury.epoch();
+    }
+
+    function nextEpochPoint() external view returns (uint256) {
+        return treasury.nextEpochPoint();
     }
 
     // =========== Director getters
