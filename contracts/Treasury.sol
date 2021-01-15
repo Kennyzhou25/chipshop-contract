@@ -1,18 +1,18 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
 
-import '@openzeppelin/contracts/math/Math.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
-import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
+pragma solidity 0.6.12;
 
-import './lib/Babylonian.sol';
-import './lib/FixedPoint.sol';
-import './lib/Safe112.sol';
-import './owner/Operator.sol';
-import './utils/ContractGuard.sol';
-import './interfaces/IBasisAsset.sol';
-import './interfaces/IOracle.sol';
-import './interfaces/IBoardroom.sol';
+import "@openzeppelin/contracts/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+import "./lib/Babylonian.sol";
+import "./owner/Operator.sol";
+import "./utils/ContractGuard.sol";
+import "./interfaces/IBasisAsset.sol";
+import "./interfaces/IOracle.sol";
+import "./interfaces/IBoardroom.sol";
 
 /**
  * @title Basis Dollar Treasury contract
@@ -26,7 +26,7 @@ contract Treasury is ContractGuard {
 
     /* ========= CONSTANT VARIABLES ======== */
 
-    uint256 public constant PERIOD = 12 hours;
+    uint256 public constant PERIOD = 6 hours;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -43,9 +43,9 @@ contract Treasury is ContractGuard {
     uint256 public epochSupplyContractionLeft = 0;
 
     // core components
-    address public dollar = address(0x003e0af2916e598Fa5eA5Cb2Da4EDfdA9aEd9Fde);
-    address public bond = address(0xE7C9C188138f7D70945D420d75F8Ca7d8ab9c700);
-    address public share = address(0x9f48b2f14517770F2d238c787356F3b961a6616F);
+    address public dollar = address(0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454);
+    address public bond = address(0x9586b02B09bd68A7cD4aa9167a61B78F43092063);
+    address public share = address(0x0d9319565be7f53CeFE84Ad201Be3f40feAE2740);
 
     address public boardroom;
     address public dollarOracle;
@@ -56,28 +56,42 @@ contract Treasury is ContractGuard {
 
     uint256 public seigniorageSaved;
 
-    // protocol parameters - https://docs.basisdollar.fi/ProtocolParameters
+    // protocol parameters - https://github.com/bearn-defi/bdollar-smartcontracts/tree/master/docs/ProtocolParameters.md
     uint256 public maxSupplyExpansionPercent;
+    uint256 public maxSupplyExpansionPercentInDebtPhase;
     uint256 public bondDepletionFloorPercent;
     uint256 public seigniorageExpansionFloorPercent;
     uint256 public maxSupplyContractionPercent;
     uint256 public maxDeptRatioPercent;
 
-    /* =================== BDIPs (BasisDollar Improvement Proposals) =================== */
+    /* =================== BDOIPs (bDollar Improvement Proposals) =================== */
 
-        startTime = _startTime;
+    // BDOIP01: 28 first epochs (1 week) with 4.5% expansion regardless of BDO price
+    uint256 public bdoip01BootstrapEpochs;
+    uint256 public bdoip01BootstrapSupplyExpansionPercent;
 
-        cashPriceOne = 10**18;
-        cashPriceCeiling = uint256(105).mul(cashPriceOne).div(10**2);
+    /* =================== Added variables (need to keep orders for proxy to work) =================== */
+    uint256 public previousEpochDollarPrice;
+    uint256 public allocateSeigniorageSalary;
+    uint256 public maxDiscountRate; // when purchasing bond
+    uint256 public maxPremiumRate; // when redeeming bond
+    uint256 public discountPercent;
+    uint256 public premiumPercent;
+    uint256 public mintingFactorForPayingDebt; // print extra BDO during dept phase
+
+    // BDOIP03: 10% of minted BDO goes to Community DAO Fund
+    address public daoFund;
+    uint256 public daoFundSharedPercent;
 
     /* =================== Events =================== */
 
     event Initialized(address indexed executor, uint256 at);
     event Migration(address indexed target);
-    event RedeemedBonds(address indexed from, uint256 amount);
-    event BoughtBonds(address indexed from, uint256 amount);
+    event RedeemedBonds(address indexed from, uint256 dollarAmount, uint256 bondAmount);
+    event BoughtBonds(address indexed from, uint256 dollarAmount, uint256 bondAmount);
     event TreasuryFunded(uint256 timestamp, uint256 seigniorage);
     event BoardroomFunded(uint256 timestamp, uint256 seigniorage);
+    event DaoFundFunded(uint256 timestamp, uint256 seigniorage);
 
     /* =================== Modifier =================== */
 
@@ -99,6 +113,7 @@ contract Treasury is ContractGuard {
         _;
 
         epoch = epoch.add(1);
+        epochSupplyContractionLeft = (getDollarPrice() > dollarPriceCeiling) ? 0 : IERC20(dollar).totalSupply().mul(maxSupplyContractionPercent).div(10000);
     }
 
     modifier checkOperator {
@@ -136,9 +151,17 @@ contract Treasury is ContractGuard {
     }
 
     // oracle
-    function getCashPrice() public view returns (uint256 cashPrice) {
-        try IOracle(cashOracle).consult(cash, 1e18) returns (uint256 price) {
-            return price;
+    function getDollarPrice() public view returns (uint256 dollarPrice) {
+        try IOracle(dollarOracle).consult(dollar, 1e18) returns (uint144 price) {
+            return uint256(price);
+        } catch {
+            revert("Treasury: failed to consult dollar price from the oracle");
+        }
+    }
+
+    function getDollarUpdatedPrice() public view returns (uint256 _dollarPrice) {
+        try IOracle(dollarOracle).twap(dollar, 1e18) returns (uint144 price) {
+            return uint256(price);
         } catch {
             revert("Treasury: failed to consult dollar price from the oracle");
         }
@@ -147,6 +170,64 @@ contract Treasury is ContractGuard {
     // budget
     function getReserve() public view returns (uint256) {
         return seigniorageSaved;
+    }
+
+    function getBurnableDollarLeft() public view returns (uint256 _burnableDollarLeft) {
+        uint256  _dollarPrice = getDollarPrice();
+        if (_dollarPrice <= dollarPriceOne) {
+            uint256 _dollarSupply = IERC20(dollar).totalSupply();
+            uint256 _bondMaxSupply = _dollarSupply.mul(maxDeptRatioPercent).div(10000);
+            uint256 _bondSupply = IERC20(bond).totalSupply();
+            if (_bondMaxSupply > _bondSupply) {
+                uint256 _maxMintableBond = _bondMaxSupply.sub(_bondSupply);
+                uint256 _maxBurnableDollar = _maxMintableBond.mul(_dollarPrice).div(1e18);
+                _burnableDollarLeft = Math.min(epochSupplyContractionLeft, _maxBurnableDollar);
+            }
+        }
+    }
+
+    function getRedeemableBonds() public view returns (uint256 _redeemableBonds) {
+        uint256  _dollarPrice = getDollarPrice();
+        if (_dollarPrice > dollarPriceCeiling) {
+            uint256 _totalDollar = IERC20(dollar).balanceOf(address(this));
+            uint256 _rate = getBondPremiumRate();
+            if (_rate > 0) {
+                _redeemableBonds = _totalDollar.mul(1e18).div(_rate);
+            }
+        }
+    }
+
+    function getBondDiscountRate() public view returns (uint256 _rate) {
+        uint256 _dollarPrice = getDollarPrice();
+        if (_dollarPrice <= dollarPriceOne) {
+            if (discountPercent == 0) {
+                // no discount
+                _rate = dollarPriceOne;
+            } else {
+                uint256 _bondAmount = dollarPriceOne.mul(1e18).div(_dollarPrice); // to burn 1 dollar
+                uint256 _discountAmount = _bondAmount.sub(dollarPriceOne).mul(discountPercent).div(10000);
+                _rate = dollarPriceOne.add(_discountAmount);
+                if (maxDiscountRate > 0 && _rate > maxDiscountRate) {
+                    _rate = maxDiscountRate;
+                }
+            }
+        }
+    }
+
+    function getBondPremiumRate() public view returns (uint256 _rate) {
+        uint256 _dollarPrice = getDollarPrice();
+        if (_dollarPrice > dollarPriceCeiling) {
+            if (premiumPercent == 0) {
+                // no premium bonus
+                _rate = dollarPriceOne;
+            } else {
+                uint256 _premiumAmount = _dollarPrice.sub(dollarPriceOne).mul(premiumPercent).div(10000);
+                _rate = dollarPriceOne.add(_premiumAmount);
+                if (maxDiscountRate > 0 && _rate > maxDiscountRate) {
+                    _rate = maxDiscountRate;
+                }
+            }
+        }
     }
 
     /* ========== GOVERNANCE ========== */
@@ -163,27 +244,18 @@ contract Treasury is ContractGuard {
         startTime = _startTime;
 
         dollarPriceOne = 10**18;
-        dollarPriceCeiling = dollarPriceOne.mul(105).div(100);
+        dollarPriceCeiling = dollarPriceOne.mul(101).div(100);
 
-        maxSupplyExpansionPercent = 450; // Upto 4.5% supply for expansion
+        maxSupplyExpansionPercent = 300; // Upto 3.0% supply for expansion
+        maxSupplyExpansionPercentInDebtPhase = 450; // Upto 4.5% supply for expansion in debt phase (to pay debt faster)
         bondDepletionFloorPercent = 10000; // 100% of Bond supply for depletion floor
         seigniorageExpansionFloorPercent = 3500; // At least 35% of expansion reserved for boardroom
-        maxSupplyContractionPercent = 450; // Upto 4.5% supply for contraction (to burn BSD and mint BSDB)
-        maxDeptRatioPercent = 3500; // Upto 35% supply of BSDB to purchase
+        maxSupplyContractionPercent = 300; // Upto 3.0% supply for contraction (to burn BDO and mint bBDO)
+        maxDeptRatioPercent = 3500; // Upto 35% supply of bBDO to purchase
 
-        // BDIP01: 75% of X $BSD from expansion to BSDS stakers and 25% to LPs for 14 epochs
-        bdip01SharedIncentiveForLpEpochs = 14;
-        bdip01SharedIncentiveForLpPercent = 2500;
-        bdip01LiquidityPools = [
-            address(0x71661297e9784f08fd5d840D4340C02e52550cd9), // DAI/BSD
-            address(0x9E7a4f7e4211c0CE4809cE06B9dDA6b95254BaaC), // USDC/BSD
-            address(0xc259bf15BaD4D870dFf1FE1AAB450794eB33f8e8), // DAI/BSDS
-            address(0xE0e7F7EB27CEbCDB2F1DA5F893c429d0e5954468) // USDC/BSDS
-        ];
-
-        // BDIP02: 14 first epochs with 9% max expansion
-        bdip02BootstrapEpochs = 14;
-        bdip02BootstrapSupplyExpansionPercent = 900;
+        // BDIP01: First 28 epochs with 4.5% expansion
+        bdoip01BootstrapEpochs = 28;
+        bdoip01BootstrapSupplyExpansionPercent = 450;
 
         // set seigniorageSaved to it's balance
         seigniorageSaved = IERC20(dollar).balanceOf(address(this));
@@ -210,9 +282,12 @@ contract Treasury is ContractGuard {
         dollarPriceCeiling = _dollarPriceCeiling;
     }
 
-    function setMaxSupplyExpansionPercent(uint256 _maxSupplyExpansionPercent) external onlyOperator {
-        require(_maxSupplyExpansionPercent >= 10 && _maxSupplyExpansionPercent <= 1500, "out of range"); // [0.1%, 15%]
+    function setMaxSupplyExpansionPercents(uint256 _maxSupplyExpansionPercent, uint256 _maxSupplyExpansionPercentInDebtPhase) external onlyOperator {
+        require(_maxSupplyExpansionPercent >= 10 && _maxSupplyExpansionPercent <= 1000, "_maxSupplyExpansionPercent: out of range"); // [0.1%, 10%]
+        require(_maxSupplyExpansionPercentInDebtPhase >= 10 && _maxSupplyExpansionPercentInDebtPhase <= 1500, "_maxSupplyExpansionPercentInDebtPhase: out of range"); // [0.1%, 15%]
+        require(_maxSupplyExpansionPercent <= _maxSupplyExpansionPercentInDebtPhase, "_maxSupplyExpansionPercent is over _maxSupplyExpansionPercentInDebtPhase");
         maxSupplyExpansionPercent = _maxSupplyExpansionPercent;
+        maxSupplyExpansionPercentInDebtPhase = _maxSupplyExpansionPercentInDebtPhase;
     }
 
     function setBondDepletionFloorPercent(uint256 _bondDepletionFloorPercent) external onlyOperator {
@@ -230,19 +305,49 @@ contract Treasury is ContractGuard {
         maxDeptRatioPercent = _maxDeptRatioPercent;
     }
 
-    function setBDIP01(uint256 _bdip01SharedIncentiveForLpEpochs, uint256 _bdip01SharedIncentiveForLpPercent, address[] memory _bdip01LiquidityPools) external onlyOperator {
-        require(_bdip01SharedIncentiveForLpEpochs <= 730, "_bdip01SharedIncentiveForLpEpochs: out of range"); // <= 1 year
-        require(_bdip01SharedIncentiveForLpPercent <= 10000, "_bdip01SharedIncentiveForLpPercent: out of range"); // [0%, 100%]
-        bdip01SharedIncentiveForLpEpochs = _bdip01SharedIncentiveForLpEpochs;
-        bdip01SharedIncentiveForLpPercent = _bdip01SharedIncentiveForLpPercent;
-        bdip01LiquidityPools = _bdip01LiquidityPools;
+    function setBDOIP01(uint256 _bdoip01BootstrapEpochs, uint256 _bdoip01BootstrapSupplyExpansionPercent) external onlyOperator {
+        require(_bdoip01BootstrapEpochs <= 120, "_bdoip01BootstrapEpochs: out of range"); // <= 1 month
+        require(_bdoip01BootstrapSupplyExpansionPercent >= 100 && _bdoip01BootstrapSupplyExpansionPercent <= 1000, "_bdoip01BootstrapSupplyExpansionPercent: out of range"); // [1%, 10%]
+        bdoip01BootstrapEpochs = _bdoip01BootstrapEpochs;
+        bdoip01BootstrapSupplyExpansionPercent = _bdoip01BootstrapSupplyExpansionPercent;
     }
 
-    function setBDIP02(uint256 _bdip02BootstrapEpochs, uint256 _bdip02BootstrapSupplyExpansionPercent) external onlyOperator {
-        require(_bdip02BootstrapEpochs <= 60, "_bdip02BootstrapEpochs: out of range"); // <= 1 month
-        require(_bdip02BootstrapSupplyExpansionPercent >= 100 && _bdip02BootstrapSupplyExpansionPercent <= 1500, "_bdip02BootstrapSupplyExpansionPercent: out of range"); // [1%, 15%]
-        bdip02BootstrapEpochs = _bdip02BootstrapEpochs;
-        bdip02BootstrapSupplyExpansionPercent = _bdip02BootstrapSupplyExpansionPercent;
+    function setDaoFund(address _daoFund) external onlyOperator {
+        require(_daoFund != address(0), "zero");
+        daoFund = _daoFund;
+    }
+
+    function setDaoFundSharedPercent(uint256 _daoFundSharedPercent) external onlyOperator {
+        require(_daoFundSharedPercent <= 2000, "out of range"); // <= 20%
+        daoFundSharedPercent = _daoFundSharedPercent;
+    }
+
+    function setAllocateSeigniorageSalary(uint256 _allocateSeigniorageSalary) external onlyOperator {
+        require(_allocateSeigniorageSalary <= 100 ether, "Treasury: dont pay too much");
+        allocateSeigniorageSalary = _allocateSeigniorageSalary;
+    }
+
+    function setMaxDiscountRate(uint256 _maxDiscountRate) external onlyOperator {
+        maxDiscountRate = _maxDiscountRate;
+    }
+
+    function setMaxPremiumRate(uint256 _maxPremiumRate) external onlyOperator {
+        maxPremiumRate = _maxPremiumRate;
+    }
+
+    function setDiscountPercent(uint256 _discountPercent) external onlyOperator {
+        require(_discountPercent <= 20000, "_discountPercent is over 200%");
+        discountPercent = _discountPercent;
+    }
+
+    function setPremiumPercent(uint256 _premiumPercent) external onlyOperator {
+        require(_premiumPercent <= 20000, "_premiumPercent is over 200%");
+        premiumPercent = _premiumPercent;
+    }
+
+    function setMintingFactorForPayingDebt(uint256 _mintingFactorForPayingDebt) external onlyOperator {
+        require(_mintingFactorForPayingDebt >= 10000 && _mintingFactorForPayingDebt <= 20000, "_mintingFactorForPayingDebt: out of range"); // [100%, 200%]
+        mintingFactorForPayingDebt = _mintingFactorForPayingDebt;
     }
 
     function migrate(address target) external onlyOperator checkOperator {
@@ -273,8 +378,8 @@ contract Treasury is ContractGuard {
         try IOracle(dollarOracle).update() {} catch {}
     }
 
-    function buyBonds(uint256 amount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
-        require(amount > 0, "Treasury: cannot purchase bonds with zero amount");
+    function buyBonds(uint256 _dollarAmount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
+        require(_dollarAmount > 0, "Treasury: cannot purchase bonds with zero amount");
 
         uint256 dollarPrice = getDollarPrice();
         require(dollarPrice == targetPrice, "Treasury: dollar price moved");
@@ -283,52 +388,60 @@ contract Treasury is ContractGuard {
             "Treasury: dollarPrice not eligible for bond purchase"
         );
 
-        require(amount <= epochSupplyContractionLeft, "Treasury: not enough bond left to purchase");
+        require(_dollarAmount <= epochSupplyContractionLeft, "Treasury: not enough bond left to purchase");
 
-        uint256 _boughtBond = amount.mul(1e18).div(dollarPrice);
+        uint256 _rate = getBondDiscountRate();
+        require(_rate > 0, "Treasury: invalid bond rate");
+
+        uint256 _bondAmount = _dollarAmount.mul(_rate).div(1e18);
         uint256 dollarSupply = IERC20(dollar).totalSupply();
-        uint256 newBondSupply = IERC20(bond).totalSupply().add(_boughtBond);
+        uint256 newBondSupply = IERC20(bond).totalSupply().add(_bondAmount);
         require(newBondSupply <= dollarSupply.mul(maxDeptRatioPercent).div(10000), "over max debt ratio");
 
-        IBasisAsset(dollar).burnFrom(msg.sender, amount);
-        IBasisAsset(bond).mint(msg.sender, _boughtBond);
+        IBasisAsset(dollar).burnFrom(msg.sender, _dollarAmount);
+        IBasisAsset(bond).mint(msg.sender, _bondAmount);
 
-        epochSupplyContractionLeft = epochSupplyContractionLeft.sub(amount);
+        epochSupplyContractionLeft = epochSupplyContractionLeft.sub(_dollarAmount);
         _updateDollarPrice();
 
-        emit BoughtBonds(msg.sender, amount);
+        emit BoughtBonds(msg.sender, _dollarAmount, _bondAmount);
     }
 
-    function redeemBonds(uint256 amount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
-        require(amount > 0, "Treasury: cannot redeem bonds with zero amount");
+    function redeemBonds(uint256 _bondAmount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
+        require(_bondAmount > 0, "Treasury: cannot redeem bonds with zero amount");
 
         uint256 dollarPrice = getDollarPrice();
         require(dollarPrice == targetPrice, "Treasury: dollar price moved");
         require(
-            dollarPrice > dollarPriceCeiling, // price > $1.05
+            dollarPrice > dollarPriceCeiling, // price > $1.01
             "Treasury: dollarPrice not eligible for bond purchase"
         );
-        require(IERC20(dollar).balanceOf(address(this)) >= amount, "Treasury: treasury has no more budget");
 
-        seigniorageSaved = seigniorageSaved.sub(Math.min(seigniorageSaved, amount));
+        uint256 _rate = getBondPremiumRate();
+        require(_rate > 0, "Treasury: invalid bond rate");
 
-        IBasisAsset(bond).burnFrom(msg.sender, amount);
-        IERC20(dollar).safeTransfer(msg.sender, amount);
+        uint256 _dollarAmount = _bondAmount.mul(_rate).div(1e18);
+        require(IERC20(dollar).balanceOf(address(this)) >= _dollarAmount, "Treasury: treasury has no more budget");
+
+        seigniorageSaved = seigniorageSaved.sub(Math.min(seigniorageSaved, _dollarAmount));
+
+        IBasisAsset(bond).burnFrom(msg.sender, _bondAmount);
+        IERC20(dollar).safeTransfer(msg.sender, _dollarAmount);
 
         _updateDollarPrice();
 
-        emit RedeemedBonds(msg.sender, amount);
+        emit RedeemedBonds(msg.sender, _dollarAmount, _bondAmount);
     }
 
     function _sendToBoardRoom(uint256 _amount) internal {
         IBasisAsset(dollar).mint(address(this), _amount);
-        if (epoch < bdip01SharedIncentiveForLpEpochs) {
-            uint256 _addedPoolReward = _amount.mul(bdip01SharedIncentiveForLpPercent).div(40000);
-            for (uint256 i = 0; i < 4; i++) {
-                IERC20(dollar).transfer(bdip01LiquidityPools[i], _addedPoolReward);
-                _amount = _amount.sub(_addedPoolReward);
-            }
+        if (daoFundSharedPercent > 0) {
+            uint256 _daoFundSharedAmount = _amount.mul(daoFundSharedPercent).div(10000);
+            IERC20(dollar).transfer(daoFund, _daoFundSharedAmount);
+            emit DaoFundFunded(now, _daoFundSharedAmount);
+            _amount = _amount.sub(_daoFundSharedAmount);
         }
+        IERC20(dollar).safeApprove(boardroom, 0);
         IERC20(dollar).safeApprove(boardroom, _amount);
         IBoardroom(boardroom).allocateSeigniorage(_amount);
         emit BoardroomFunded(now, _amount);
@@ -336,16 +449,15 @@ contract Treasury is ContractGuard {
 
     function allocateSeigniorage() external onlyOneBlock checkCondition checkEpoch checkOperator {
         _updateDollarPrice();
+        previousEpochDollarPrice = getDollarPrice();
         uint256 dollarSupply = IERC20(dollar).totalSupply().sub(seigniorageSaved);
-        // BDIP02: 14 first epochs with 9% max expansion
-        if (epoch < bdip02BootstrapEpochs) {
-            _sendToBoardRoom(dollarSupply.mul(bdip02BootstrapSupplyExpansionPercent).div(10000));
+        if (epoch < bdoip01BootstrapEpochs) {// BDOIP01: 28 first epochs with 4.5% expansion
+            _sendToBoardRoom(dollarSupply.mul(bdoip01BootstrapSupplyExpansionPercent).div(10000));
         } else {
-            uint256 dollarPrice = getDollarPrice();
-            if (dollarPrice > dollarPriceCeiling) {
-                // Expansion ($BSD Price > 1$): there is some seigniorage to be allocated
+            if (previousEpochDollarPrice > dollarPriceCeiling) {
+                // Expansion ($BDO Price > 1$): there is some seigniorage to be allocated
                 uint256 bondSupply = IERC20(bond).totalSupply();
-                uint256 _percentage = dollarPrice.sub(dollarPriceOne);
+                uint256 _percentage = previousEpochDollarPrice.sub(dollarPriceOne);
                 uint256 _savedForBond;
                 uint256 _savedForBoardRoom;
                 if (seigniorageSaved >= bondSupply.mul(bondDepletionFloorPercent).div(10000)) {// saved enough to pay dept, mint as usual rate
@@ -354,14 +466,17 @@ contract Treasury is ContractGuard {
                         _percentage = _mse;
                     }
                     _savedForBoardRoom = dollarSupply.mul(_percentage).div(1e18);
-                } else {// have not saved enough to pay dept, mint double
-                    uint256 _mse = maxSupplyExpansionPercent.mul(2e14);
+                } else {// have not saved enough to pay dept, mint more
+                    uint256 _mse = maxSupplyExpansionPercentInDebtPhase.mul(1e14);
                     if (_percentage > _mse) {
                         _percentage = _mse;
                     }
                     uint256 _seigniorage = dollarSupply.mul(_percentage).div(1e18);
                     _savedForBoardRoom = _seigniorage.mul(seigniorageExpansionFloorPercent).div(10000);
                     _savedForBond = _seigniorage.sub(_savedForBoardRoom);
+                    if (mintingFactorForPayingDebt > 0) {
+                        _savedForBond = _savedForBond.mul(mintingFactorForPayingDebt).div(10000);
+                    }
                 }
                 if (_savedForBoardRoom > 0) {
                     _sendToBoardRoom(_savedForBoardRoom);
@@ -373,12 +488,34 @@ contract Treasury is ContractGuard {
                 }
             }
         }
+        if (allocateSeigniorageSalary > 0) {
+            IBasisAsset(dollar).mint(address(msg.sender), allocateSeigniorageSalary);
+        }
     }
 
-    event Initialized(address indexed executor, uint256 at);
-    event Migration(address indexed target);
-    event RedeemedBonds(address indexed from, uint256 amount);
-    event BoughtBonds(address indexed from, uint256 amount);
-    event TreasuryFunded(uint256 timestamp, uint256 seigniorage);
-    event BoardroomFunded(uint256 timestamp, uint256 seigniorage);
+    function governanceRecoverUnsupported(IERC20 _token, uint256 _amount, address _to) external onlyOperator {
+        // do not allow to drain core tokens
+        require(address(_token) != address(dollar), "dollar");
+        require(address(_token) != address(bond), "bond");
+        require(address(_token) != address(share), "share");
+        _token.safeTransfer(_to, _amount);
+    }
+
+    /* ========== BOARDROOM CONTROLLING FUNCTIONS ========== */
+
+    function boardroomSetOperator(address _operator) external onlyOperator {
+        IBoardroom(boardroom).setOperator(_operator);
+    }
+
+    function boardroomSetLockUp(uint256 _withdrawLockupEpochs, uint256 _rewardLockupEpochs) external onlyOperator {
+        IBoardroom(boardroom).setLockUp(_withdrawLockupEpochs, _rewardLockupEpochs);
+    }
+
+    function boardroomAllocateSeigniorage(uint256 amount) external onlyOperator {
+        IBoardroom(boardroom).allocateSeigniorage(amount);
+    }
+
+    function boardroomGovernanceRecoverUnsupported(address _token, uint256 _amount, address _to) external onlyOperator {
+        IBoardroom(boardroom).governanceRecoverUnsupported(_token, _amount, _to);
+    }
 }

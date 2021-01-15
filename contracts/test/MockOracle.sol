@@ -23,8 +23,12 @@ contract MockOracle is IOracle {
         emit Updated(0, 0);
     }
 
-    function consult(address, uint256 amountIn) external view override returns (uint256) {
-        return price.mul(amountIn).div(1e18);
+    function consult(address, uint256 _amountIn) external view override returns (uint144) {
+        return uint144(price.mul(_amountIn).div(1e18));
+    }
+
+    function twap(address, uint256 _amountIn) external view override returns (uint144) {
+        return uint144(price.mul(_amountIn).div(1e18));
     }
 
     event Updated(uint256 price0CumulativeLast, uint256 price1CumulativeLast);

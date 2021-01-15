@@ -9,6 +9,7 @@ contract Epoch is Operator {
 
     uint256 private period;
     uint256 private startTime;
+    uint256 private lastEpochTime;
     uint256 private epoch;
 
     /* ========== CONSTRUCTOR ========== */
@@ -21,6 +22,7 @@ contract Epoch is Operator {
         period = _period;
         startTime = _startTime;
         epoch = _startEpoch;
+        lastEpochTime = startTime.sub(period);
     }
 
     /* ========== Modifier ========== */
@@ -32,11 +34,20 @@ contract Epoch is Operator {
     }
 
     modifier checkEpoch {
-        require(now >= nextEpochPoint(), 'Epoch: not allowed');
+        uint256 _nextEpochPoint = nextEpochPoint();
+        if (now < _nextEpochPoint) {
+            require(msg.sender == operator(), 'Epoch: only operator allowed for pre-epoch');
+            _;
+        } else {
+            _;
 
-        _;
-
-        epoch = epoch.add(1);
+            for (;;) {
+                lastEpochTime = _nextEpochPoint;
+                ++epoch;
+                _nextEpochPoint = nextEpochPoint();
+                if (now < _nextEpochPoint) break;
+            }
+        }
     }
 
     /* ========== VIEW FUNCTIONS ========== */
@@ -53,13 +64,22 @@ contract Epoch is Operator {
         return startTime;
     }
 
+    function getLastEpochTime() public view returns (uint256) {
+        return lastEpochTime;
+    }
+
     function nextEpochPoint() public view returns (uint256) {
-        return startTime.add(epoch.mul(period));
+        return lastEpochTime.add(period);
     }
 
     /* ========== GOVERNANCE ========== */
 
     function setPeriod(uint256 _period) external onlyOperator {
+        require(_period >= 1 hours && _period <= 48 hours, '_period: out of range');
         period = _period;
+    }
+
+    function setEpoch(uint256 _epoch) external onlyOperator {
+        epoch = _epoch;
     }
 }
