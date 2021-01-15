@@ -74,7 +74,7 @@ contract Boardroom is ShareWrapper, ContractGuard {
     mapping(address => Boardseat) public directors;
     BoardSnapshot[] public boardHistory;
 
-    // protocol parameters - https://docs.basisdollar.fi/ProtocolParameters
+    // protocol parameters - https://github.com/bearn-defi/bdollar-smartcontracts/tree/master/docs/ProtocolParameters.md
     uint256 public withdrawLockupEpochs;
     uint256 public rewardLockupEpochs;
 
@@ -179,6 +179,10 @@ contract Boardroom is ShareWrapper, ContractGuard {
 
     function nextEpochPoint() external view returns (uint256) {
         return treasury.nextEpochPoint();
+    }
+
+    function getDollarPrice() external view returns (uint256) {
+        return treasury.getDollarPrice();
     }
 
     // =========== Director getters
