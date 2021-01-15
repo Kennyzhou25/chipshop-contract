@@ -6,11 +6,9 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "./lib/Babylonian.sol";
 import "./lib/FixedPoint.sol";
-import "./lib/UniswapV2Library.sol";
 import "./lib/UniswapV2OracleLibrary.sol";
 import "./utils/Epoch.sol";
 import "./interfaces/IUniswapV2Pair.sol";
-import "./interfaces/IUniswapV2Factory.sol";
 
 // fixed window oracle that recomputes the average price for the entire period once every period
 // note that the price average is only guaranteed to be over at least 1 period, but may be over a longer period
@@ -35,21 +33,18 @@ contract Oracle is Epoch {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
-        address _factory,
-        address _tokenA,
-        address _tokenB,
+        IUniswapV2Pair _pair,
         uint256 _period,
         uint256 _startTime
     ) public Epoch(_period, _startTime, 0) {
-        IUniswapV2Pair _pair = IUniswapV2Pair(UniswapV2Library.pairFor(_factory, _tokenA, _tokenB));
         pair = _pair;
-        token0 = _pair.token0();
-        token1 = _pair.token1();
-        price0CumulativeLast = _pair.price0CumulativeLast(); // fetch the current accumulated price value (1 / 0)
-        price1CumulativeLast = _pair.price1CumulativeLast(); // fetch the current accumulated price value (0 / 1)
+        token0 = pair.token0();
+        token1 = pair.token1();
+        price0CumulativeLast = pair.price0CumulativeLast(); // fetch the current accumulated price value (1 / 0)
+        price1CumulativeLast = pair.price1CumulativeLast(); // fetch the current accumulated price value (0 / 1)
         uint112 reserve0;
         uint112 reserve1;
-        (reserve0, reserve1, blockTimestampLast) = _pair.getReserves();
+        (reserve0, reserve1, blockTimestampLast) = pair.getReserves();
         require(reserve0 != 0 && reserve1 != 0, "Oracle: NO_RESERVES"); // ensure that there's liquidity in the pair
     }
 
@@ -95,14 +90,6 @@ contract Oracle is Epoch {
         } else if (_token == token1) {
             _amountOut = FixedPoint.uq112x112(uint224((price1Cumulative - price1CumulativeLast) / timeElapsed)).mul(_amountIn).decode144();
         }
-    }
-
-    function pairFor(
-        address factory,
-        address tokenA,
-        address tokenB
-    ) external pure returns (address lpt) {
-        return UniswapV2Library.pairFor(factory, tokenA, tokenB);
     }
 
     event Updated(uint256 price0CumulativeLast, uint256 price1CumulativeLast);

@@ -1,7 +1,11 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.6.12;
 
 interface IOracle {
     function update() external;
 
-    function consult(address token, uint256 amountIn) external view returns (uint256 amountOut);
+    function consult(address _token, uint256 _amountIn) external view returns (uint144 amountOut);
+
+    function twap(address _token, uint256 _amountIn) external view returns (uint144 _amountOut);
 }

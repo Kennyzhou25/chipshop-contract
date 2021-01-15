@@ -87,7 +87,7 @@ describe('Oracle', () => {
         await addLiquidity(provider, operator, router, dollar, dai, ETH);
 
         oracleStartTime = BigNumber.from(await latestBlocktime(provider)).add(DAY);
-        oracle = await Oracle.connect(operator).deploy(factory.address, dollar.address, dai.address, oracleStartTime);
+        oracle = await Oracle.connect(operator).deploy(factory.address, dollar.address, dai.address, DAY, oracleStartTime);
     });
 
     describe('#update', async () => {
@@ -95,18 +95,22 @@ describe('Oracle', () => {
             await advanceTimeAndBlock(provider, oracleStartTime.sub(await latestBlocktime(provider)).toNumber() - MINUTE);
 
             // epoch 0
-            await expect(oracle.update()).to.revertedWith('Oracle: not opened yet');
+            await expect(oracle.connect(whale).update()).to.revertedWith('Epoch: only operator allowed for pre-epoch');
             expect(await oracle.nextEpochPoint()).to.eq(oracleStartTime);
-            expect(await oracle.epoch()).to.eq(BigNumber.from(0));
+            expect(await oracle.getCurrentEpoch()).to.eq(BigNumber.from(0));
 
             await advanceTimeAndBlock(provider, 2 * MINUTE);
 
             // epoch 1
-            await expect(oracle.update()).to.emit(oracle, 'Updated');
+            await expect(oracle.connect(whale).update()).to.emit(oracle, 'Updated');
+
             expect(await oracle.nextEpochPoint()).to.eq(oracleStartTime.add(DAY));
-            expect(await oracle.epoch()).to.eq(BigNumber.from(1));
+            expect(await oracle.getCurrentEpoch()).to.eq(BigNumber.from(1));
             // check double update
-            await expect(oracle.update()).to.revertedWith('Oracle: not opened yet');
+            await expect(oracle.connect(whale).update()).to.revertedWith('Epoch: only operator allowed for pre-epoch');
+            await oracle.connect(operator).update();
+
+            console.log('twap = %s', String(await oracle.twap(dollar.address, ETH)));
         });
     });
 });
