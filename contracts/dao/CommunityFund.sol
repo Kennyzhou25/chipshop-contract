@@ -12,6 +12,7 @@ import "../interfaces/IBoardroom.sol";
 import "../interfaces/IShare.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IOracle.sol";
+import "../interfaces/IShareRewardPool.sol";
 
 /**
  * @dev This contract will collect vesting Shares, stake to the Boardroom and rebalance BDO, BUSD, WBNB according to DAO.
@@ -55,6 +56,9 @@ contract CommunityFund {
     address public dollarOracle = address(0xfAB911c54f7CF3ffFdE0482d2267a751D87B5B20);
     address public treasury = address(0x15A90e6157a870CD335AF03c6df776d0B1ebf94F);
     mapping(address => uint256) public maxAmountToTrade; // BDO, BUSD, WBNB
+    address public shareRewardPool = address(0x948dB1713D4392EC04C86189070557C5A8566766);
+    mapping(address => uint256) public shareRewardPoolId; // [BUSD, WBNB] -> [Pool_id]: 0, 2
+    mapping(address => address) public lpPairAddress; // [BUSD, WBNB] -> [LP]: 0xc5b0d73A7c0E4eaF66baBf7eE16A2096447f7aD6, 0x74690f829fec83ea424ee1f1654041b2491a7be9
 
     /* ========== EVENTS ========== */
 
@@ -124,6 +128,18 @@ contract CommunityFund {
 
     function setTreasury(address _treasury) external onlyOperator {
         treasury = _treasury;
+    }
+
+    function setShareRewardPool(address _shareRewardPool) external onlyOperator {
+        shareRewardPool = _shareRewardPool;
+    }
+
+    function setShareRewardPoolId(address _tokenB, uint256 _pid) external onlyStrategist {
+        shareRewardPoolId[_tokenB] = _pid;
+    }
+
+    function setLpPairAddress(address _tokenB, address _lpAdd) external onlyStrategist {
+        lpPairAddress[_tokenB] = _lpAdd;
     }
 
     function setDollarOracle(address _dollarOracle) external onlyOperator {
@@ -246,7 +262,7 @@ contract CommunityFund {
             uint256 _dollarPercent = _dollarBal.mul(10000).div(_totalBal);
             uint256 _busdPercent = _busdBal.mul(10000).div(_totalBal);
             uint256 _wbnbPercent = _wbnbBal.mul(10000).div(_totalBal);
-            uint256 _dollarPrice = getDollarPrice();
+            uint256 _dollarPrice = getDollarUpdatedPrice();
             if (_dollarPrice >= dollarPriceToSell) {// expansion: sell BDO
                 if (_dollarPercent > expansionPercent[0]) {
                     uint256 _sellingBdo = _dollarBal.mul(_dollarPercent.sub(expansionPercent[0])).div(10000);
@@ -296,6 +312,7 @@ contract CommunityFund {
 
     function workForDaoFund() external checkPublicAllow {
         collectShareRewards();
+        claimAllRewardFromSharePool();
         claimAndRestake();
         rebalance();
     }
@@ -334,8 +351,74 @@ contract CommunityFund {
             _path[0] = _inputToken;
             _path[1] = _outputToken;
         }
+        IERC20(_inputToken).safeApprove(address(pancakeRouter), 0);
+        IERC20(_inputToken).safeApprove(address(pancakeRouter), _amount);
         pancakeRouter.swapExactTokensForTokens(_amount, 1, _path, address(this), now.add(1800));
     }
+
+    /* ========== PROVIDE LP AND STAKE TO SHARE POOL ========== */
+
+    function _addLiquidity(address _tokenB, uint256 _amountADesired) internal {
+        // tokenA is always BDO
+        // addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin, to, deadline)
+        pancakeRouter.addLiquidity(dollar, _tokenB, _amountADesired, IERC20(_tokenB).balanceOf(address(this)), 0, 0, address(this), now.add(1800));
+    }
+
+    function _removeLiquidity(address _lpAdd, address _tokenB, uint256 _liquidity) internal {
+        // tokenA is always BDO
+        // removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline)
+        IERC20(_lpAdd).safeApprove(address(pancakeRouter), 0);
+        IERC20(_lpAdd).safeApprove(address(pancakeRouter), _liquidity);
+        pancakeRouter.removeLiquidity(dollar, _tokenB, _liquidity, 1, 1, address(this), now.add(1800));
+    }
+
+    function depositToSharePool(address _tokenB, uint256 _dollarAmount) external onlyStrategist {
+        address _lpAdd = lpPairAddress[_tokenB];
+        uint256 _before = IERC20(_lpAdd).balanceOf(address(this));
+        _addLiquidity(_tokenB, _dollarAmount);
+        uint256 _after = IERC20(_lpAdd).balanceOf(address(this));
+        uint256 _lpBal = _after.sub(_before);
+        require(_lpBal > 0, "add liquidity failed");
+        address _shareRewardPool = shareRewardPool;
+        uint256 _pid = shareRewardPoolId[_tokenB];
+        IERC20(_lpAdd).safeApprove(_shareRewardPool, 0);
+        IERC20(_lpAdd).safeApprove(_shareRewardPool, _lpBal);
+        IShareRewardPool(_shareRewardPool).deposit(_pid, _lpBal);
+    }
+
+    function withdrawFromSharePool(address _tokenB, uint256 _lpAmount) public onlyStrategist {
+        address _lpAdd = lpPairAddress[_tokenB];
+        address _shareRewardPool = shareRewardPool;
+        uint256 _pid = shareRewardPoolId[_tokenB];
+        IShareRewardPool(_shareRewardPool).withdraw(_pid, _lpAmount);
+        _removeLiquidity(_lpAdd, _tokenB, _lpAmount);
+    }
+
+    function exitSharePool(address _tokenB) external onlyStrategist {
+        (uint _stakedAmount,) = IShareRewardPool(shareRewardPool).userInfo(shareRewardPoolId[_tokenB], address(this));
+        withdrawFromSharePool(_tokenB, _stakedAmount);
+    }
+
+    function claimRewardFromSharePool(address _tokenB) public {
+        address _shareRewardPool = shareRewardPool;
+        uint256 _pid = shareRewardPoolId[_tokenB];
+        IShareRewardPool(_shareRewardPool).withdraw(_pid, 0);
+    }
+
+    function claimAllRewardFromSharePool() public {
+        if (pendingFromSharePool(busd) > 0) claimRewardFromSharePool(busd);
+        if (pendingFromSharePool(wbnb) > 0) claimRewardFromSharePool(wbnb);
+    }
+
+    function pendingFromSharePool(address _tokenB) public view returns(uint256) {
+        return IShareRewardPool(shareRewardPool).pendingShare(shareRewardPoolId[_tokenB], address(this));
+    }
+
+    function pendingAllFromSharePool() public view returns(uint256) {
+        return pendingFromSharePool(busd).add(pendingFromSharePool(wbnb));
+    }
+
+    /* ========== EMERGENCY ========== */
 
     function executeTransaction(address target, uint256 value, string memory signature, bytes memory data) public onlyOperator returns (bytes memory) {
         bytes memory callData;
