@@ -13,6 +13,7 @@ import "../interfaces/IShare.sol";
 import "../interfaces/ITreasury.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/IShareRewardPool.sol";
+import "../interfaces/IPancakeswapPool.sol";
 
 /**
  * @dev This contract will collect vesting Shares, stake to the Boardroom and rebalance BDO, BUSD, WBNB according to DAO.
@@ -55,10 +56,22 @@ contract CommunityFund {
     address public strategist;
     address public dollarOracle = address(0xfAB911c54f7CF3ffFdE0482d2267a751D87B5B20);
     address public treasury = address(0x15A90e6157a870CD335AF03c6df776d0B1ebf94F);
+
     mapping(address => uint256) public maxAmountToTrade; // BDO, BUSD, WBNB
+
     address public shareRewardPool = address(0x948dB1713D4392EC04C86189070557C5A8566766);
     mapping(address => uint256) public shareRewardPoolId; // [BUSD, WBNB] -> [Pool_id]: 0, 2
-    mapping(address => address) public lpPairAddress; // [BUSD, WBNB] -> [LP]: 0xc5b0d73A7c0E4eaF66baBf7eE16A2096447f7aD6, 0x74690f829fec83ea424ee1f1654041b2491a7be9
+    mapping(address => address) public lpPairAddress; // [BUSD, WBNB] -> [LP]: 0xc5b0d73A7c0E4eaF66baBf7eE16A2096447f7aD6, 0x74690f829fec83ea424ee1F1654041b2491A7bE9
+
+    address public pancakeFarmingPool = address(0x73feaa1eE314F8c655E354234017bE2193C9E24E);
+    uint256 public pancakeFarmingPoolId = 66;
+    address public pancakeFarmingPoolLpPairAddress = address(0x74690f829fec83ea424ee1F1654041b2491A7bE9); // BDO/WBNB
+    address public cake = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82); // CAKE (pancakePool farming token)
+
+    address public kebabFarmingPool = address(0x76FCeffFcf5325c6156cA89639b17464ea833ECd);
+    uint256 public kebabFarmingPoolId = 2;
+    address public kebabFarmingPoolLpPairAddress = address(0x1B96B92314C44b159149f7E0303511fB2Fc4774f); // BUSD/WBNB
+    address public kebab = address(0x7979F6C54ebA05E18Ded44C4F986F49a5De551c2); // KEBAB (kebabPool farming token)
 
     /* ========== EVENTS ========== */
 
@@ -71,22 +84,22 @@ contract CommunityFund {
     /* ========== Modifiers =============== */
 
     modifier onlyOperator() {
-        require(operator == msg.sender, "CommunityFund: caller is not the operator");
+        require(operator == msg.sender, "!operator");
         _;
     }
 
     modifier onlyStrategist() {
-        require(strategist == msg.sender || operator == msg.sender, "CommunityFund: caller is not a strategist");
+        require(strategist == msg.sender || operator == msg.sender, "!strategist");
         _;
     }
 
     modifier notInitialized() {
-        require(!initialized, "CommunityFund: already initialized");
+        require(!initialized, "initialized");
         _;
     }
 
     modifier checkPublicAllow() {
-        require(publicAllowed || msg.sender == operator, "CommunityFund: caller is not the operator nor public call not allowed");
+        require(publicAllowed || msg.sender == operator, "!operator nor !publicAllowed");
         _;
     }
 
@@ -142,6 +155,20 @@ contract CommunityFund {
         lpPairAddress[_tokenB] = _lpAdd;
     }
 
+    function setPancakeFarmingPool(address _pancakeFarmingPool, uint256 _pancakeFarmingPoolId, address _pancakeFarmingPoolLpPairAddress, address _cake) external onlyOperator {
+        pancakeFarmingPool = _pancakeFarmingPool;
+        pancakeFarmingPoolId = _pancakeFarmingPoolId;
+        pancakeFarmingPoolLpPairAddress = _pancakeFarmingPoolLpPairAddress;
+        cake = _cake;
+    }
+
+    function setKebabFarmingPool(address _kebabFarmingPool, uint256 _kebabFarmingPoolId, address _kebabFarmingPoolLpPairAddress, address _kebab) external onlyOperator {
+        kebabFarmingPool = _kebabFarmingPool;
+        kebabFarmingPoolId = _kebabFarmingPoolId;
+        kebabFarmingPoolLpPairAddress = _kebabFarmingPoolLpPairAddress;
+        kebab = _kebab;
+    }
+
     function setDollarOracle(address _dollarOracle) external onlyOperator {
         dollarOracle = _dollarOracle;
     }
@@ -171,12 +198,12 @@ contract CommunityFund {
     }
 
     function setDollarPriceToSell(uint256 _dollarPriceToSell) external onlyStrategist {
-        require(_dollarPriceToSell >= 950 finney && _dollarPriceToSell <= 2000 finney, "_dollarPriceToSell: out of range"); // [$0.95, $2.00]
+        require(_dollarPriceToSell >= 950 finney && _dollarPriceToSell <= 2000 finney, "out of range"); // [$0.95, $2.00]
         dollarPriceToSell = _dollarPriceToSell;
     }
 
     function setDollarPriceToBuy(uint256 _dollarPriceToBuy) external onlyStrategist {
-        require(_dollarPriceToBuy >= 500 finney && _dollarPriceToBuy <= 1050 finney, "_dollarPriceToBuy: out of range"); // [$0.50, $1.05]
+        require(_dollarPriceToBuy >= 500 finney && _dollarPriceToBuy <= 1050 finney, "out of range"); // [$0.50, $1.05]
         dollarPriceToBuy = _dollarPriceToBuy;
     }
 
@@ -222,7 +249,7 @@ contract CommunityFund {
         try IOracle(dollarOracle).consult(dollar, 1e18) returns (uint144 price) {
             return uint256(price);
         } catch {
-            revert("CommunityFund: failed to consult dollar price from the oracle");
+            revert("failed to consult price");
         }
     }
 
@@ -230,7 +257,7 @@ contract CommunityFund {
         try IOracle(dollarOracle).twap(dollar, 1e18) returns (uint144 price) {
             return uint256(price);
         } catch {
-            revert("Treasury: failed to consult dollar price from the oracle");
+            revert("failed to consult price");
         }
     }
 
@@ -330,13 +357,23 @@ contract CommunityFund {
     }
 
     function forceSell(address _buyingToken, uint256 _dollarAmount) external onlyStrategist {
-        require(getDollarPrice() >= dollarPriceToBuy, "CommunityFund: price is too low to sell");
+        require(getDollarUpdatedPrice() >= dollarPriceToBuy, "price is too low to sell");
         _swapToken(dollar, _buyingToken, _dollarAmount);
     }
 
     function forceBuy(address _sellingToken, uint256 _sellingAmount) external onlyStrategist {
-        require(getDollarPrice() <= dollarPriceToSell, "CommunityFund: price is too high to buy");
+        require(getDollarUpdatedPrice() <= dollarPriceToSell, "price is too high to buy");
         _swapToken(_sellingToken, dollar, _sellingAmount);
+    }
+
+    function trimNonCoreToken(address _sellingToken) public onlyStrategist {
+        require(_sellingToken != dollar &&
+        _sellingToken != bond && _sellingToken != share &&
+        _sellingToken != busd && _sellingToken != wbnb, "core");
+        uint256 _bal = IERC20(_sellingToken).balanceOf(address(this));
+        if (_bal > 0) {
+            _swapToken(_sellingToken, dollar, _bal);
+        }
     }
 
     function _swapToken(address _inputToken, address _outputToken, uint256 _amount) internal {
@@ -356,21 +393,33 @@ contract CommunityFund {
         pancakeRouter.swapExactTokensForTokens(_amount, 1, _path, address(this), now.add(1800));
     }
 
-    /* ========== PROVIDE LP AND STAKE TO SHARE POOL ========== */
-
     function _addLiquidity(address _tokenB, uint256 _amountADesired) internal {
         // tokenA is always BDO
-        // addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin, to, deadline)
-        pancakeRouter.addLiquidity(dollar, _tokenB, _amountADesired, IERC20(_tokenB).balanceOf(address(this)), 0, 0, address(this), now.add(1800));
+        _addLiquidity2(dollar, _tokenB, _amountADesired, IERC20(_tokenB).balanceOf(address(this)));
     }
 
     function _removeLiquidity(address _lpAdd, address _tokenB, uint256 _liquidity) internal {
         // tokenA is always BDO
-        // removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline)
+        _removeLiquidity2(_lpAdd, dollar, _tokenB, _liquidity);
+    }
+
+    function _addLiquidity2(address _tokenA, address _tokenB, uint256 _amountADesired, uint256 amountBDesired) internal {
+        IERC20(_tokenA).safeApprove(address(pancakeRouter), 0);
+        IERC20(_tokenA).safeApprove(address(pancakeRouter), type(uint256).max);
+        IERC20(_tokenB).safeApprove(address(pancakeRouter), 0);
+        IERC20(_tokenB).safeApprove(address(pancakeRouter), type(uint256).max);
+        // addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin, to, deadline)
+        pancakeRouter.addLiquidity(_tokenA, _tokenB, _amountADesired, amountBDesired, 0, 0, address(this), now.add(1800));
+    }
+
+    function _removeLiquidity2(address _lpAdd, address _tokenA, address _tokenB, uint256 _liquidity) internal {
         IERC20(_lpAdd).safeApprove(address(pancakeRouter), 0);
         IERC20(_lpAdd).safeApprove(address(pancakeRouter), _liquidity);
-        pancakeRouter.removeLiquidity(dollar, _tokenB, _liquidity, 1, 1, address(this), now.add(1800));
+        // removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline)
+        pancakeRouter.removeLiquidity(_tokenA, _tokenB, _liquidity, 1, 1, address(this), now.add(1800));
     }
+
+    /* ========== PROVIDE LP AND STAKE TO SHARE POOL ========== */
 
     function depositToSharePool(address _tokenB, uint256 _dollarAmount) external onlyStrategist {
         address _lpAdd = lpPairAddress[_tokenB];
@@ -378,7 +427,7 @@ contract CommunityFund {
         _addLiquidity(_tokenB, _dollarAmount);
         uint256 _after = IERC20(_lpAdd).balanceOf(address(this));
         uint256 _lpBal = _after.sub(_before);
-        require(_lpBal > 0, "add liquidity failed");
+        require(_lpBal > 0, "!_lpBal");
         address _shareRewardPool = shareRewardPool;
         uint256 _pid = shareRewardPoolId[_tokenB];
         IERC20(_lpAdd).safeApprove(_shareRewardPool, 0);
@@ -394,15 +443,19 @@ contract CommunityFund {
         _removeLiquidity(_lpAdd, _tokenB, _lpAmount);
     }
 
-    function exitSharePool(address _tokenB) external onlyStrategist {
+    function exitSharePool(address _tokenB) public onlyStrategist {
         (uint _stakedAmount,) = IShareRewardPool(shareRewardPool).userInfo(shareRewardPoolId[_tokenB], address(this));
         withdrawFromSharePool(_tokenB, _stakedAmount);
     }
 
+    function exitAllSharePool() external {
+        if (stakeAmountFromSharePool(busd) > 0) exitSharePool(busd);
+        if (stakeAmountFromSharePool(wbnb) > 0) exitSharePool(wbnb);
+    }
+
     function claimRewardFromSharePool(address _tokenB) public {
-        address _shareRewardPool = shareRewardPool;
         uint256 _pid = shareRewardPoolId[_tokenB];
-        IShareRewardPool(_shareRewardPool).withdraw(_pid, 0);
+        IShareRewardPool(shareRewardPool).withdraw(_pid, 0);
     }
 
     function claimAllRewardFromSharePool() public {
@@ -416,6 +469,132 @@ contract CommunityFund {
 
     function pendingAllFromSharePool() public view returns(uint256) {
         return pendingFromSharePool(busd).add(pendingFromSharePool(wbnb));
+    }
+
+    function stakeAmountFromSharePool(address _tokenB) public view returns(uint256 _stakedAmount) {
+        (_stakedAmount, ) = IShareRewardPool(shareRewardPool).userInfo(shareRewardPoolId[_tokenB], address(this));
+    }
+
+    function stakeAmountAllFromSharePool() public view returns(uint256 _bnbPoolStakedAmount, uint256 _wbnbPoolStakedAmount) {
+        _bnbPoolStakedAmount = stakeAmountFromSharePool(busd);
+        _wbnbPoolStakedAmount = stakeAmountFromSharePool(wbnb);
+    }
+
+    /* ========== FARM PANCAKESWAP POOL: STAKE BDO/BUSD EARN CAKE ========== */
+
+    function depositToPancakePool(uint256 _dollarAmount) external onlyStrategist {
+        address _lpAdd = pancakeFarmingPoolLpPairAddress;
+        uint256 _before = IERC20(_lpAdd).balanceOf(address(this));
+        _addLiquidity(wbnb, _dollarAmount);
+        uint256 _after = IERC20(_lpAdd).balanceOf(address(this));
+        uint256 _lpBal = _after.sub(_before);
+        require(_lpBal > 0, "!_lpBal");
+        address _pancakeFarmingPool = pancakeFarmingPool;
+        IERC20(_lpAdd).safeApprove(_pancakeFarmingPool, 0);
+        IERC20(_lpAdd).safeApprove(_pancakeFarmingPool, _lpBal);
+        IPancakeswapPool(_pancakeFarmingPool).deposit(pancakeFarmingPoolId, _lpBal);
+    }
+
+    function withdrawFromPancakePool(uint256 _lpAmount) public onlyStrategist {
+        IPancakeswapPool(pancakeFarmingPool).withdraw(pancakeFarmingPoolId, _lpAmount);
+        _removeLiquidity(pancakeFarmingPoolLpPairAddress, wbnb, _lpAmount);
+    }
+
+    function exitPancakePool() public onlyStrategist {
+        (uint256 _stakedAmount, ) = IPancakeswapPool(pancakeFarmingPool).userInfo(pancakeFarmingPoolId, address(this));
+        withdrawFromPancakePool(_stakedAmount);
+        uint256 _bal = IERC20(cake).balanceOf(address(this));
+        if (_bal > 0) {
+            trimNonCoreToken(cake);
+        }
+    }
+
+    function claimAndReinvestFromPancakePool() public {
+        IPancakeswapPool(pancakeFarmingPool).withdraw(pancakeFarmingPoolId, 0);
+        uint256 _cakeBal = IERC20(cake).balanceOf(address(this));
+        if (_cakeBal > 0) {
+            uint256 _wbnbBef = IERC20(wbnb).balanceOf(address(this));
+            _swapToken(cake, wbnb, _cakeBal);
+            uint256 _wbnbAft = IERC20(wbnb).balanceOf(address(this));
+            uint256 _boughtWbnb = _wbnbAft.sub(_wbnbBef);
+            if (_boughtWbnb >= 2) {
+                uint256 _dollarBef = IERC20(dollar).balanceOf(address(this));
+                _swapToken(wbnb, dollar, _boughtWbnb.div(2));
+                uint256 _dollarAft = IERC20(dollar).balanceOf(address(this));
+                uint256 _boughtDollar = _dollarAft.sub(_dollarBef);
+                _addLiquidity(wbnb, _boughtDollar);
+            }
+        }
+        address _lpAdd = pancakeFarmingPoolLpPairAddress;
+        uint256 _lpBal = IERC20(_lpAdd).balanceOf(address(this));
+        if (_lpBal > 0) {
+            address _pancakeFarmingPool = pancakeFarmingPool;
+            IERC20(_lpAdd).safeApprove(_pancakeFarmingPool, 0);
+            IERC20(_lpAdd).safeApprove(_pancakeFarmingPool, _lpBal);
+            IPancakeswapPool(_pancakeFarmingPool).deposit(pancakeFarmingPoolId, _lpBal);
+        }
+    }
+
+    function pendingFromPancakePool() public view returns(uint256) {
+        return IPancakeswapPool(pancakeFarmingPool).pendingCake(pancakeFarmingPoolId, address(this));
+    }
+
+    function stakeAmountFromPancakePool() public view returns(uint256 _stakedAmount) {
+        (_stakedAmount, ) = IPancakeswapPool(pancakeFarmingPool).userInfo(pancakeFarmingPoolId, address(this));
+    }
+
+    /* ========== FARM KEBAB POOL: STAKE BUSD/WBNB EARN KEBAB ========== */
+
+    function depositToKebabPool(uint256 _busdAmount, uint256 _wbnbAmount) external onlyStrategist {
+        address _lpAdd = kebabFarmingPoolLpPairAddress;
+        _addLiquidity2(busd, wbnb, _busdAmount, _wbnbAmount);
+        uint256 _lpBal = IERC20(_lpAdd).balanceOf(address(this));
+        require(_lpBal > 0, "!_lpBal");
+        address _kebabFarmingPool = kebabFarmingPool;
+        IERC20(_lpAdd).safeApprove(_kebabFarmingPool, 0);
+        IERC20(_lpAdd).safeApprove(_kebabFarmingPool, _lpBal);
+        IPancakeswapPool(_kebabFarmingPool).deposit(kebabFarmingPoolId, _lpBal);
+    }
+
+    function withdrawFromKebabPool(uint256 _lpAmount) public onlyStrategist {
+        IPancakeswapPool(kebabFarmingPool).withdraw(kebabFarmingPoolId, _lpAmount);
+        _removeLiquidity2(kebabFarmingPoolLpPairAddress, busd, wbnb, _lpAmount);
+    }
+
+    function exitKebabPool() public onlyStrategist {
+        (uint256 _stakedAmount, ) = IPancakeswapPool(kebabFarmingPool).userInfo(kebabFarmingPoolId, address(this));
+        withdrawFromKebabPool(_stakedAmount);
+        uint256 _bal = IERC20(kebab).balanceOf(address(this));
+        if (_bal > 0) {
+            trimNonCoreToken(kebab);
+        }
+    }
+
+    function claimAndReinvestFromKebabPool() public {
+        IPancakeswapPool(kebabFarmingPool).withdraw(kebabFarmingPoolId, 0);
+        uint256 _kebabBal = IERC20(kebab).balanceOf(address(this));
+        if (_kebabBal > 0) {
+            uint256 _wbnbBef = IERC20(wbnb).balanceOf(address(this));
+            _swapToken(kebab, wbnb, _kebabBal);
+            uint256 _wbnbAft = IERC20(wbnb).balanceOf(address(this));
+            uint256 _boughtWbnb = _wbnbAft.sub(_wbnbBef);
+            if (_boughtWbnb >= 2) {
+                uint256 _dollarBef = IERC20(dollar).balanceOf(address(this));
+                _swapToken(wbnb, dollar, _boughtWbnb.div(2));
+                uint256 _dollarAft = IERC20(dollar).balanceOf(address(this));
+                uint256 _boughtDollar = _dollarAft.sub(_dollarBef);
+                _addLiquidity(wbnb, _boughtDollar);
+                claimAndReinvestFromPancakePool();
+            }
+        }
+    }
+
+    function pendingFromKebabPool() public view returns(uint256) {
+        return IPancakeswapPool(kebabFarmingPool).pendingCake(kebabFarmingPoolId, address(this));
+    }
+
+    function stakeAmountFromKebabPool() public view returns(uint256 _stakedAmount) {
+        (_stakedAmount, ) = IPancakeswapPool(kebabFarmingPool).userInfo(kebabFarmingPoolId, address(this));
     }
 
     /* ========== EMERGENCY ========== */

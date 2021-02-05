@@ -83,6 +83,12 @@ contract Treasury is ContractGuard {
     address public daoFund;
     uint256 public daoFundSharedPercent;
 
+    // BDOIP04: 15% to DAO Fund, 3% to bVaults incentive fund, 2% to MKT
+    address public bVaultsFund;
+    uint256 public bVaultsFundSharedPercent;
+    address public marketingFund;
+    uint256 public marketingFundSharedPercent;
+
     /* =================== Events =================== */
 
     event Initialized(address indexed executor, uint256 at);
@@ -92,6 +98,8 @@ contract Treasury is ContractGuard {
     event TreasuryFunded(uint256 timestamp, uint256 seigniorage);
     event BoardroomFunded(uint256 timestamp, uint256 seigniorage);
     event DaoFundFunded(uint256 timestamp, uint256 seigniorage);
+    event BVaultsFundFunded(uint256 timestamp, uint256 seigniorage);
+    event MarketingFundFunded(uint256 timestamp, uint256 seigniorage);
 
     /* =================== Modifier =================== */
 
@@ -312,14 +320,21 @@ contract Treasury is ContractGuard {
         bdoip01BootstrapSupplyExpansionPercent = _bdoip01BootstrapSupplyExpansionPercent;
     }
 
-    function setDaoFund(address _daoFund) external onlyOperator {
+    function setExtraFunds(address _daoFund, uint256 _daoFundSharedPercent,
+        address _bVaultsFund, uint256 _bVaultsFundSharedPercent,
+        address _marketingFund, uint256 _marketingFundSharedPercent) external onlyOperator {
         require(_daoFund != address(0), "zero");
+        require(_daoFundSharedPercent <= 3000, "out of range"); // <= 30%
+        require(_bVaultsFund != address(0), "zero");
+        require(_bVaultsFundSharedPercent <= 1000, "out of range"); // <= 10%
+        require(_marketingFund != address(0), "zero");
+        require(_marketingFundSharedPercent <= 1000, "out of range"); // <= 10%
         daoFund = _daoFund;
-    }
-
-    function setDaoFundSharedPercent(uint256 _daoFundSharedPercent) external onlyOperator {
-        require(_daoFundSharedPercent <= 2000, "out of range"); // <= 20%
         daoFundSharedPercent = _daoFundSharedPercent;
+        bVaultsFund = _bVaultsFund;
+        bVaultsFundSharedPercent = _bVaultsFundSharedPercent;
+        marketingFund = _marketingFund;
+        marketingFundSharedPercent = _marketingFundSharedPercent;
     }
 
     function setAllocateSeigniorageSalary(uint256 _allocateSeigniorageSalary) external onlyOperator {
@@ -440,6 +455,18 @@ contract Treasury is ContractGuard {
             IERC20(dollar).transfer(daoFund, _daoFundSharedAmount);
             emit DaoFundFunded(now, _daoFundSharedAmount);
             _amount = _amount.sub(_daoFundSharedAmount);
+        }
+        if (bVaultsFundSharedPercent > 0) {
+            uint256 _bVaultsFundSharedAmount = _amount.mul(bVaultsFundSharedPercent).div(10000);
+            IERC20(dollar).transfer(bVaultsFund, _bVaultsFundSharedAmount);
+            emit BVaultsFundFunded(now, _bVaultsFundSharedAmount);
+            _amount = _amount.sub(_bVaultsFundSharedAmount);
+        }
+        if (marketingFundSharedPercent > 0) {
+            uint256 _marketingSharedAmount = _amount.mul(marketingFundSharedPercent).div(10000);
+            IERC20(dollar).transfer(marketingFund, _marketingSharedAmount);
+            emit MarketingFundFunded(now, _marketingSharedAmount);
+            _amount = _amount.sub(_marketingSharedAmount);
         }
         IERC20(dollar).safeApprove(boardroom, 0);
         IERC20(dollar).safeApprove(boardroom, _amount);
