@@ -3,7 +3,7 @@ import {ethers} from 'hardhat';
 import {solidity} from 'ethereum-waffle';
 import {Contract, ContractFactory, BigNumber, utils} from 'ethers';
 import {Provider} from '@ethersproject/providers';
-import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
+import {SignerWithAddress} from 'hardhat-deploy-ethers/dist/src/signer-with-address';
 
 import { advanceBlock, advanceTimeAndBlock } from './shared/utilities';
 

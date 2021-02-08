@@ -56,7 +56,7 @@ contract Treasury is ContractGuard {
 
     uint256 public seigniorageSaved;
 
-    // protocol parameters - https://github.com/bearn-defi/bdollar-smartcontracts/tree/master/docs/ProtocolParameters.md
+    // protocol parameters - https://github.com/MidasCore/midasdollar-protocol/tree/master/docs/ProtocolParameters.md
     uint256 public maxSupplyExpansionPercent;
     uint256 public maxSupplyExpansionPercentInDebtPhase;
     uint256 public bondDepletionFloorPercent;
@@ -64,9 +64,9 @@ contract Treasury is ContractGuard {
     uint256 public maxSupplyContractionPercent;
     uint256 public maxDeptRatioPercent;
 
-    /* =================== BDOIPs (bDollar Improvement Proposals) =================== */
+    /* =================== MDOIPs (Midas Dollar Improvement Proposals) =================== */
 
-    // BDOIP01: 28 first epochs (1 week) with 4.5% expansion regardless of BDO price
+    // MDOIP01: 28 first epochs (1 week) with 4.5% expansion regardless of MDO price
     uint256 public bdoip01BootstrapEpochs;
     uint256 public bdoip01BootstrapSupplyExpansionPercent;
 
@@ -77,13 +77,13 @@ contract Treasury is ContractGuard {
     uint256 public maxPremiumRate; // when redeeming bond
     uint256 public discountPercent;
     uint256 public premiumPercent;
-    uint256 public mintingFactorForPayingDebt; // print extra BDO during dept phase
+    uint256 public mintingFactorForPayingDebt; // print extra MDO during dept phase
 
-    // BDOIP03: 10% of minted BDO goes to Community DAO Fund
+    // MDOIP03: 10% of minted MDO goes to Community DAO Fund
     address public daoFund;
     uint256 public daoFundSharedPercent;
 
-    // BDOIP04: 15% to DAO Fund, 3% to bVaults incentive fund, 2% to MKT
+    // MDOIP04: 15% to DAO Fund, 3% to bVaults incentive fund, 2% to MKT
     address public bVaultsFund;
     uint256 public bVaultsFundSharedPercent;
     address public marketingFund;
@@ -258,8 +258,8 @@ contract Treasury is ContractGuard {
         maxSupplyExpansionPercentInDebtPhase = 450; // Upto 4.5% supply for expansion in debt phase (to pay debt faster)
         bondDepletionFloorPercent = 10000; // 100% of Bond supply for depletion floor
         seigniorageExpansionFloorPercent = 3500; // At least 35% of expansion reserved for boardroom
-        maxSupplyContractionPercent = 300; // Upto 3.0% supply for contraction (to burn BDO and mint bBDO)
-        maxDeptRatioPercent = 3500; // Upto 35% supply of bBDO to purchase
+        maxSupplyContractionPercent = 300; // Upto 3.0% supply for contraction (to burn MDO and mint MDB)
+        maxDeptRatioPercent = 3500; // Upto 35% supply of MDB to purchase
 
         // BDIP01: First 28 epochs with 4.5% expansion
         bdoip01BootstrapEpochs = 28;
@@ -313,7 +313,7 @@ contract Treasury is ContractGuard {
         maxDeptRatioPercent = _maxDeptRatioPercent;
     }
 
-    function setBDOIP01(uint256 _bdoip01BootstrapEpochs, uint256 _bdoip01BootstrapSupplyExpansionPercent) external onlyOperator {
+    function setMDOIP01(uint256 _bdoip01BootstrapEpochs, uint256 _bdoip01BootstrapSupplyExpansionPercent) external onlyOperator {
         require(_bdoip01BootstrapEpochs <= 120, "_bdoip01BootstrapEpochs: out of range"); // <= 1 month
         require(_bdoip01BootstrapSupplyExpansionPercent >= 100 && _bdoip01BootstrapSupplyExpansionPercent <= 1000, "_bdoip01BootstrapSupplyExpansionPercent: out of range"); // [1%, 10%]
         bdoip01BootstrapEpochs = _bdoip01BootstrapEpochs;
@@ -478,11 +478,11 @@ contract Treasury is ContractGuard {
         _updateDollarPrice();
         previousEpochDollarPrice = getDollarPrice();
         uint256 dollarSupply = IERC20(dollar).totalSupply().sub(seigniorageSaved);
-        if (epoch < bdoip01BootstrapEpochs) {// BDOIP01: 28 first epochs with 4.5% expansion
+        if (epoch < bdoip01BootstrapEpochs) {// MDOIP01: 28 first epochs with 4.5% expansion
             _sendToBoardRoom(dollarSupply.mul(bdoip01BootstrapSupplyExpansionPercent).div(10000));
         } else {
             if (previousEpochDollarPrice > dollarPriceCeiling) {
-                // Expansion ($BDO Price > 1$): there is some seigniorage to be allocated
+                // Expansion ($MDO Price > 1$): there is some seigniorage to be allocated
                 uint256 bondSupply = IERC20(bond).totalSupply();
                 uint256 _percentage = previousEpochDollarPrice.sub(dollarPriceOne);
                 uint256 _savedForBond;

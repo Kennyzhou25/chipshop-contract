@@ -74,7 +74,7 @@ contract Boardroom is ShareWrapper, ContractGuard {
     mapping(address => Boardseat) public directors;
     BoardSnapshot[] public boardHistory;
 
-    // protocol parameters - https://github.com/bearn-defi/bdollar-smartcontracts/tree/master/docs/ProtocolParameters.md
+    // protocol parameters - https://github.com/MidasCore/midasdollar-protocol/tree/master/docs/ProtocolParameters.md
     uint256 public withdrawLockupEpochs;
     uint256 public rewardLockupEpochs;
 

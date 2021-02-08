@@ -2,7 +2,7 @@ import chai, {expect} from "chai";
 import {ethers} from "hardhat";
 import {solidity} from "ethereum-waffle";
 import {Contract, ContractFactory, BigNumber, utils} from "ethers";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import {SignerWithAddress} from 'hardhat-deploy-ethers/dist/src/signer-with-address';
 import { Provider } from '@ethersproject/providers';
 
 chai.use(solidity);

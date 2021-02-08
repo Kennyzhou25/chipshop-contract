@@ -3,7 +3,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_bdo",
+        "name": "_mdo",
         "type": "address"
       },
       {
@@ -111,7 +111,7 @@
   },
   {
     "inputs": [],
-    "name": "BLOCKS_PER_WEEK",
+    "name": "BLOCKS_PER_DAY",
     "outputs": [
       {
         "internalType": "uint256",
@@ -148,19 +148,6 @@
     "name": "add",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "bdo",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -202,7 +189,7 @@
         "type": "uint256"
       }
     ],
-    "name": "epochBdoPerBlock",
+    "name": "epochEndBlocks",
     "outputs": [
       {
         "internalType": "uint256",
@@ -221,7 +208,7 @@
         "type": "uint256"
       }
     ],
-    "name": "epochEndBlocks",
+    "name": "epochMdoPerBlock",
     "outputs": [
       {
         "internalType": "uint256",
@@ -307,6 +294,19 @@
   },
   {
     "inputs": [],
+    "name": "mdo",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "operator",
     "outputs": [
       {
@@ -331,7 +331,7 @@
         "type": "address"
       }
     ],
-    "name": "pendingBDO",
+    "name": "pendingMDO",
     "outputs": [
       {
         "internalType": "uint256",
@@ -369,7 +369,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "accBdoPerShare",
+        "name": "accMdoPerShare",
         "type": "uint256"
       },
       {

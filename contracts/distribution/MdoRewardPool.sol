@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-// Note that this pool has no minter key of BDO (rewards).
-// Instead, the governance will call BDO distributeReward method and send reward to this pool at the beginning.
-contract BdoRewardPool {
+// Note that this pool has no minter key of MDO (rewards).
+// Instead, the governance will call MDO distributeReward method and send reward to this pool at the beginning.
+contract MdoRewardPool {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -24,13 +24,13 @@ contract BdoRewardPool {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. BDOs to distribute per block.
-        uint256 lastRewardBlock; // Last block number that BDOs distribution occurs.
-        uint256 accBdoPerShare; // Accumulated BDOs per share, times 1e18. See below.
+        uint256 allocPoint; // How many allocation points assigned to this pool. MDOs to distribute per block.
+        uint256 lastRewardBlock; // Last block number that MDOs distribution occurs.
+        uint256 accMdoPerShare; // Accumulated MDOs per share, times 1e18. See below.
         bool isStarted; // if lastRewardBlock has passed
     }
 
-    IERC20 public bdo = IERC20(0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454);
+    IERC20 public mdo = IERC20(0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454);
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -41,18 +41,18 @@ contract BdoRewardPool {
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
 
-    // The block number when BDO mining starts.
+    // The block number when MDO mining starts.
     uint256 public startBlock;
 
-    uint256 public constant BLOCKS_PER_WEEK = 201600; // 86400 * 7 / 3;
+    uint256 public constant BLOCKS_PER_DAY = 28800; // 86400 / 3;
 
-    uint256[] public epochTotalRewards = [80000 ether, 60000 ether, 40000 ether];
+    uint256[] public epochTotalRewards = [1000 ether, 90000 ether];
 
     // Block number when each epoch ends.
-    uint[3] public epochEndBlocks;
+    uint[2] public epochEndBlocks;
 
-    // Reward per block for each of 3 epochs (last item is equal to 0 - for sanity).
-    uint[4] public epochBdoPerBlock;
+    // Reward per block for each of 2 epochs (last item is equal to 0 - for sanity).
+    uint[3] public epochMdoPerBlock;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -60,33 +60,29 @@ contract BdoRewardPool {
     event RewardPaid(address indexed user, uint256 amount);
 
     constructor(
-        address _bdo,
+        address _mdo,
         uint256 _startBlock
     ) public {
         require(block.number < _startBlock, "late");
-        if (_bdo != address(0)) bdo = IERC20(_bdo);
-        startBlock = _startBlock; // supposed to be 3,410,000 (Fri Dec 25 2020 15:00:00 UTC)
-        epochEndBlocks[0] = startBlock + BLOCKS_PER_WEEK;
-        uint256 i;
-        for (i = 1; i <= 2; ++i) {
-            epochEndBlocks[i] = epochEndBlocks[i - 1] + BLOCKS_PER_WEEK;
-        }
-        for (i = 0; i <= 2; ++i) {
-            epochBdoPerBlock[i] = epochTotalRewards[i].div(BLOCKS_PER_WEEK);
-        }
-        epochBdoPerBlock[3] = 0;
+        if (_mdo != address(0)) mdo = IERC20(_mdo);
+        startBlock = _startBlock; // supposed to be 4,702,800 (Mon Feb 08 2021 14:30:00 UTC)
+        epochEndBlocks[0] = startBlock + BLOCKS_PER_DAY;
+        epochEndBlocks[1] = startBlock + BLOCKS_PER_DAY.mul(10);
+        epochMdoPerBlock[0] = epochTotalRewards[0].div(BLOCKS_PER_DAY);
+        epochMdoPerBlock[1] = epochTotalRewards[1].div(BLOCKS_PER_DAY.mul(9));
+        epochMdoPerBlock[2] = 0;
         operator = msg.sender;
     }
 
     modifier onlyOperator() {
-        require(operator == msg.sender, "BdoRewardPool: caller is not the operator");
+        require(operator == msg.sender, "MdoRewardPool: caller is not the operator");
         _;
     }
 
     function checkPoolDuplicate(IERC20 _lpToken) internal view {
         uint256 length = poolInfo.length;
         for (uint256 pid = 0; pid < length; ++pid) {
-            require(poolInfo[pid].lpToken != _lpToken, "BdoRewardPool: existing pool?");
+            require(poolInfo[pid].lpToken != _lpToken, "MdoRewardPool: existing pool?");
         }
     }
 
@@ -123,7 +119,7 @@ contract BdoRewardPool {
             lpToken : _lpToken,
             allocPoint : _allocPoint,
             lastRewardBlock : _lastRewardBlock,
-            accBdoPerShare : 0,
+            accMdoPerShare : 0,
             isStarted : _isStarted
             }));
         if (_isStarted) {
@@ -131,7 +127,7 @@ contract BdoRewardPool {
         }
     }
 
-    // Update the given pool's BDO allocation point. Can only be called by the owner.
+    // Update the given pool's MDO allocation point. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint) public onlyOperator {
         massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
@@ -145,33 +141,33 @@ contract BdoRewardPool {
 
     // Return accumulate rewards over the given _from to _to block.
     function getGeneratedReward(uint256 _from, uint256 _to) public view returns (uint256) {
-        for (uint8 epochId = 3; epochId >= 1; --epochId) {
+        for (uint8 epochId = 2; epochId >= 1; --epochId) {
             if (_to >= epochEndBlocks[epochId - 1]) {
-                if (_from >= epochEndBlocks[epochId - 1]) return _to.sub(_from).mul(epochBdoPerBlock[epochId]);
-                uint256 _generatedReward = _to.sub(epochEndBlocks[epochId - 1]).mul(epochBdoPerBlock[epochId]);
-                if (epochId == 1) return _generatedReward.add(epochEndBlocks[0].sub(_from).mul(epochBdoPerBlock[0]));
+                if (_from >= epochEndBlocks[epochId - 1]) return _to.sub(_from).mul(epochMdoPerBlock[epochId]);
+                uint256 _generatedReward = _to.sub(epochEndBlocks[epochId - 1]).mul(epochMdoPerBlock[epochId]);
+                if (epochId == 1) return _generatedReward.add(epochEndBlocks[0].sub(_from).mul(epochMdoPerBlock[0]));
                 for (epochId = epochId - 1; epochId >= 1; --epochId) {
-                    if (_from >= epochEndBlocks[epochId - 1]) return _generatedReward.add(epochEndBlocks[epochId].sub(_from).mul(epochBdoPerBlock[epochId]));
-                    _generatedReward = _generatedReward.add(epochEndBlocks[epochId].sub(epochEndBlocks[epochId - 1]).mul(epochBdoPerBlock[epochId]));
+                    if (_from >= epochEndBlocks[epochId - 1]) return _generatedReward.add(epochEndBlocks[epochId].sub(_from).mul(epochMdoPerBlock[epochId]));
+                    _generatedReward = _generatedReward.add(epochEndBlocks[epochId].sub(epochEndBlocks[epochId - 1]).mul(epochMdoPerBlock[epochId]));
                 }
-                return _generatedReward.add(epochEndBlocks[0].sub(_from).mul(epochBdoPerBlock[0]));
+                return _generatedReward.add(epochEndBlocks[0].sub(_from).mul(epochMdoPerBlock[0]));
             }
         }
-        return _to.sub(_from).mul(epochBdoPerBlock[0]);
+        return _to.sub(_from).mul(epochMdoPerBlock[0]);
     }
 
-    // View function to see pending BDOs on frontend.
-    function pendingBDO(uint256 _pid, address _user) external view returns (uint256) {
+    // View function to see pending MDOs on frontend.
+    function pendingMDO(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accBdoPerShare = pool.accBdoPerShare;
+        uint256 accMdoPerShare = pool.accMdoPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 _generatedReward = getGeneratedReward(pool.lastRewardBlock, block.number);
-            uint256 _bdoReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
-            accBdoPerShare = accBdoPerShare.add(_bdoReward.mul(1e18).div(lpSupply));
+            uint256 _mdoReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
+            accMdoPerShare = accMdoPerShare.add(_mdoReward.mul(1e18).div(lpSupply));
         }
-        return user.amount.mul(accBdoPerShare).div(1e18).sub(user.rewardDebt);
+        return user.amount.mul(accMdoPerShare).div(1e18).sub(user.rewardDebt);
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -199,8 +195,8 @@ contract BdoRewardPool {
         }
         if (totalAllocPoint > 0) {
             uint256 _generatedReward = getGeneratedReward(pool.lastRewardBlock, block.number);
-            uint256 _bdoReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
-            pool.accBdoPerShare = pool.accBdoPerShare.add(_bdoReward.mul(1e18).div(lpSupply));
+            uint256 _mdoReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
+            pool.accMdoPerShare = pool.accMdoPerShare.add(_mdoReward.mul(1e18).div(lpSupply));
         }
         pool.lastRewardBlock = block.number;
     }
@@ -212,9 +208,9 @@ contract BdoRewardPool {
         UserInfo storage user = userInfo[_pid][_sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 _pending = user.amount.mul(pool.accBdoPerShare).div(1e18).sub(user.rewardDebt);
+            uint256 _pending = user.amount.mul(pool.accMdoPerShare).div(1e18).sub(user.rewardDebt);
             if (_pending > 0) {
-                safeBdoTransfer(_sender, _pending);
+                safeMdoTransfer(_sender, _pending);
                 emit RewardPaid(_sender, _pending);
             }
         }
@@ -222,7 +218,7 @@ contract BdoRewardPool {
             pool.lpToken.safeTransferFrom(_sender, address(this), _amount);
             user.amount = user.amount.add(_amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accBdoPerShare).div(1e18);
+        user.rewardDebt = user.amount.mul(pool.accMdoPerShare).div(1e18);
         emit Deposit(_sender, _pid, _amount);
     }
 
@@ -233,16 +229,16 @@ contract BdoRewardPool {
         UserInfo storage user = userInfo[_pid][_sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 _pending = user.amount.mul(pool.accBdoPerShare).div(1e18).sub(user.rewardDebt);
+        uint256 _pending = user.amount.mul(pool.accMdoPerShare).div(1e18).sub(user.rewardDebt);
         if (_pending > 0) {
-            safeBdoTransfer(_sender, _pending);
+            safeMdoTransfer(_sender, _pending);
             emit RewardPaid(_sender, _pending);
         }
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(_sender, _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accBdoPerShare).div(1e18);
+        user.rewardDebt = user.amount.mul(pool.accMdoPerShare).div(1e18);
         emit Withdraw(_sender, _pid, _amount);
     }
 
@@ -257,14 +253,14 @@ contract BdoRewardPool {
         emit EmergencyWithdraw(msg.sender, _pid, _amount);
     }
 
-    // Safe bdo transfer function, just in case if rounding error causes pool to not have enough BDOs.
-    function safeBdoTransfer(address _to, uint256 _amount) internal {
-        uint256 _bdoBal = bdo.balanceOf(address(this));
-        if (_bdoBal > 0) {
-            if (_amount > _bdoBal) {
-                bdo.safeTransfer(_to, _bdoBal);
+    // Safe mdo transfer function, just in case if rounding error causes pool to not have enough MDOs.
+    function safeMdoTransfer(address _to, uint256 _amount) internal {
+        uint256 _mdoBal = mdo.balanceOf(address(this));
+        if (_mdoBal > 0) {
+            if (_amount > _mdoBal) {
+                mdo.safeTransfer(_to, _mdoBal);
             } else {
-                bdo.safeTransfer(_to, _amount);
+                mdo.safeTransfer(_to, _amount);
             }
         }
     }
@@ -274,9 +270,9 @@ contract BdoRewardPool {
     }
 
     function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external onlyOperator {
-        if (block.number < epochEndBlocks[2] + BLOCKS_PER_WEEK * 26) {
-            // do not allow to drain lpToken if less than 6 months after farming
-            require(_token != bdo, "!bdo");
+        if (block.number < epochEndBlocks[1] + BLOCKS_PER_DAY * 180) {
+            // do not allow to drain lpToken if less than 180 days after farming
+            require(_token != mdo, "!mdo");
             uint256 length = poolInfo.length;
             for (uint256 pid = 0; pid < length; ++pid) {
                 PoolInfo storage pool = poolInfo[pid];

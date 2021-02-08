@@ -7,7 +7,7 @@
         "*.ts"
       ],
       "options": {
-        "printWidth": 160,
+        "printWidth": 200,
         "tabWidth": 4,
         "useTabs": false,
         "bracketSpacing": false,

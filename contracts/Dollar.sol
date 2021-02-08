@@ -7,15 +7,16 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "./owner/Operator.sol";
 
 contract Dollar is ERC20Burnable, Operator {
-    uint256 public constant INITIAL_DISTRIBUTION = 210000 ether;
+    uint256 public constant INITIAL_DISTRIBUTION = 100000 ether;
+    uint256 public constant AIRDROP_FUND = 9000 ether;
 
     bool public rewardPoolDistributed = false;
 
     /**
-     * @notice Constructs the bDollar ERC-20 contract.
+     * @notice Constructs the Midas Dollar ERC-20 contract.
      */
-    constructor() public ERC20("bDollar", "BDO") {
-        // Mints 1 bDollar to contract creator for initial pool setup
+    constructor() public ERC20("Midas Dollar", "MDO") {
+        // Mints 1 Midas Dollar to contract creator for initial pool setup
         _mint(msg.sender, 1 ether);
     }
 
@@ -48,7 +49,8 @@ contract Dollar is ERC20Burnable, Operator {
         require(!rewardPoolDistributed, "only can distribute once");
         require(_distributionPool != address(0), "!_distributionPool");
         rewardPoolDistributed = true;
-        _mint(_distributionPool, INITIAL_DISTRIBUTION);
+        _mint(_distributionPool, INITIAL_DISTRIBUTION.sub(AIRDROP_FUND));
+        _mint(msg.sender, AIRDROP_FUND);
     }
 
     function governanceRecoverUnsupported(IERC20 _token, uint256 _amount, address _to) external onlyOperator {

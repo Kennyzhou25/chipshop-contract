@@ -16,7 +16,7 @@ import "../interfaces/IShareRewardPool.sol";
 import "../interfaces/IPancakeswapPool.sol";
 
 /**
- * @dev This contract will collect vesting Shares, stake to the Boardroom and rebalance BDO, BUSD, WBNB according to DAO.
+ * @dev This contract will collect vesting Shares, stake to the Boardroom and rebalance MDO, BUSD, WBNB according to DAO.
  */
 contract CommunityFund {
     using SafeERC20 for IERC20;
@@ -48,7 +48,7 @@ contract CommunityFund {
     IUniswapV2Router public pancakeRouter = IUniswapV2Router(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
     mapping(address => mapping(address => address[])) public uniswapPaths;
 
-    // DAO parameters - https://docs.basisdollar.fi/DAO
+    // DAO parameters - https://docs.midasdollar.fi/DAO
     uint256[] public expansionPercent;
     uint256[] public contractionPercent;
 
@@ -57,7 +57,7 @@ contract CommunityFund {
     address public dollarOracle = address(0xfAB911c54f7CF3ffFdE0482d2267a751D87B5B20);
     address public treasury = address(0x15A90e6157a870CD335AF03c6df776d0B1ebf94F);
 
-    mapping(address => uint256) public maxAmountToTrade; // BDO, BUSD, WBNB
+    mapping(address => uint256) public maxAmountToTrade; // MDO, BUSD, WBNB
 
     address public shareRewardPool = address(0x948dB1713D4392EC04C86189070557C5A8566766);
     mapping(address => uint256) public shareRewardPoolId; // [BUSD, WBNB] -> [Pool_id]: 0, 2
@@ -65,7 +65,7 @@ contract CommunityFund {
 
     address public pancakeFarmingPool = address(0x73feaa1eE314F8c655E354234017bE2193C9E24E);
     uint256 public pancakeFarmingPoolId = 66;
-    address public pancakeFarmingPoolLpPairAddress = address(0x74690f829fec83ea424ee1F1654041b2491A7bE9); // BDO/WBNB
+    address public pancakeFarmingPoolLpPairAddress = address(0x74690f829fec83ea424ee1F1654041b2491A7bE9); // MDO/WBNB
     address public cake = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82); // CAKE (pancakePool farming token)
 
     address public kebabFarmingPool = address(0x76FCeffFcf5325c6156cA89639b17464ea833ECd);
@@ -290,30 +290,30 @@ contract CommunityFund {
             uint256 _busdPercent = _busdBal.mul(10000).div(_totalBal);
             uint256 _wbnbPercent = _wbnbBal.mul(10000).div(_totalBal);
             uint256 _dollarPrice = getDollarUpdatedPrice();
-            if (_dollarPrice >= dollarPriceToSell) {// expansion: sell BDO
+            if (_dollarPrice >= dollarPriceToSell) {// expansion: sell MDO
                 if (_dollarPercent > expansionPercent[0]) {
-                    uint256 _sellingBdo = _dollarBal.mul(_dollarPercent.sub(expansionPercent[0])).div(10000);
+                    uint256 _sellingMdo = _dollarBal.mul(_dollarPercent.sub(expansionPercent[0])).div(10000);
                     if (_busdPercent >= expansionPercent[1]) {// enough BUSD
                         if (_wbnbPercent < expansionPercent[2]) {// short of WBNB: buy WBNB
-                            _swapToken(dollar, wbnb, _sellingBdo);
+                            _swapToken(dollar, wbnb, _sellingMdo);
                         } else {
                             if (_busdPercent.sub(expansionPercent[1]) <= _wbnbPercent.sub(expansionPercent[2])) {// has more WBNB than BUSD: buy BUSD
-                                _swapToken(dollar, busd, _sellingBdo);
+                                _swapToken(dollar, busd, _sellingMdo);
                             } else {// has more BUSD than WBNB: buy WBNB
-                                _swapToken(dollar, wbnb, _sellingBdo);
+                                _swapToken(dollar, wbnb, _sellingMdo);
                             }
                         }
                     } else {// short of BUSD
                         if (_wbnbPercent >= expansionPercent[2]) {// enough WBNB: buy BUSD
-                            _swapToken(dollar, busd, _sellingBdo);
+                            _swapToken(dollar, busd, _sellingMdo);
                         } else {// short of WBNB
-                            uint256 _sellingBdoToBusd = _sellingBdo.div(2);
-                            _swapToken(dollar, busd, _sellingBdoToBusd);
-                            _swapToken(dollar, wbnb, _sellingBdo.sub(_sellingBdoToBusd));
+                            uint256 _sellingMdoToBusd = _sellingMdo.div(2);
+                            _swapToken(dollar, busd, _sellingMdoToBusd);
+                            _swapToken(dollar, wbnb, _sellingMdo.sub(_sellingMdoToBusd));
                         }
                     }
                 }
-            } else if (_dollarPrice <= dollarPriceToBuy && (msg.sender == operator || msg.sender == strategist)) {// contraction: buy BDO
+            } else if (_dollarPrice <= dollarPriceToBuy && (msg.sender == operator || msg.sender == strategist)) {// contraction: buy MDO
                 if (_busdPercent >= contractionPercent[1]) {// enough BUSD
                     if (_wbnbPercent <= contractionPercent[2]) {// short of WBNB: sell BUSD
                         uint256 _sellingBUSD = _busdBal.mul(_busdPercent.sub(contractionPercent[1])).div(10000);
@@ -394,12 +394,12 @@ contract CommunityFund {
     }
 
     function _addLiquidity(address _tokenB, uint256 _amountADesired) internal {
-        // tokenA is always BDO
+        // tokenA is always MDO
         _addLiquidity2(dollar, _tokenB, _amountADesired, IERC20(_tokenB).balanceOf(address(this)));
     }
 
     function _removeLiquidity(address _lpAdd, address _tokenB, uint256 _liquidity) internal {
-        // tokenA is always BDO
+        // tokenA is always MDO
         _removeLiquidity2(_lpAdd, dollar, _tokenB, _liquidity);
     }
 
@@ -480,7 +480,7 @@ contract CommunityFund {
         _wbnbPoolStakedAmount = stakeAmountFromSharePool(wbnb);
     }
 
-    /* ========== FARM PANCAKESWAP POOL: STAKE BDO/BUSD EARN CAKE ========== */
+    /* ========== FARM PANCAKESWAP POOL: STAKE MDO/BUSD EARN CAKE ========== */
 
     function depositToPancakePool(uint256 _dollarAmount) external onlyStrategist {
         address _lpAdd = pancakeFarmingPoolLpPairAddress;

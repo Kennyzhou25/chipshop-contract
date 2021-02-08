@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-// Note that this pool has no minter key of sBDO (rewards).
-// Instead, the governance will call sBDO distributeReward method and send reward to this pool at the beginning.
+// Note that this pool has no minter key of MDS (rewards).
+// Instead, the governance will call MDS distributeReward method and send reward to this pool at the beginning.
 contract ShareRewardPool {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -24,9 +24,9 @@ contract ShareRewardPool {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. sBDOs to distribute per block.
-        uint256 lastRewardBlock; // Last block number that sBDOs distribution occurs.
-        uint256 accSbdoPerShare; // Accumulated sBDOs per share, times 1e18. See below.
+        uint256 allocPoint; // How many allocation points assigned to this pool. MDSs to distribute per block.
+        uint256 lastRewardBlock; // Last block number that MDSs distribution occurs.
+        uint256 accSbdoPerShare; // Accumulated MDSs per share, times 1e18. See below.
         bool isStarted; // if lastRewardBlock has passed
     }
 
@@ -41,7 +41,7 @@ contract ShareRewardPool {
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
 
-    // The block number when sBDO mining starts.
+    // The block number when MDS mining starts.
     uint256 public startBlock;
 
     uint256 public endBlock;
@@ -124,7 +124,7 @@ contract ShareRewardPool {
         }
     }
 
-    // Update the given pool's sBDO allocation point. Can only be called by the owner.
+    // Update the given pool's MDS allocation point. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint) public onlyOperator {
         massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
@@ -150,7 +150,7 @@ contract ShareRewardPool {
         }
     }
 
-    // View function to see pending sBDOs on frontend.
+    // View function to see pending MDSs on frontend.
     function pendingShare(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
@@ -247,7 +247,7 @@ contract ShareRewardPool {
         emit EmergencyWithdraw(msg.sender, _pid, _amount);
     }
 
-    // Safe sbdo transfer function, just in case if rounding error causes pool to not have enough sBDOs.
+    // Safe sbdo transfer function, just in case if rounding error causes pool to not have enough MDSs.
     function safeSbdoTransfer(address _to, uint256 _amount) internal {
         uint256 _sbdoBal = sbdo.balanceOf(address(this));
         if (_sbdoBal > 0) {
@@ -265,7 +265,7 @@ contract ShareRewardPool {
 
     function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external onlyOperator {
         if (block.number < endBlock + BLOCKS_PER_WEEK * 26) {
-            // do not allow to drain core token (sBDO or lps) if less than 6 months after pool ends
+            // do not allow to drain core token (MDS or lps) if less than 6 months after pool ends
             require(_token != sbdo, "sbdo");
             uint256 length = poolInfo.length;
             for (uint256 pid = 0; pid < length; ++pid) {

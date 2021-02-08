@@ -1,8 +1,10 @@
-import chai, {expect} from "chai";
-import {ethers} from "hardhat";
-import {solidity} from "ethereum-waffle";
+// @ts-ignore
+import chai from "chai";
+import {deployments, ethers} from 'hardhat';
+import {expect} from './chai-setup';
+import {solidity} from 'ethereum-waffle';
 import {Contract, ContractFactory, BigNumber, utils} from "ethers";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import {SignerWithAddress} from 'hardhat-deploy-ethers/dist/src/signer-with-address';
 
 chai.use(solidity);
 
@@ -93,7 +95,7 @@ describe("Tokens", () => {
             await expect(token.connect(rewardPool).transfer(operator.address, ETH))
                 .to.emit(token, "Transfer")
                 .withArgs(rewardPool.address, operator.address, ETH);
-            expect(await token.balanceOf(rewardPool.address)).to.eq(ETH.mul(800000 - 1));
+            expect(await token.balanceOf(rewardPool.address)).to.eq(ETH.mul(17500 - 1));
             expect(await token.balanceOf(operator.address)).to.eq(ETH.mul(2));
         });
 
