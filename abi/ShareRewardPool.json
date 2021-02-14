@@ -3,7 +3,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_sbdo",
+        "name": "_mds",
         "type": "address"
       },
       {
@@ -111,7 +111,7 @@
   },
   {
     "inputs": [],
-    "name": "BLOCKS_PER_WEEK",
+    "name": "BLOCKS_PER_DAY",
     "outputs": [
       {
         "internalType": "uint256",
@@ -263,6 +263,32 @@
   },
   {
     "inputs": [],
+    "name": "mds",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "mdsPerBlock",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "operator",
     "outputs": [
       {
@@ -325,7 +351,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "accSbdoPerShare",
+        "name": "accMdsPerShare",
         "type": "uint256"
       },
       {
@@ -340,32 +366,6 @@
   {
     "inputs": [],
     "name": "runningBlocks",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "sbdo",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "sbdoPerBlock",
     "outputs": [
       {
         "internalType": "uint256",

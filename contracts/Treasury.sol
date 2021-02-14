@@ -13,20 +13,17 @@ import "./utils/ContractGuard.sol";
 import "./interfaces/IBasisAsset.sol";
 import "./interfaces/IOracle.sol";
 import "./interfaces/IBoardroom.sol";
+import "./interfaces/ITreasury.sol";
 
 /**
  * @title Basis Dollar Treasury contract
  * @notice Monetary policy logic to adjust supplies of basis dollar assets
  * @author Summer Smith & Rick Sanchez
  */
-contract Treasury is ContractGuard {
+contract Treasury is ContractGuard, ITreasury {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
-
-    /* ========= CONSTANT VARIABLES ======== */
-
-    uint256 public constant PERIOD = 6 hours;
 
     /* ========== STATE VARIABLES ========== */
 
@@ -39,13 +36,14 @@ contract Treasury is ContractGuard {
 
     // epoch
     uint256 public startTime;
-    uint256 public epoch = 0;
+    uint256 public lastEpochTime;
+    uint256 private _epoch = 0;
     uint256 public epochSupplyContractionLeft = 0;
 
     // core components
-    address public dollar = address(0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454);
-    address public bond = address(0x9586b02B09bd68A7cD4aa9167a61B78F43092063);
-    address public share = address(0x0d9319565be7f53CeFE84Ad201Be3f40feAE2740);
+    address public dollar = address(0x35e869B7456462b81cdB5e6e42434bD27f3F788c);
+    address public share = address(0x242E46490397ACCa94ED930F2C4EdF16250237fa);
+    address public bond = address(0xCaD2109CC2816D47a796cB7a0B57988EC7611541);
 
     address public boardroom;
     address public dollarOracle;
@@ -64,13 +62,9 @@ contract Treasury is ContractGuard {
     uint256 public maxSupplyContractionPercent;
     uint256 public maxDeptRatioPercent;
 
-    /* =================== MDOIPs (Midas Dollar Improvement Proposals) =================== */
+    uint256 public bootstrapEpochs;
+    uint256 public bootstrapSupplyExpansionPercent;
 
-    // MDOIP01: 28 first epochs (1 week) with 4.5% expansion regardless of MDO price
-    uint256 public bdoip01BootstrapEpochs;
-    uint256 public bdoip01BootstrapSupplyExpansionPercent;
-
-    /* =================== Added variables (need to keep orders for proxy to work) =================== */
     uint256 public previousEpochDollarPrice;
     uint256 public allocateSeigniorageSalary;
     uint256 public maxDiscountRate; // when purchasing bond
@@ -79,15 +73,16 @@ contract Treasury is ContractGuard {
     uint256 public premiumPercent;
     uint256 public mintingFactorForPayingDebt; // print extra MDO during dept phase
 
-    // MDOIP03: 10% of minted MDO goes to Community DAO Fund
     address public daoFund;
     uint256 public daoFundSharedPercent;
 
-    // MDOIP04: 15% to DAO Fund, 3% to bVaults incentive fund, 2% to MKT
-    address public bVaultsFund;
-    uint256 public bVaultsFundSharedPercent;
+    address public miVaultsFund;
+    uint256 public miVaultsFundSharedPercent;
     address public marketingFund;
     uint256 public marketingFundSharedPercent;
+
+    /* =================== Added variables (need to keep orders for proxy to work) =================== */
+    //// TO BE ADDED
 
     /* =================== Events =================== */
 
@@ -98,7 +93,7 @@ contract Treasury is ContractGuard {
     event TreasuryFunded(uint256 timestamp, uint256 seigniorage);
     event BoardroomFunded(uint256 timestamp, uint256 seigniorage);
     event DaoFundFunded(uint256 timestamp, uint256 seigniorage);
-    event BVaultsFundFunded(uint256 timestamp, uint256 seigniorage);
+    event MiVaultsFundFunded(uint256 timestamp, uint256 seigniorage);
     event MarketingFundFunded(uint256 timestamp, uint256 seigniorage);
 
     /* =================== Modifier =================== */
@@ -116,11 +111,13 @@ contract Treasury is ContractGuard {
     }
 
     modifier checkEpoch {
-        require(now >= nextEpochPoint(), "Treasury: not opened yet");
+        uint256 _nextEpochPoint = nextEpochPoint();
+        require(now >= _nextEpochPoint, "Treasury: not opened yet");
 
         _;
 
-        epoch = epoch.add(1);
+        lastEpochTime = _nextEpochPoint;
+        _epoch = _epoch.add(1);
         epochSupplyContractionLeft = (getDollarPrice() > dollarPriceCeiling) ? 0 : IERC20(dollar).totalSupply().mul(maxSupplyContractionPercent).div(10000);
     }
 
@@ -154,12 +151,26 @@ contract Treasury is ContractGuard {
     }
 
     // epoch
-    function nextEpochPoint() public view returns (uint256) {
-        return startTime.add(epoch.mul(PERIOD));
+    function epoch() public override view returns (uint256) {
+        return _epoch;
+    }
+
+    function nextEpochPoint() public override view returns (uint256) {
+        return lastEpochTime.add(nextEpochLength());
+    }
+
+    function nextEpochLength() public override view returns (uint256 _length) {
+        if (_epoch <= bootstrapEpochs) {
+            // 21 first epochs with 8h long
+            _length = 8 hours;
+        } else {
+            uint256 dollarPrice = getDollarPrice();
+            _length = (dollarPrice > dollarPriceCeiling) ? 8 hours : 6 hours;
+        }
     }
 
     // oracle
-    function getDollarPrice() public view returns (uint256 dollarPrice) {
+    function getDollarPrice() public override view returns (uint256 dollarPrice) {
         try IOracle(dollarOracle).consult(dollar, 1e18) returns (uint144 price) {
             return uint256(price);
         } catch {
@@ -250,23 +261,38 @@ contract Treasury is ContractGuard {
         bond = _bond;
         share = _share;
         startTime = _startTime;
+        lastEpochTime = _startTime.sub(8 hours);
 
         dollarPriceOne = 10**18;
         dollarPriceCeiling = dollarPriceOne.mul(101).div(100);
 
-        maxSupplyExpansionPercent = 300; // Upto 3.0% supply for expansion
-        maxSupplyExpansionPercentInDebtPhase = 450; // Upto 4.5% supply for expansion in debt phase (to pay debt faster)
+        maxSupplyExpansionPercent = 400; // Upto 4.0% supply for expansion
+        maxSupplyExpansionPercentInDebtPhase = 600; // Upto 4.5% supply for expansion in debt phase (to pay debt faster)
         bondDepletionFloorPercent = 10000; // 100% of Bond supply for depletion floor
-        seigniorageExpansionFloorPercent = 3500; // At least 35% of expansion reserved for boardroom
-        maxSupplyContractionPercent = 300; // Upto 3.0% supply for contraction (to burn MDO and mint MDB)
-        maxDeptRatioPercent = 3500; // Upto 35% supply of MDB to purchase
+        seigniorageExpansionFloorPercent = 5000; // At least 50% of expansion reserved for boardroom
+        maxSupplyContractionPercent = 400; // Upto 4.0% supply for contraction (to burn MDO and mint MDB)
+        maxDeptRatioPercent = 5000; // Upto 50% supply of MDB to purchase
 
-        // BDIP01: First 28 epochs with 4.5% expansion
-        bdoip01BootstrapEpochs = 28;
-        bdoip01BootstrapSupplyExpansionPercent = 450;
+        // First 21 epochs with 4.0% expansion
+        bootstrapEpochs = 21;
+        bootstrapSupplyExpansionPercent = 400;
 
         // set seigniorageSaved to it's balance
         seigniorageSaved = IERC20(dollar).balanceOf(address(this));
+
+        allocateSeigniorageSalary = 1 ether; // 1 MDO salary for calling allocateSeigniorage
+
+        maxDiscountRate = 13e17; // 30% - when purchasing bond
+        maxPremiumRate = 13e17; // 30% - when redeeming bond
+
+        discountPercent = 0; // no discount
+        premiumPercent = 6500; // 65% premium
+
+        mintingFactorForPayingDebt = 10000; // 100%
+
+        daoFundSharedPercent = 2500; // 25% toward Midas DAO Fund
+        miVaultsFundSharedPercent = 0;
+        marketingFundSharedPercent = 0;
 
         initialized = true;
         operator = msg.sender;
@@ -275,6 +301,12 @@ contract Treasury is ContractGuard {
 
     function setOperator(address _operator) external onlyOperator {
         operator = _operator;
+    }
+
+    function resetStartTime(uint256 _startTime) external onlyOperator {
+        require(_epoch == 0, "already started");
+        startTime = _startTime;
+        lastEpochTime = _startTime.sub(8 hours);
     }
 
     function setBoardroom(address _boardroom) external onlyOperator {
@@ -313,26 +345,26 @@ contract Treasury is ContractGuard {
         maxDeptRatioPercent = _maxDeptRatioPercent;
     }
 
-    function setMDOIP01(uint256 _bdoip01BootstrapEpochs, uint256 _bdoip01BootstrapSupplyExpansionPercent) external onlyOperator {
-        require(_bdoip01BootstrapEpochs <= 120, "_bdoip01BootstrapEpochs: out of range"); // <= 1 month
-        require(_bdoip01BootstrapSupplyExpansionPercent >= 100 && _bdoip01BootstrapSupplyExpansionPercent <= 1000, "_bdoip01BootstrapSupplyExpansionPercent: out of range"); // [1%, 10%]
-        bdoip01BootstrapEpochs = _bdoip01BootstrapEpochs;
-        bdoip01BootstrapSupplyExpansionPercent = _bdoip01BootstrapSupplyExpansionPercent;
+    function setBootstrapParams(uint256 _bootstrapEpochs, uint256 _bootstrapSupplyExpansionPercent) external onlyOperator {
+        require(_bootstrapEpochs <= 90, "_bootstrapSupplyExpansionPercent: out of range"); // <= 1 month
+        require(_bootstrapSupplyExpansionPercent >= 100 && _bootstrapSupplyExpansionPercent <= 1000, "_bootstrapSupplyExpansionPercent: out of range"); // [1%, 10%]
+        bootstrapEpochs = _bootstrapEpochs;
+        bootstrapSupplyExpansionPercent = _bootstrapSupplyExpansionPercent;
     }
 
     function setExtraFunds(address _daoFund, uint256 _daoFundSharedPercent,
-        address _bVaultsFund, uint256 _bVaultsFundSharedPercent,
+        address _miVaultsFund, uint256 _miVaultsFundSharedPercent,
         address _marketingFund, uint256 _marketingFundSharedPercent) external onlyOperator {
         require(_daoFund != address(0), "zero");
         require(_daoFundSharedPercent <= 3000, "out of range"); // <= 30%
-        require(_bVaultsFund != address(0), "zero");
-        require(_bVaultsFundSharedPercent <= 1000, "out of range"); // <= 10%
+        require(_miVaultsFund != address(0), "zero");
+        require(_miVaultsFundSharedPercent <= 1000, "out of range"); // <= 10%
         require(_marketingFund != address(0), "zero");
         require(_marketingFundSharedPercent <= 1000, "out of range"); // <= 10%
         daoFund = _daoFund;
         daoFundSharedPercent = _daoFundSharedPercent;
-        bVaultsFund = _bVaultsFund;
-        bVaultsFundSharedPercent = _bVaultsFundSharedPercent;
+        miVaultsFund = _miVaultsFund;
+        miVaultsFundSharedPercent = _miVaultsFundSharedPercent;
         marketingFund = _marketingFund;
         marketingFundSharedPercent = _marketingFundSharedPercent;
     }
@@ -393,7 +425,8 @@ contract Treasury is ContractGuard {
         try IOracle(dollarOracle).update() {} catch {}
     }
 
-    function buyBonds(uint256 _dollarAmount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
+    function buyBonds(uint256 _dollarAmount, uint256 targetPrice) external override onlyOneBlock checkCondition checkOperator {
+        require(_epoch >= bootstrapEpochs, "Treasury: still in boostrap");
         require(_dollarAmount > 0, "Treasury: cannot purchase bonds with zero amount");
 
         uint256 dollarPrice = getDollarPrice();
@@ -422,7 +455,7 @@ contract Treasury is ContractGuard {
         emit BoughtBonds(msg.sender, _dollarAmount, _bondAmount);
     }
 
-    function redeemBonds(uint256 _bondAmount, uint256 targetPrice) external onlyOneBlock checkCondition checkOperator {
+    function redeemBonds(uint256 _bondAmount, uint256 targetPrice) external override onlyOneBlock checkCondition checkOperator {
         require(_bondAmount > 0, "Treasury: cannot redeem bonds with zero amount");
 
         uint256 dollarPrice = getDollarPrice();
@@ -456,11 +489,11 @@ contract Treasury is ContractGuard {
             emit DaoFundFunded(now, _daoFundSharedAmount);
             _amount = _amount.sub(_daoFundSharedAmount);
         }
-        if (bVaultsFundSharedPercent > 0) {
-            uint256 _bVaultsFundSharedAmount = _amount.mul(bVaultsFundSharedPercent).div(10000);
-            IERC20(dollar).transfer(bVaultsFund, _bVaultsFundSharedAmount);
-            emit BVaultsFundFunded(now, _bVaultsFundSharedAmount);
-            _amount = _amount.sub(_bVaultsFundSharedAmount);
+        if (miVaultsFundSharedPercent > 0) {
+            uint256 _miVaultsFundSharedAmount = _amount.mul(miVaultsFundSharedPercent).div(10000);
+            IERC20(dollar).transfer(miVaultsFund, _miVaultsFundSharedAmount);
+            emit MiVaultsFundFunded(now, _miVaultsFundSharedAmount);
+            _amount = _amount.sub(_miVaultsFundSharedAmount);
         }
         if (marketingFundSharedPercent > 0) {
             uint256 _marketingSharedAmount = _amount.mul(marketingFundSharedPercent).div(10000);
@@ -478,8 +511,8 @@ contract Treasury is ContractGuard {
         _updateDollarPrice();
         previousEpochDollarPrice = getDollarPrice();
         uint256 dollarSupply = IERC20(dollar).totalSupply().sub(seigniorageSaved);
-        if (epoch < bdoip01BootstrapEpochs) {// MDOIP01: 28 first epochs with 4.5% expansion
-            _sendToBoardRoom(dollarSupply.mul(bdoip01BootstrapSupplyExpansionPercent).div(10000));
+        if (_epoch < bootstrapEpochs) {// 21 first epochs with 4.0% expansion
+            _sendToBoardRoom(dollarSupply.mul(bootstrapSupplyExpansionPercent).div(10000));
         } else {
             if (previousEpochDollarPrice > dollarPriceCeiling) {
                 // Expansion ($MDO Price > 1$): there is some seigniorage to be allocated

@@ -127,8 +127,8 @@ contract Boardroom is ShareWrapper, ContractGuard {
         BoardSnapshot memory genesisSnapshot = BoardSnapshot({time : block.number, rewardReceived : 0, rewardPerShare : 0});
         boardHistory.push(genesisSnapshot);
 
-        withdrawLockupEpochs = 6; // Lock for 6 epochs (36h) before release withdraw
-        rewardLockupEpochs = 3; // Lock for 3 epochs (18h) before release claimReward
+        withdrawLockupEpochs = 6; // Lock for 6 epochs (36-48h) before release withdraw
+        rewardLockupEpochs = 3; // Lock for 3 epochs (18-24h) before release claimReward
 
         initialized = true;
         operator = msg.sender;

@@ -1,6 +1,6 @@
 # Midas Dollar
 
-[![Twitter Follow](https://img.shields.io/twitter/follow/Midas_Dollar_Fi?label=Follow)](https://twitter.com/Midas_Dollar_Fi)
+[![Twitter Follow](https://img.shields.io/twitter/follow/MidasDollar?label=Follow)](https://twitter.com/MidasDollar)
 
 Midas Dollar is a lightweight implementation of the [Basis Protocol](basis.io) on Ethereum.
 
@@ -40,10 +40,13 @@ Basis was shut down in 2018, due to regulatory concerns its Bond and Share token
 
 Midas Dollar differs from the original Basis Project in several meaningful ways: 
 
-1. **Rationally simplified** - several core mechanisms of the Basis protocol has been simplified, especially around bond issuance and seigniorage distribution. We've thought deeply about the tradeoffs for these changes, and believe they allow significant gains in UX and contract simplicity, while preserving the intended behavior of the original monetary policy design. 
-2. **Censorship resistant** - we launch this project anonymously, protected by the guise of characters from the popular SciFi series Rick and Morty. We believe this will allow the project to avoid the censorship of regulators that scuttled the original Basis Protocol, but will also allow Midas Dollar to avoid founder glorification & single points of failure that have plagued so many other projects. 
-3. **Fairly distributed** - both Midas Dollar Shares and Midas Dollar has zero premine and no investors - community members can earn the initial supply of both assets by helping to contribute to bootstrap liquidity & adoption of Midas Dollar. 
-
+1. (Boardroom) Epoch duration: 8 hours during expansion and 6 hours during contraction — the protocol reacts faster to stabilize MDO price to peg as compared to other protocols with longer epoch durations
+2. Epoch Expansion: Capped at 6% if there are bonds to be redeemed, 4% if treasury is sufficiently full to meet bond redemption
+3. MDB tokens do not expire and this greatly reduces the risk for bond buyers
+4. Price feed oracle for TWAP is based on the average of 2 liquidity pool pairs (i.e. MDO/BUSD and MDO/USDT) which makes it more difficult to manipulate
+5. The protocol keeps 75% of the expanded MDO supply for MDS boardroom stakers for each epoch expansion, 25% toward Midas DAO Fund. During debt phase, 50% of minted MDO will be sent to the treasury for MDS holders to participate in bond redemption.
+6. No discount for bond purchase, but premium bonus for bond redemptions if users were to wait for MDO to increase even more than the 1 $BUSD peg
+7. Riding on [Midas.eco](https://midas.eco) & [Mcashchain.eco](https://mcashchain.eco)’s various resources and ecosystem pillars, MDO will find its ever growing utilities right after launch, which is its great advantage over other algorithmic stablecoins.
 ### A Three-token System
 
 There exists three types of assets in the Midas Dollar system. 

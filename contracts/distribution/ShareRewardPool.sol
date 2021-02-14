@@ -26,11 +26,11 @@ contract ShareRewardPool {
         IERC20 lpToken; // Address of LP token contract.
         uint256 allocPoint; // How many allocation points assigned to this pool. MDSs to distribute per block.
         uint256 lastRewardBlock; // Last block number that MDSs distribution occurs.
-        uint256 accSbdoPerShare; // Accumulated MDSs per share, times 1e18. See below.
+        uint256 accMdsPerShare; // Accumulated MDSs per share, times 1e18. See below.
         bool isStarted; // if lastRewardBlock has passed
     }
 
-    IERC20 public sbdo = IERC20(0x0d9319565be7f53CeFE84Ad201Be3f40feAE2740);
+    IERC20 public mds = IERC20(0x0d9319565be7f53CeFE84Ad201Be3f40feAE2740);
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -46,12 +46,12 @@ contract ShareRewardPool {
 
     uint256 public endBlock;
 
-    uint256 public sbdoPerBlock = 0.008 ether;
+    uint256 public mdsPerBlock = 0.00165 ether;
 
-    uint256 public runningBlocks = 10625000; // 368 days
+    uint256 public runningBlocks = 10606060; // 368 days
 
-    uint256 public constant BLOCKS_PER_WEEK = 201600; // 86400 * 7 / 3;
-    uint256 public constant TOTAL_REWARDS = 85000 ether;
+    uint256 public constant BLOCKS_PER_DAY = 28800; // 86400 / 3;
+    uint256 public constant TOTAL_REWARDS = 17500 ether;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -59,15 +59,13 @@ contract ShareRewardPool {
     event RewardPaid(address indexed user, uint256 amount);
 
     constructor(
-        address _sbdo,
+        address _mds,
         uint256 _startBlock
     ) public {
         require(block.number < _startBlock, "late");
-        if (_sbdo != address(0)) sbdo = IERC20(_sbdo);
-        startBlock = _startBlock;
-        // supposed to be 3,496,900 (Mon Dec 28 2020 15:00:00 UTC)
-        endBlock = startBlock + runningBlocks;
-        // 14,121,900 (Sat Jan 01 2022 20:45:00 UTC)
+        if (_mds != address(0)) mds = IERC20(_mds);
+        startBlock = _startBlock; // supposed to be 4,750,000 (Wed Feb 10 2021 05:30:00 UTC)
+        endBlock = startBlock + runningBlocks; // 15,356,060 (Sun Feb 13 2022 12:00:00 UTC)
         operator = msg.sender;
     }
 
@@ -116,7 +114,7 @@ contract ShareRewardPool {
             lpToken : _lpToken,
             allocPoint : _allocPoint,
             lastRewardBlock : _lastRewardBlock,
-            accSbdoPerShare : 0,
+            accMdsPerShare : 0,
             isStarted : _isStarted
             }));
         if (_isStarted) {
@@ -141,12 +139,12 @@ contract ShareRewardPool {
         if (_from >= _to) return 0;
         if (_to >= endBlock) {
             if (_from >= endBlock) return 0;
-            if (_from <= startBlock) return endBlock.sub(startBlock).mul(sbdoPerBlock);
-            return endBlock.sub(_from).mul(sbdoPerBlock);
+            if (_from <= startBlock) return endBlock.sub(startBlock).mul(mdsPerBlock);
+            return endBlock.sub(_from).mul(mdsPerBlock);
         } else {
             if (_to <= startBlock) return 0;
-            if (_from <= startBlock) return _to.sub(startBlock).mul(sbdoPerBlock);
-            return _to.sub(_from).mul(sbdoPerBlock);
+            if (_from <= startBlock) return _to.sub(startBlock).mul(mdsPerBlock);
+            return _to.sub(_from).mul(mdsPerBlock);
         }
     }
 
@@ -154,14 +152,14 @@ contract ShareRewardPool {
     function pendingShare(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accSbdoPerShare = pool.accSbdoPerShare;
+        uint256 accMdsPerShare = pool.accMdsPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 _generatedReward = getGeneratedReward(pool.lastRewardBlock, block.number);
-            uint256 _sbdoReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
-            accSbdoPerShare = accSbdoPerShare.add(_sbdoReward.mul(1e18).div(lpSupply));
+            uint256 _mdsReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
+            accMdsPerShare = accMdsPerShare.add(_mdsReward.mul(1e18).div(lpSupply));
         }
-        return user.amount.mul(accSbdoPerShare).div(1e18).sub(user.rewardDebt);
+        return user.amount.mul(accMdsPerShare).div(1e18).sub(user.rewardDebt);
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -189,8 +187,8 @@ contract ShareRewardPool {
         }
         if (totalAllocPoint > 0) {
             uint256 _generatedReward = getGeneratedReward(pool.lastRewardBlock, block.number);
-            uint256 _sbdoReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
-            pool.accSbdoPerShare = pool.accSbdoPerShare.add(_sbdoReward.mul(1e18).div(lpSupply));
+            uint256 _mdsReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
+            pool.accMdsPerShare = pool.accMdsPerShare.add(_mdsReward.mul(1e18).div(lpSupply));
         }
         pool.lastRewardBlock = block.number;
     }
@@ -202,9 +200,9 @@ contract ShareRewardPool {
         UserInfo storage user = userInfo[_pid][_sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 _pending = user.amount.mul(pool.accSbdoPerShare).div(1e18).sub(user.rewardDebt);
+            uint256 _pending = user.amount.mul(pool.accMdsPerShare).div(1e18).sub(user.rewardDebt);
             if (_pending > 0) {
-                safeSbdoTransfer(_sender, _pending);
+                safeMdsTransfer(_sender, _pending);
                 emit RewardPaid(_sender, _pending);
             }
         }
@@ -212,7 +210,7 @@ contract ShareRewardPool {
             pool.lpToken.safeTransferFrom(_sender, address(this), _amount);
             user.amount = user.amount.add(_amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accSbdoPerShare).div(1e18);
+        user.rewardDebt = user.amount.mul(pool.accMdsPerShare).div(1e18);
         emit Deposit(_sender, _pid, _amount);
     }
 
@@ -223,16 +221,16 @@ contract ShareRewardPool {
         UserInfo storage user = userInfo[_pid][_sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 _pending = user.amount.mul(pool.accSbdoPerShare).div(1e18).sub(user.rewardDebt);
+        uint256 _pending = user.amount.mul(pool.accMdsPerShare).div(1e18).sub(user.rewardDebt);
         if (_pending > 0) {
-            safeSbdoTransfer(_sender, _pending);
+            safeMdsTransfer(_sender, _pending);
             emit RewardPaid(_sender, _pending);
         }
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(_sender, _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accSbdoPerShare).div(1e18);
+        user.rewardDebt = user.amount.mul(pool.accMdsPerShare).div(1e18);
         emit Withdraw(_sender, _pid, _amount);
     }
 
@@ -247,14 +245,14 @@ contract ShareRewardPool {
         emit EmergencyWithdraw(msg.sender, _pid, _amount);
     }
 
-    // Safe sbdo transfer function, just in case if rounding error causes pool to not have enough MDSs.
-    function safeSbdoTransfer(address _to, uint256 _amount) internal {
-        uint256 _sbdoBal = sbdo.balanceOf(address(this));
-        if (_sbdoBal > 0) {
-            if (_amount > _sbdoBal) {
-                sbdo.safeTransfer(_to, _sbdoBal);
+    // Safe mds transfer function, just in case if rounding error causes pool to not have enough MDSs.
+    function safeMdsTransfer(address _to, uint256 _amount) internal {
+        uint256 _mdsBal = mds.balanceOf(address(this));
+        if (_mdsBal > 0) {
+            if (_amount > _mdsBal) {
+                mds.safeTransfer(_to, _mdsBal);
             } else {
-                sbdo.safeTransfer(_to, _amount);
+                mds.safeTransfer(_to, _amount);
             }
         }
     }
@@ -264,9 +262,9 @@ contract ShareRewardPool {
     }
 
     function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external onlyOperator {
-        if (block.number < endBlock + BLOCKS_PER_WEEK * 26) {
-            // do not allow to drain core token (MDS or lps) if less than 6 months after pool ends
-            require(_token != sbdo, "sbdo");
+        if (block.number < endBlock + BLOCKS_PER_DAY * 180) {
+            // do not allow to drain lpToken if less than 180 days after farming
+            require(_token != mds, "mds");
             uint256 length = poolInfo.length;
             for (uint256 pid = 0; pid < length; ++pid) {
                 PoolInfo storage pool = poolInfo[pid];

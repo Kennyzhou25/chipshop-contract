@@ -7,16 +7,24 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./lib/Babylonian.sol";
 import "./lib/FixedPoint.sol";
 import "./lib/UniswapV2OracleLibrary.sol";
-import "./utils/Epoch.sol";
 import "./interfaces/IUniswapV2Pair.sol";
+import "./interfaces/IEpoch.sol";
 
 // fixed window oracle that recomputes the average price for the entire period once every period
 // note that the price average is only guaranteed to be over at least 1 period, but may be over a longer period
-contract Oracle is Epoch {
+contract Oracle is IEpoch {
     using FixedPoint for *;
     using SafeMath for uint256;
 
     /* ========== STATE VARIABLES ========== */
+
+    address public constant dollar = address(0x35e869B7456462b81cdB5e6e42434bD27f3F788c);
+
+    // governance
+    address public operator;
+
+    // flags
+    bool public initialized = false;
 
     // uniswap
     address public token0;
@@ -30,13 +38,52 @@ contract Oracle is Epoch {
     FixedPoint.uq112x112 public price0Average;
     FixedPoint.uq112x112 public price1Average;
 
-    /* ========== CONSTRUCTOR ========== */
+    // epoch
+    address public treasury;
+    mapping(uint256 => uint256) public epochDollarPrice;
 
-    constructor(
-        IUniswapV2Pair _pair,
-        uint256 _period,
-        uint256 _startTime
-    ) public Epoch(_period, _startTime, 0) {
+    /* =================== Events =================== */
+
+    event Initialized(address indexed executor, uint256 at);
+    event Updated(uint256 price0CumulativeLast, uint256 price1CumulativeLast);
+
+    /* =================== Modifier =================== */
+
+    modifier onlyOperator() {
+        require(operator == msg.sender, "Treasury: caller is not the operator");
+        _;
+    }
+
+    modifier checkEpoch {
+        require(block.timestamp >= nextEpochPoint(), "OracleMultiPair: not opened yet");
+        _;
+    }
+
+    modifier notInitialized {
+        require(!initialized, "Treasury: already initialized");
+
+        _;
+    }
+
+    /* ========== VIEW FUNCTIONS ========== */
+
+    function epoch() public override view returns (uint256) {
+        return IEpoch(treasury).epoch();
+    }
+
+    function nextEpochPoint() public override view returns (uint256) {
+        return IEpoch(treasury).nextEpochPoint();
+    }
+
+    function nextEpochLength() external override view returns (uint256) {
+        return IEpoch(treasury).nextEpochLength();
+    }
+
+    /* ========== GOVERNANCE ========== */
+
+    function initialize(
+        IUniswapV2Pair _pair
+    ) public notInitialized {
         pair = _pair;
         token0 = pair.token0();
         token1 = pair.token1();
@@ -46,6 +93,18 @@ contract Oracle is Epoch {
         uint112 reserve1;
         (reserve0, reserve1, blockTimestampLast) = pair.getReserves();
         require(reserve0 != 0 && reserve1 != 0, "Oracle: NO_RESERVES"); // ensure that there's liquidity in the pair
+
+        initialized = true;
+        operator = msg.sender;
+        emit Initialized(msg.sender, block.number);
+    }
+
+    function setOperator(address _operator) external onlyOperator {
+        operator = _operator;
+    }
+
+    function setTreasury(address _treasury) external onlyOperator {
+        treasury = _treasury;
     }
 
     /* ========== MUTABLE FUNCTIONS ========== */
@@ -69,11 +128,12 @@ contract Oracle is Epoch {
         price1CumulativeLast = price1Cumulative;
         blockTimestampLast = blockTimestamp;
 
+        epochDollarPrice[epoch()] = consult(dollar, 1e18);
         emit Updated(price0Cumulative, price1Cumulative);
     }
 
     // note this will always return 0 before update has been called successfully for the first time.
-    function consult(address _token, uint256 _amountIn) external view returns (uint144 amountOut) {
+    function consult(address _token, uint256 _amountIn) public view returns (uint144 amountOut) {
         if (_token == token0) {
             amountOut = price0Average.mul(_amountIn).decode144();
         } else {
@@ -91,6 +151,4 @@ contract Oracle is Epoch {
             _amountOut = FixedPoint.uq112x112(uint224((price1Cumulative - price1CumulativeLast) / timeElapsed)).mul(_amountIn).decode144();
         }
     }
-
-    event Updated(uint256 price0CumulativeLast, uint256 price1CumulativeLast);
 }

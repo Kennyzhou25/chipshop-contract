@@ -102,6 +102,32 @@
   },
   {
     "inputs": [],
+    "name": "bcash",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "bdo",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "boardroom",
     "outputs": [
       {
@@ -324,6 +350,13 @@
   },
   {
     "inputs": [],
+    "name": "exitAllSharePool",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "exitBoardroom",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -476,6 +509,16 @@
       {
         "internalType": "address",
         "name": "_boardroom",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_dollarOracle",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_treasury",
         "type": "address"
       },
       {
@@ -831,6 +874,39 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "_busd",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_usdt",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_bdo",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_bcash",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_wbnb",
+        "type": "address"
+      }
+    ],
+    "name": "setTokenAddresses",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "_treasury",
         "type": "address"
       }
@@ -902,6 +978,43 @@
       {
         "internalType": "uint256",
         "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stakeAmountAllFromSharePool",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_bnbPoolStakedAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_wbnbPoolStakedAmount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenB",
+        "type": "address"
+      }
+    ],
+    "name": "stakeAmountFromSharePool",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_stakedAmount",
         "type": "uint256"
       }
     ],
@@ -989,6 +1102,19 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "_sellingToken",
+        "type": "address"
+      }
+    ],
+    "name": "trimNonCoreToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "",
         "type": "address"
       },
@@ -1004,6 +1130,19 @@
       }
     ],
     "name": "uniswapPaths",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "usdt",
     "outputs": [
       {
         "internalType": "address",

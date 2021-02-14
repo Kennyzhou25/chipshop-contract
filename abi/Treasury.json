@@ -85,6 +85,44 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "seigniorage",
+        "type": "uint256"
+      }
+    ],
+    "name": "MarketingFundFunded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "seigniorage",
+        "type": "uint256"
+      }
+    ],
+    "name": "MiVaultsFundFunded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "target",
@@ -140,19 +178,6 @@
   },
   {
     "inputs": [],
-    "name": "PERIOD",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "allocateSeigniorage",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -161,32 +186,6 @@
   {
     "inputs": [],
     "name": "allocateSeigniorageSalary",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "bdoip01BootstrapEpochs",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "bdoip01BootstrapSupplyExpansionPercent",
     "outputs": [
       {
         "internalType": "uint256",
@@ -293,6 +292,32 @@
   {
     "inputs": [],
     "name": "bondDepletionFloorPercent",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "bootstrapEpochs",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "bootstrapSupplyExpansionPercent",
     "outputs": [
       {
         "internalType": "uint256",
@@ -621,6 +646,45 @@
   },
   {
     "inputs": [],
+    "name": "lastEpochTime",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "marketingFund",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "marketingFundSharedPercent",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "maxDeptRatioPercent",
     "outputs": [
       {
@@ -698,6 +762,32 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "miVaultsFund",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "miVaultsFundSharedPercent",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -730,6 +820,19 @@
       {
         "internalType": "uint256",
         "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "nextEpochLength",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "_length",
         "type": "uint256"
       }
     ],
@@ -807,6 +910,19 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_startTime",
+        "type": "uint256"
+      }
+    ],
+    "name": "resetStartTime",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "seigniorageExpansionFloorPercent",
     "outputs": [
@@ -848,24 +964,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_bdoip01BootstrapEpochs",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_bdoip01BootstrapSupplyExpansionPercent",
-        "type": "uint256"
-      }
-    ],
-    "name": "setMDOIP01",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "_boardroom",
         "type": "address"
@@ -892,25 +990,17 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_daoFund",
-        "type": "address"
-      }
-    ],
-    "name": "setDaoFund",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+        "internalType": "uint256",
+        "name": "_bootstrapEpochs",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
-        "name": "_daoFundSharedPercent",
+        "name": "_bootstrapSupplyExpansionPercent",
         "type": "uint256"
       }
     ],
-    "name": "setDaoFundSharedPercent",
+    "name": "setBootstrapParams",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -950,6 +1040,44 @@
       }
     ],
     "name": "setDollarPriceCeiling",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_daoFund",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_daoFundSharedPercent",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_miVaultsFund",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_miVaultsFundSharedPercent",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_marketingFund",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_marketingFundSharedPercent",
+        "type": "uint256"
+      }
+    ],
+    "name": "setExtraFunds",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

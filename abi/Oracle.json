@@ -1,71 +1,21 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_factory",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_tokenA",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_tokenB",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_period",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_startTime",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
     "anonymous": false,
     "inputs": [
       {
         "indexed": true,
         "internalType": "address",
-        "name": "previousOperator",
+        "name": "executor",
         "type": "address"
       },
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOperator",
-        "type": "address"
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "at",
+        "type": "uint256"
       }
     ],
-    "name": "OperatorTransferred",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnershipTransferred",
+    "name": "Initialized",
     "type": "event"
   },
   {
@@ -126,7 +76,20 @@
   },
   {
     "inputs": [],
-    "name": "getCurrentEpoch",
+    "name": "dollar",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "epoch",
     "outputs": [
       {
         "internalType": "uint256",
@@ -138,8 +101,14 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getLastEpochTime",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "epochDollarPrice",
     "outputs": [
       {
         "internalType": "uint256",
@@ -151,39 +120,39 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getPeriod",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "internalType": "contract IUniswapV2Pair",
+        "name": "_pair",
+        "type": "address"
       }
     ],
-    "stateMutability": "view",
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "getStartTime",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "isOperator",
+    "name": "initialized",
     "outputs": [
       {
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "nextEpochLength",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -217,19 +186,6 @@
   },
   {
     "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "pair",
     "outputs": [
       {
@@ -239,35 +195,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "factory",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "tokenA",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "tokenB",
-        "type": "address"
-      }
-    ],
-    "name": "pairFor",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "lpt",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "pure",
     "type": "function"
   },
   {
@@ -323,8 +250,14 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "renounceOwnership",
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_operator",
+        "type": "address"
+      }
+    ],
+    "name": "setOperator",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -332,25 +265,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_epoch",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "_treasury",
+        "type": "address"
       }
     ],
-    "name": "setEpoch",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_period",
-        "type": "uint256"
-      }
-    ],
-    "name": "setPeriod",
+    "name": "setTreasury",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -382,29 +302,16 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "treasury",
+    "outputs": [
       {
         "internalType": "address",
-        "name": "newOperator_",
+        "name": "",
         "type": "address"
       }
     ],
-    "name": "transferOperator",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
