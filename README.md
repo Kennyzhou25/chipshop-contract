@@ -46,7 +46,6 @@ Wantan Mee differs from the original Basis Project in several meaningful ways:
 4. Price feed oracle for TWAP is based on the average of 2 liquidity pool pairs (i.e. MEE/BETH and MEE/ETH) which makes it more difficult to manipulate
 5. The protocol keeps 75% of the expanded MEE supply for MES boardroom stakers for each epoch expansion, 3% to MEE/WBNB farming pool, 22% toward DAO Fund. During debt phase, 50% of minted MEE will be sent to the treasury for MES holders to participate in bond redemption.
 6. No discount for bond purchase, but premium bonus for bond redemptions if users were to wait for MEE to increase even more than the 1 BETH peg
-7. Riding on [Midas.eco](https://midas.eco) & [Mcashchain.eco](https://mcashchain.eco)’s various resources and ecosystem pillars, MEE will find its ever growing utilities right after launch, which is its great advantage over other algorithmic stablecoins.
 ### A Three-token System
 
 There exists three types of assets in the Wantan Mee system. 
@@ -61,9 +60,8 @@ Wantan Mee is the latest product of the Midas Protocol ecosystem as we are stron
 
 #### Community channels:
 
-- Telegram: 
-- Discord: 
-- Medium: 
+- Telegram: https://t.me/Wantamme_News
+- Medium: https://wantanmee.medium.com/
 - Twitter: https://twitter.com/Our_Wantanmee
 - GitHub: https://github.com/wantanmee-finance/wantanmee-contracts
 
