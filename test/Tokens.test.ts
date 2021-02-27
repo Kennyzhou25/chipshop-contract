@@ -23,12 +23,12 @@ describe("Tokens", () => {
     });
 
     let Bond: ContractFactory;
-    let Dollar: ContractFactory;
+    let WantanMee: ContractFactory;
     let Share: ContractFactory;
 
     before("fetch contract factories", async () => {
         Bond = await ethers.getContractFactory("Bond");
-        Dollar = await ethers.getContractFactory("Dollar");
+        WantanMee = await ethers.getContractFactory("WantanMee");
         Share = await ethers.getContractFactory("Share");
     });
 
@@ -59,11 +59,11 @@ describe("Tokens", () => {
         });
     });
 
-    describe("Dollar", () => {
+    describe("Mee", () => {
         let token: Contract;
 
         before("deploy token", async () => {
-            token = await Dollar.connect(operator).deploy();
+            token = await WantanMee.connect(operator).deploy();
         });
 
         it("mint", async () => {
@@ -95,18 +95,19 @@ describe("Tokens", () => {
             await expect(token.connect(rewardPool).transfer(operator.address, ETH))
                 .to.emit(token, "Transfer")
                 .withArgs(rewardPool.address, operator.address, ETH);
-            expect(await token.balanceOf(rewardPool.address)).to.eq(ETH.mul(17500 - 1));
-            expect(await token.balanceOf(operator.address)).to.eq(ETH.mul(2));
+            expect(await token.balanceOf(rewardPool.address)).to.eq(utils.parseEther('863.2021'));
+            expect(await token.balanceOf(operator.address)).to.eq(utils.parseEther('1.2021'));
         });
 
         it("burn", async () => {
             await expect(token.connect(operator).burn(ETH)).to.emit(token, "Transfer").withArgs(operator.address, ZERO_ADDR, ETH);
-            expect(await token.balanceOf(operator.address)).to.eq(ETH);
+            expect(await token.balanceOf(operator.address)).to.eq(utils.parseEther('0.2021'));
         });
 
         it("burnFrom", async () => {
-            await expect(token.connect(operator).approve(operator.address, ETH));
-            await expect(token.connect(operator).burnFrom(operator.address, ETH)).to.emit(token, "Transfer").withArgs(operator.address, ZERO_ADDR, ETH);
+            let amt = utils.parseEther('0.2021');
+            await expect(token.connect(operator).approve(operator.address, amt));
+            await expect(token.connect(operator).burnFrom(operator.address, amt)).to.emit(token, "Transfer").withArgs(operator.address, ZERO_ADDR, amt);
             expect(await token.balanceOf(operator.address)).to.eq(ZERO);
         });
     });

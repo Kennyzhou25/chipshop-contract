@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-// Note that this pool has no minter key of MDS (rewards).
-// Instead, the governance will call MDS distributeReward method and send reward to this pool at the beginning.
+// Note that this pool has no minter key of MES (rewards).
+// Instead, the governance will call MES distributeReward method and send reward to this pool at the beginning.
 contract ShareRewardPool {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -24,13 +24,13 @@ contract ShareRewardPool {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. MDSs to distribute per block.
-        uint256 lastRewardBlock; // Last block number that MDSs distribution occurs.
-        uint256 accMdsPerShare; // Accumulated MDSs per share, times 1e18. See below.
+        uint256 allocPoint; // How many allocation points assigned to this pool. MESs to distribute per block.
+        uint256 lastRewardBlock; // Last block number that MESs distribution occurs.
+        uint256 accMesPerShare; // Accumulated MESs per share, times 1e18. See below.
         bool isStarted; // if lastRewardBlock has passed
     }
 
-    IERC20 public mds = IERC20(0x0d9319565be7f53CeFE84Ad201Be3f40feAE2740);
+    IERC20 public mes = IERC20(0x0d9319565be7f53CeFE84Ad201Be3f40feAE2740);
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -41,12 +41,12 @@ contract ShareRewardPool {
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
 
-    // The block number when MDS mining starts.
+    // The block number when MES mining starts.
     uint256 public startBlock;
 
     uint256 public endBlock;
 
-    uint256 public mdsPerBlock = 0.00165 ether;
+    uint256 public mesPerBlock = 0.00165 ether;
 
     uint256 public runningBlocks = 10606060; // 368 days
 
@@ -59,11 +59,11 @@ contract ShareRewardPool {
     event RewardPaid(address indexed user, uint256 amount);
 
     constructor(
-        address _mds,
+        address _mes,
         uint256 _startBlock
     ) public {
         require(block.number < _startBlock, "late");
-        if (_mds != address(0)) mds = IERC20(_mds);
+        if (_mes != address(0)) mes = IERC20(_mes);
         startBlock = _startBlock; // supposed to be 4,750,000 (Wed Feb 10 2021 05:30:00 UTC)
         endBlock = startBlock + runningBlocks; // 15,356,060 (Sun Feb 13 2022 12:00:00 UTC)
         operator = msg.sender;
@@ -114,7 +114,7 @@ contract ShareRewardPool {
             lpToken : _lpToken,
             allocPoint : _allocPoint,
             lastRewardBlock : _lastRewardBlock,
-            accMdsPerShare : 0,
+            accMesPerShare : 0,
             isStarted : _isStarted
             }));
         if (_isStarted) {
@@ -122,7 +122,7 @@ contract ShareRewardPool {
         }
     }
 
-    // Update the given pool's MDS allocation point. Can only be called by the owner.
+    // Update the given pool's MES allocation point. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint) public onlyOperator {
         massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
@@ -139,27 +139,27 @@ contract ShareRewardPool {
         if (_from >= _to) return 0;
         if (_to >= endBlock) {
             if (_from >= endBlock) return 0;
-            if (_from <= startBlock) return endBlock.sub(startBlock).mul(mdsPerBlock);
-            return endBlock.sub(_from).mul(mdsPerBlock);
+            if (_from <= startBlock) return endBlock.sub(startBlock).mul(mesPerBlock);
+            return endBlock.sub(_from).mul(mesPerBlock);
         } else {
             if (_to <= startBlock) return 0;
-            if (_from <= startBlock) return _to.sub(startBlock).mul(mdsPerBlock);
-            return _to.sub(_from).mul(mdsPerBlock);
+            if (_from <= startBlock) return _to.sub(startBlock).mul(mesPerBlock);
+            return _to.sub(_from).mul(mesPerBlock);
         }
     }
 
-    // View function to see pending MDSs on frontend.
-    function pendingShare(uint256 _pid, address _user) external view returns (uint256) {
+    // View function to see pending MESs on frontend.
+    function pendingReward(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accMdsPerShare = pool.accMdsPerShare;
+        uint256 accMesPerShare = pool.accMesPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 _generatedReward = getGeneratedReward(pool.lastRewardBlock, block.number);
-            uint256 _mdsReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
-            accMdsPerShare = accMdsPerShare.add(_mdsReward.mul(1e18).div(lpSupply));
+            uint256 _mesReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
+            accMesPerShare = accMesPerShare.add(_mesReward.mul(1e18).div(lpSupply));
         }
-        return user.amount.mul(accMdsPerShare).div(1e18).sub(user.rewardDebt);
+        return user.amount.mul(accMesPerShare).div(1e18).sub(user.rewardDebt);
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -187,8 +187,8 @@ contract ShareRewardPool {
         }
         if (totalAllocPoint > 0) {
             uint256 _generatedReward = getGeneratedReward(pool.lastRewardBlock, block.number);
-            uint256 _mdsReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
-            pool.accMdsPerShare = pool.accMdsPerShare.add(_mdsReward.mul(1e18).div(lpSupply));
+            uint256 _mesReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
+            pool.accMesPerShare = pool.accMesPerShare.add(_mesReward.mul(1e18).div(lpSupply));
         }
         pool.lastRewardBlock = block.number;
     }
@@ -200,9 +200,9 @@ contract ShareRewardPool {
         UserInfo storage user = userInfo[_pid][_sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 _pending = user.amount.mul(pool.accMdsPerShare).div(1e18).sub(user.rewardDebt);
+            uint256 _pending = user.amount.mul(pool.accMesPerShare).div(1e18).sub(user.rewardDebt);
             if (_pending > 0) {
-                safeMdsTransfer(_sender, _pending);
+                safeMesTransfer(_sender, _pending);
                 emit RewardPaid(_sender, _pending);
             }
         }
@@ -210,7 +210,7 @@ contract ShareRewardPool {
             pool.lpToken.safeTransferFrom(_sender, address(this), _amount);
             user.amount = user.amount.add(_amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accMdsPerShare).div(1e18);
+        user.rewardDebt = user.amount.mul(pool.accMesPerShare).div(1e18);
         emit Deposit(_sender, _pid, _amount);
     }
 
@@ -221,16 +221,16 @@ contract ShareRewardPool {
         UserInfo storage user = userInfo[_pid][_sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 _pending = user.amount.mul(pool.accMdsPerShare).div(1e18).sub(user.rewardDebt);
+        uint256 _pending = user.amount.mul(pool.accMesPerShare).div(1e18).sub(user.rewardDebt);
         if (_pending > 0) {
-            safeMdsTransfer(_sender, _pending);
+            safeMesTransfer(_sender, _pending);
             emit RewardPaid(_sender, _pending);
         }
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(_sender, _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accMdsPerShare).div(1e18);
+        user.rewardDebt = user.amount.mul(pool.accMesPerShare).div(1e18);
         emit Withdraw(_sender, _pid, _amount);
     }
 
@@ -245,14 +245,14 @@ contract ShareRewardPool {
         emit EmergencyWithdraw(msg.sender, _pid, _amount);
     }
 
-    // Safe mds transfer function, just in case if rounding error causes pool to not have enough MDSs.
-    function safeMdsTransfer(address _to, uint256 _amount) internal {
-        uint256 _mdsBal = mds.balanceOf(address(this));
-        if (_mdsBal > 0) {
-            if (_amount > _mdsBal) {
-                mds.safeTransfer(_to, _mdsBal);
+    // Safe mes transfer function, just in case if rounding error causes pool to not have enough MESs.
+    function safeMesTransfer(address _to, uint256 _amount) internal {
+        uint256 _mesBal = mes.balanceOf(address(this));
+        if (_mesBal > 0) {
+            if (_amount > _mesBal) {
+                mes.safeTransfer(_to, _mesBal);
             } else {
-                mds.safeTransfer(_to, _amount);
+                mes.safeTransfer(_to, _amount);
             }
         }
     }
@@ -264,7 +264,7 @@ contract ShareRewardPool {
     function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external onlyOperator {
         if (block.number < endBlock + BLOCKS_PER_DAY * 180) {
             // do not allow to drain lpToken if less than 180 days after farming
-            require(_token != mds, "mds");
+            require(_token != mes, "mes");
             uint256 length = poolInfo.length;
             for (uint256 pid = 0; pid < length; ++pid) {
                 PoolInfo storage pool = poolInfo[pid];

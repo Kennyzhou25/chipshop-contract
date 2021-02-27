@@ -10,14 +10,14 @@ import "./owner/Operator.sol";
 contract Share is ERC20Burnable, Operator {
     using SafeMath for uint256;
 
-    // TOTAL MAX SUPPLY = 21,000 MDS
-    uint256 public constant FARMING_POOL_REWARD_ALLOCATION = 17500 ether;
-    uint256 public constant COMMUNITY_FUND_POOL_ALLOCATION = 1750 ether;
-    uint256 public constant DEV_FUND_POOL_ALLOCATION = 1750 ether;
+    // TOTAL MAX SUPPLY = 1024.2021 MES
+    uint256 public constant FARMING_POOL_REWARD_ALLOCATION = 864 ether;
+    uint256 public constant COMMUNITY_FUND_POOL_ALLOCATION = 80 ether;
+    uint256 public constant DEV_FUND_POOL_ALLOCATION = 80 ether;
 
     uint256 public constant VESTING_DURATION = 365 days;
-    uint256 public startTime = 1612742400; // Monday, 8 February 2021 00:00:00 UTC
-    uint256 public endTime = startTime + VESTING_DURATION; // Tuesday, 8 February 2022 00:00:00 UTC
+    uint256 public startTime = 1614384000; // Saturday, 27 February 2021 00:00:00 UTC
+    uint256 public endTime = startTime + VESTING_DURATION; // Sunday, 27 February 2022 00:00:00 UTC
 
     uint256 public communityFundRewardRate = COMMUNITY_FUND_POOL_ALLOCATION / VESTING_DURATION;
     uint256 public devFundRewardRate = DEV_FUND_POOL_ALLOCATION / VESTING_DURATION;
@@ -30,8 +30,8 @@ contract Share is ERC20Burnable, Operator {
 
     bool public rewardPoolDistributed = false;
 
-    constructor() public ERC20("Midas Dollar Share", "MDS") {
-        _mint(msg.sender, 1 ether); // mint 1 Basis Share for initial pools deployment
+    constructor() public ERC20("Wantan Mee Share", "MES") {
+        _mint(msg.sender, 0.2021 ether); // mint 0.2021 Share for initial pools deployment
         devFund = msg.sender;
     }
 

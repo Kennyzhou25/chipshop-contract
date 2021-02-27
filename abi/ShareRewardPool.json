@@ -3,7 +3,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_mds",
+        "name": "_mes",
         "type": "address"
       },
       {
@@ -263,7 +263,7 @@
   },
   {
     "inputs": [],
-    "name": "mds",
+    "name": "mes",
     "outputs": [
       {
         "internalType": "contract IERC20",
@@ -276,7 +276,7 @@
   },
   {
     "inputs": [],
-    "name": "mdsPerBlock",
+    "name": "mesPerBlock",
     "outputs": [
       {
         "internalType": "uint256",
@@ -351,7 +351,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "accMdsPerShare",
+        "name": "accMesPerShare",
         "type": "uint256"
       },
       {

@@ -25,7 +25,7 @@ async function latestBlocknumber(provider: Provider): Promise<number> {
     return await provider.getBlockNumber();
 }
 
-describe('MdoRewardPool.test', () => {
+describe('MeeRewardPool.test', () => {
     const {provider} = ethers;
 
     let operator: SignerWithAddress;
@@ -38,18 +38,18 @@ describe('MdoRewardPool.test', () => {
     });
 
     // core
-    let MdoRewardPool: ContractFactory;
-    let Dollar: ContractFactory;
+    let MeeRewardPool: ContractFactory;
+    let WantanMee: ContractFactory;
     let MockERC20: ContractFactory;
 
     before('fetch contract factories', async () => {
-        MdoRewardPool = await ethers.getContractFactory('MdoRewardPool');
-        Dollar = await ethers.getContractFactory('Dollar');
+        MeeRewardPool = await ethers.getContractFactory('MeeRewardPool');
+        WantanMee = await ethers.getContractFactory('WantanMee');
         MockERC20 = await ethers.getContractFactory('MockERC20');
     });
 
     let pool: Contract;
-    let dollar: Contract;
+    let mee: Contract;
     let dai: Contract;
     let usdc: Contract;
     let usdt: Contract;
@@ -59,20 +59,20 @@ describe('MdoRewardPool.test', () => {
     let startBlock: BigNumber;
 
     before('deploy contracts', async () => {
-        dollar = await Dollar.connect(operator).deploy();
+        mee = await WantanMee.connect(operator).deploy();
         dai = await MockERC20.connect(operator).deploy('Dai Stablecoin', 'DAI', 18);
         usdc = await MockERC20.connect(operator).deploy('USD Circle', 'USDC', 6);
         usdt = await MockERC20.connect(operator).deploy('Tether', 'USDT', 6);
         busd = await MockERC20.connect(operator).deploy('Binance USD', 'BUSD', 18);
-        esd = await MockERC20.connect(operator).deploy('Empty Set Dollar', 'ESD', 18);
+        esd = await MockERC20.connect(operator).deploy('Empty Set WantanMee', 'ESD', 18);
 
         startBlock = BigNumber.from(await latestBlocknumber(provider)).add(4);
-        pool = await MdoRewardPool.connect(operator).deploy(dollar.address, startBlock);
+        pool = await MeeRewardPool.connect(operator).deploy(mee.address, startBlock);
         await pool.connect(operator).add(8000, dai.address, false, 0);
         await pool.connect(operator).add(2000, busd.address, false, 0);
         await pool.connect(operator).add(1000, usdt.address, false, 0);
 
-        await dollar.connect(operator).distributeReward(pool.address);
+        await mee.connect(operator).distributeReward(pool.address);
 
         for await (const user of [bob, carol, david]) {
             await dai.connect(operator).mint(user.address, INITIAL_AMOUNT);
@@ -90,15 +90,12 @@ describe('MdoRewardPool.test', () => {
     describe('#constructor', () => {
         it('should works correctly', async () => {
             expect(String(await pool.startBlock())).to.eq('10');
-            expect(String(await pool.epochEndBlocks(1))).to.eq(String(28800 * 10 + 10));
-            expect(String(await pool.epochTotalRewards(0))).to.eq(utils.parseEther('1000'));
-            expect(String(await pool.epochTotalRewards(1))).to.eq(utils.parseEther('90000'));
-            expect(String(await pool.epochMdoPerBlock(0))).to.eq(utils.parseEther('0.034722222222222222'));
-            expect(String(await pool.epochMdoPerBlock(1))).to.eq(utils.parseEther('0.347222222222222222'));
-            expect(String(await pool.epochMdoPerBlock(2))).to.eq('0');
-            expect(String(await pool.getGeneratedReward(10, 11))).to.eq(utils.parseEther('0.034722222222222222'));
-            expect(String(await pool.getGeneratedReward(20, 30))).to.eq(utils.parseEther('0.34722222222222222'));
-            expect(String(await pool.getGeneratedReward(28809, 28810))).to.eq(utils.parseEther('0.034722222222222222'));
+            expect(String(await pool.endBlock())).to.eq(String(28800 * 10 + 10));
+            expect(String(await pool.totalRewards())).to.eq(utils.parseEther('100'));
+            expect(String(await pool.rewardPerBlock())).to.eq(utils.parseEther('0.000347222222222222'));
+            expect(String(await pool.getGeneratedReward(10, 11))).to.eq(utils.parseEther('0.000347222222222222'));
+            expect(String(await pool.getGeneratedReward(20, 30))).to.eq(utils.parseEther('0.00347222222222222'));
+            expect(String(await pool.getGeneratedReward(28809, 28810))).to.eq(utils.parseEther('0.000347222222222222'));
         });
     });
 
@@ -126,15 +123,15 @@ describe('MdoRewardPool.test', () => {
             }).to.changeTokenBalances(busd, [david, pool], [utils.parseEther('-10'), utils.parseEther('10')]);
         });
 
-        it('pendingMDO()', async () => {
+        it('pendingReward()', async () => {
             await advanceBlock(provider);
-            expect(await pool.pendingMDO(0, bob.address)).to.eq(utils.parseEther('0.0547138047138047'));
-            expect(await pool.pendingMDO(2, bob.address)).to.eq(utils.parseEther('0'));
-            expect(await pool.pendingMDO(0, carol.address)).to.eq(utils.parseEther('0.0589225589225589'));
-            expect(await pool.pendingMDO(2, carol.address)).to.eq(utils.parseEther('0.009469696969696969'));
-            expect(await pool.pendingMDO(0, david.address)).to.eq(utils.parseEther('0.01262626262626262'));
-            expect(await pool.pendingMDO(2, david.address)).to.eq(utils.parseEther('0'));
-            expect(await pool.pendingMDO(1, david.address)).to.eq(utils.parseEther('0.00631313131313131'));
+            expect(await pool.pendingReward(0, bob.address)).to.eq(utils.parseEther('0.000547138047138030'));
+            expect(await pool.pendingReward(2, bob.address)).to.eq(utils.parseEther('0'));
+            expect(await pool.pendingReward(0, carol.address)).to.eq(utils.parseEther('0.000589225589225560'));
+            expect(await pool.pendingReward(2, carol.address)).to.eq(utils.parseEther('0.000094696969696969'));
+            expect(await pool.pendingReward(0, david.address)).to.eq(utils.parseEther('0.000126262626262620'));
+            expect(await pool.pendingReward(2, david.address)).to.eq(utils.parseEther('0'));
+            expect(await pool.pendingReward(1, david.address)).to.eq(utils.parseEther('0.000063131313131310'));
         });
 
         it('carol withdraw 20 DAI', async () => {
@@ -143,7 +140,7 @@ describe('MdoRewardPool.test', () => {
             let _beforeDAI = await dai.balanceOf(carol.address);
             await expect(async () => {
                 await pool.connect(carol).withdraw(0, utils.parseEther('20'));
-            }).to.changeTokenBalances(dollar, [carol, pool], [utils.parseEther('0.09680134680134678'), utils.parseEther('-0.09680134680134678')]);
+            }).to.changeTokenBalances(mee, [carol, pool], [utils.parseEther('0.00096801346801344'), utils.parseEther('-0.00096801346801344')]);
             let _afterDAI = await dai.balanceOf(carol.address);
             expect(_afterDAI.sub(_beforeDAI)).to.eq(utils.parseEther('20'));
         });

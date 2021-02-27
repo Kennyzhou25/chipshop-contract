@@ -6,24 +6,24 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 
 import "./owner/Operator.sol";
 
-contract Dollar is ERC20Burnable, Operator {
-    uint256 public constant INITIAL_DISTRIBUTION = 100000 ether;
-    uint256 public constant AIRDROP_FUND = 9000 ether;
+contract WantanMee is ERC20Burnable, Operator {
+    uint256 public constant INITIAL_DISTRIBUTION = 100 ether;
+    uint256 public constant AIRDROP_FUND = 0 ether; // disable airdrop
 
     bool public rewardPoolDistributed = false;
 
     /**
-     * @notice Constructs the Midas Dollar ERC-20 contract.
+     * @notice Constructs the Wantan Mee ERC-20 contract.
      */
-    constructor() public ERC20("Midas Dollar", "MDO") {
-        // Mints 1 Midas Dollar to contract creator for initial pool setup
+    constructor() public ERC20("Wantan Mee", "MEE") {
+        // Mints 1 Wantan Mee to contract creator for initial pool setup
         _mint(msg.sender, 1 ether);
     }
 
     /**
-     * @notice Operator mints basis dollar to a recipient
+     * @notice Operator mints basis mee to a recipient
      * @param recipient_ The address of recipient
-     * @param amount_ The amount of basis dollar to mint to
+     * @param amount_ The amount of basis mee to mint to
      * @return whether the process has been done
      */
     function mint(address recipient_, uint256 amount_) public onlyOperator returns (bool) {

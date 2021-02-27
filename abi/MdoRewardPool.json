@@ -3,7 +3,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_mdo",
+        "name": "_mee",
         "type": "address"
       },
       {
@@ -208,7 +208,7 @@
         "type": "uint256"
       }
     ],
-    "name": "epochMdoPerBlock",
+    "name": "epochMeePerBlock",
     "outputs": [
       {
         "internalType": "uint256",
@@ -294,7 +294,7 @@
   },
   {
     "inputs": [],
-    "name": "mdo",
+    "name": "mee",
     "outputs": [
       {
         "internalType": "contract IERC20",
@@ -331,7 +331,7 @@
         "type": "address"
       }
     ],
-    "name": "pendingMDO",
+    "name": "pendingMEE",
     "outputs": [
       {
         "internalType": "uint256",
@@ -369,7 +369,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "accMdoPerShare",
+        "name": "accMeePerShare",
         "type": "uint256"
       },
       {

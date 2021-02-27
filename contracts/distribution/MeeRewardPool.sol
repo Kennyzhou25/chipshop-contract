@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-// Note that this pool has no minter key of MDO (rewards).
-// Instead, the governance will call MDO distributeReward method and send reward to this pool at the beginning.
-contract MdoRewardPool {
+// Note that this pool has no minter key of MEE (rewards).
+// Instead, the governance will call MEE distributeReward method and send reward to this pool at the beginning.
+contract MeeRewardPool {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -24,13 +24,13 @@ contract MdoRewardPool {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. MDOs to distribute per block.
-        uint256 lastRewardBlock; // Last block number that MDOs distribution occurs.
-        uint256 accMdoPerShare; // Accumulated MDOs per share, times 1e18. See below.
+        uint256 allocPoint; // How many allocation points assigned to this pool. MEEs to distribute per block.
+        uint256 lastRewardBlock; // Last block number that MEEs distribution occurs.
+        uint256 accMeePerShare; // Accumulated MEEs per share, times 1e18. See below.
         bool isStarted; // if lastRewardBlock has passed
     }
 
-    IERC20 public mdo = IERC20(0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454);
+    IERC20 public mee = IERC20(0x57aE681cF079740d1f2d7E0078a779B7443c2a21);
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -41,18 +41,17 @@ contract MdoRewardPool {
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
 
-    // The block number when MDO mining starts.
+    // The block number when MEE mining starts.
     uint256 public startBlock;
+
+    // The block number when MEE mining ends.
+    uint256 public endBlock;
 
     uint256 public constant BLOCKS_PER_DAY = 28800; // 86400 / 3;
 
-    uint256[] public epochTotalRewards = [1000 ether, 90000 ether];
+    uint256 public totalRewards = 100 ether;
 
-    // Block number when each epoch ends.
-    uint[2] public epochEndBlocks;
-
-    // Reward per block for each of 2 epochs (last item is equal to 0 - for sanity).
-    uint[3] public epochMdoPerBlock;
+    uint256 public rewardPerBlock;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -60,29 +59,26 @@ contract MdoRewardPool {
     event RewardPaid(address indexed user, uint256 amount);
 
     constructor(
-        address _mdo,
+        address _mee,
         uint256 _startBlock
     ) public {
         require(block.number < _startBlock, "late");
-        if (_mdo != address(0)) mdo = IERC20(_mdo);
+        if (_mee != address(0)) mee = IERC20(_mee);
         startBlock = _startBlock; // supposed to be 4,702,800 (Mon Feb 08 2021 14:30:00 UTC)
-        epochEndBlocks[0] = startBlock + BLOCKS_PER_DAY;
-        epochEndBlocks[1] = startBlock + BLOCKS_PER_DAY.mul(10);
-        epochMdoPerBlock[0] = epochTotalRewards[0].div(BLOCKS_PER_DAY);
-        epochMdoPerBlock[1] = epochTotalRewards[1].div(BLOCKS_PER_DAY.mul(9));
-        epochMdoPerBlock[2] = 0;
+        endBlock = startBlock.add(BLOCKS_PER_DAY.mul(10));
+        rewardPerBlock = totalRewards.div(endBlock.sub(startBlock));
         operator = msg.sender;
     }
 
     modifier onlyOperator() {
-        require(operator == msg.sender, "MdoRewardPool: caller is not the operator");
+        require(operator == msg.sender, "MeeRewardPool: caller is not the operator");
         _;
     }
 
     function checkPoolDuplicate(IERC20 _lpToken) internal view {
         uint256 length = poolInfo.length;
         for (uint256 pid = 0; pid < length; ++pid) {
-            require(poolInfo[pid].lpToken != _lpToken, "MdoRewardPool: existing pool?");
+            require(poolInfo[pid].lpToken != _lpToken, "MeeRewardPool: existing pool?");
         }
     }
 
@@ -119,7 +115,7 @@ contract MdoRewardPool {
             lpToken : _lpToken,
             allocPoint : _allocPoint,
             lastRewardBlock : _lastRewardBlock,
-            accMdoPerShare : 0,
+            accMeePerShare : 0,
             isStarted : _isStarted
             }));
         if (_isStarted) {
@@ -127,7 +123,7 @@ contract MdoRewardPool {
         }
     }
 
-    // Update the given pool's MDO allocation point. Can only be called by the owner.
+    // Update the given pool's MEE allocation point. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint) public onlyOperator {
         massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
@@ -141,33 +137,38 @@ contract MdoRewardPool {
 
     // Return accumulate rewards over the given _from to _to block.
     function getGeneratedReward(uint256 _from, uint256 _to) public view returns (uint256) {
-        for (uint8 epochId = 2; epochId >= 1; --epochId) {
-            if (_to >= epochEndBlocks[epochId - 1]) {
-                if (_from >= epochEndBlocks[epochId - 1]) return _to.sub(_from).mul(epochMdoPerBlock[epochId]);
-                uint256 _generatedReward = _to.sub(epochEndBlocks[epochId - 1]).mul(epochMdoPerBlock[epochId]);
-                if (epochId == 1) return _generatedReward.add(epochEndBlocks[0].sub(_from).mul(epochMdoPerBlock[0]));
-                for (epochId = epochId - 1; epochId >= 1; --epochId) {
-                    if (_from >= epochEndBlocks[epochId - 1]) return _generatedReward.add(epochEndBlocks[epochId].sub(_from).mul(epochMdoPerBlock[epochId]));
-                    _generatedReward = _generatedReward.add(epochEndBlocks[epochId].sub(epochEndBlocks[epochId - 1]).mul(epochMdoPerBlock[epochId]));
-                }
-                return _generatedReward.add(epochEndBlocks[0].sub(_from).mul(epochMdoPerBlock[0]));
+        if (_from >= _to) return 0;
+        if (_to <= startBlock) {
+            return 0;
+        } else if (_to >= endBlock) {
+            if (_from >= endBlock) {
+                return 0;
+            } else if (_from <= startBlock) {
+                return rewardPerBlock.mul(endBlock.sub(startBlock));
+            } else {
+                return rewardPerBlock.mul(endBlock.sub(_from));
+            }
+        } else {
+            if (_from <= startBlock) {
+                return rewardPerBlock.mul(_to.sub(startBlock));
+            } else {
+                return rewardPerBlock.mul(_to.sub(_from));
             }
         }
-        return _to.sub(_from).mul(epochMdoPerBlock[0]);
     }
 
-    // View function to see pending MDOs on frontend.
-    function pendingMDO(uint256 _pid, address _user) external view returns (uint256) {
+    // View function to see pending MEEs on frontend.
+    function pendingReward(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accMdoPerShare = pool.accMdoPerShare;
+        uint256 accMeePerShare = pool.accMeePerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 _generatedReward = getGeneratedReward(pool.lastRewardBlock, block.number);
-            uint256 _mdoReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
-            accMdoPerShare = accMdoPerShare.add(_mdoReward.mul(1e18).div(lpSupply));
+            uint256 _meeReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
+            accMeePerShare = accMeePerShare.add(_meeReward.mul(1e18).div(lpSupply));
         }
-        return user.amount.mul(accMdoPerShare).div(1e18).sub(user.rewardDebt);
+        return user.amount.mul(accMeePerShare).div(1e18).sub(user.rewardDebt);
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -195,8 +196,8 @@ contract MdoRewardPool {
         }
         if (totalAllocPoint > 0) {
             uint256 _generatedReward = getGeneratedReward(pool.lastRewardBlock, block.number);
-            uint256 _mdoReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
-            pool.accMdoPerShare = pool.accMdoPerShare.add(_mdoReward.mul(1e18).div(lpSupply));
+            uint256 _meeReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
+            pool.accMeePerShare = pool.accMeePerShare.add(_meeReward.mul(1e18).div(lpSupply));
         }
         pool.lastRewardBlock = block.number;
     }
@@ -208,9 +209,9 @@ contract MdoRewardPool {
         UserInfo storage user = userInfo[_pid][_sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 _pending = user.amount.mul(pool.accMdoPerShare).div(1e18).sub(user.rewardDebt);
+            uint256 _pending = user.amount.mul(pool.accMeePerShare).div(1e18).sub(user.rewardDebt);
             if (_pending > 0) {
-                safeMdoTransfer(_sender, _pending);
+                safeMeeTransfer(_sender, _pending);
                 emit RewardPaid(_sender, _pending);
             }
         }
@@ -218,7 +219,7 @@ contract MdoRewardPool {
             pool.lpToken.safeTransferFrom(_sender, address(this), _amount);
             user.amount = user.amount.add(_amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accMdoPerShare).div(1e18);
+        user.rewardDebt = user.amount.mul(pool.accMeePerShare).div(1e18);
         emit Deposit(_sender, _pid, _amount);
     }
 
@@ -229,16 +230,16 @@ contract MdoRewardPool {
         UserInfo storage user = userInfo[_pid][_sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 _pending = user.amount.mul(pool.accMdoPerShare).div(1e18).sub(user.rewardDebt);
+        uint256 _pending = user.amount.mul(pool.accMeePerShare).div(1e18).sub(user.rewardDebt);
         if (_pending > 0) {
-            safeMdoTransfer(_sender, _pending);
+            safeMeeTransfer(_sender, _pending);
             emit RewardPaid(_sender, _pending);
         }
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(_sender, _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accMdoPerShare).div(1e18);
+        user.rewardDebt = user.amount.mul(pool.accMeePerShare).div(1e18);
         emit Withdraw(_sender, _pid, _amount);
     }
 
@@ -253,14 +254,14 @@ contract MdoRewardPool {
         emit EmergencyWithdraw(msg.sender, _pid, _amount);
     }
 
-    // Safe mdo transfer function, just in case if rounding error causes pool to not have enough MDOs.
-    function safeMdoTransfer(address _to, uint256 _amount) internal {
-        uint256 _mdoBal = mdo.balanceOf(address(this));
-        if (_mdoBal > 0) {
-            if (_amount > _mdoBal) {
-                mdo.safeTransfer(_to, _mdoBal);
+    // Safe mee transfer function, just in case if rounding error causes pool to not have enough MEEs.
+    function safeMeeTransfer(address _to, uint256 _amount) internal {
+        uint256 _meeBal = mee.balanceOf(address(this));
+        if (_meeBal > 0) {
+            if (_amount > _meeBal) {
+                mee.safeTransfer(_to, _meeBal);
             } else {
-                mdo.safeTransfer(_to, _amount);
+                mee.safeTransfer(_to, _amount);
             }
         }
     }
@@ -270,9 +271,9 @@ contract MdoRewardPool {
     }
 
     function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external onlyOperator {
-        if (block.number < epochEndBlocks[1] + BLOCKS_PER_DAY * 180) {
+        if (block.number < endBlock + BLOCKS_PER_DAY * 180) {
             // do not allow to drain lpToken if less than 180 days after farming
-            require(_token != mdo, "!mdo");
+            require(_token != mee, "!mee");
             uint256 length = poolInfo.length;
             for (uint256 pid = 0; pid < length; ++pid) {
                 PoolInfo storage pool = poolInfo[pid];

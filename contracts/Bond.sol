@@ -10,7 +10,7 @@ contract Bond is ERC20Burnable, Operator {
     /**
      * @notice Constructs the Basis Bond ERC-20 contract.
      */
-    constructor() public ERC20("Midas Dollar Bond", "MDB") {}
+    constructor() public ERC20("Wantan Mee Bond", "MEB") {}
 
     /**
      * @notice Operator mints basis bonds to a recipient

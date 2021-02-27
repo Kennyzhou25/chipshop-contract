@@ -13,9 +13,9 @@ const DAY = 86400;
 const ETH = utils.parseEther("1");
 const ZERO = BigNumber.from(0);
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
-const INITIAL_MDO_AMOUNT = utils.parseEther("50000");
-const INITIAL_SMDO_AMOUNT = utils.parseEther("10000");
-const INITIAL_BMDO_AMOUNT = utils.parseEther("100");
+const INITIAL_MEE_AMOUNT = utils.parseEther("50000");
+const INITIAL_SMEE_AMOUNT = utils.parseEther("10000");
+const INITIAL_BMEE_AMOUNT = utils.parseEther("100");
 
 async function latestBlocktime(provider: Provider): Promise<number> {
     const {timestamp} = await provider.getBlock("latest");
@@ -175,10 +175,10 @@ describe("Treasury", () => {
     describe("seigniorage", () => {
         describe("#allocateSeigniorage", () => {
             beforeEach("transfer permissions", async () => {
-                await dollar.mint(operator.address, INITIAL_MDO_AMOUNT);
-                await dollar.mint(treasury.address, INITIAL_MDO_AMOUNT);
+                await dollar.mint(operator.address, INITIAL_MEE_AMOUNT);
+                await dollar.mint(treasury.address, INITIAL_MEE_AMOUNT);
                 await share.connect(operator).distributeReward(rewardPool.address);
-                await share.connect(rewardPool).transfer(operator.address, INITIAL_SMDO_AMOUNT);
+                await share.connect(rewardPool).transfer(operator.address, INITIAL_SMEE_AMOUNT);
                 for await (const contract of [dollar, bond, share, boardroom]) {
                     await contract.connect(operator).transferOperator(treasury.address);
                 }
@@ -209,7 +209,7 @@ describe("Treasury", () => {
                     await advanceTimeAndBlock(provider, startTime.sub(await latestBlocktime(provider)).toNumber());
                 });
 
-                it("should funded to boardroom even when seigniorageSaved below depletion floor (MDOIP01)", async () => {
+                it("should funded to boardroom even when seigniorageSaved below depletion floor (MEEIP01)", async () => {
                     const dollarPrice = ETH.mul(106).div(100);
                     await oracle.setPrice(dollarPrice);
 
@@ -268,7 +268,7 @@ describe("Treasury", () => {
                 });
 
                 it("should funded even fails to call update function in oracle", async () => {
-                    await treasury.connect(operator).setMDOIP01(0, 100);
+                    await treasury.connect(operator).setMEEIP01(0, 100);
                     const dollarPrice = ETH.mul(106).div(100);
                     await oracle.setRevert(true);
                     await oracle.setPrice(dollarPrice);
@@ -316,8 +316,8 @@ describe("Treasury", () => {
 
     describe("bonds", async () => {
         beforeEach("transfer permissions", async () => {
-            await dollar.mint(operator.address, INITIAL_MDO_AMOUNT);
-            await bond.mint(operator.address, INITIAL_BMDO_AMOUNT);
+            await dollar.mint(operator.address, INITIAL_MEE_AMOUNT);
+            await bond.mint(operator.address, INITIAL_BMEE_AMOUNT);
             for await (const contract of [dollar, bond, share, boardroom]) {
                 await contract.connect(operator).transferOperator(treasury.address);
             }
@@ -352,7 +352,7 @@ describe("Treasury", () => {
 
             describe("#buyBonds", () => {
                 it("should work if dollar price below $1", async () => {
-                    await treasury.connect(operator).setMDOIP01(0, 100);
+                    await treasury.connect(operator).setMEEIP01(0, 100);
                     const dollarPrice = ETH.mul(99).div(100); // $0.99
                     await oracle.setPrice(dollarPrice);
                     await treasury.allocateSeigniorage();

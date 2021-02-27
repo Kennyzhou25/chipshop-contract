@@ -10,9 +10,9 @@ contract MockERC20 is ERC20Burnable, Operator {
     }
 
     /**
-     * @notice Operator mints dino dollar to a recipient
+     * @notice Operator mints dino mee to a recipient
      * @param recipient_ The address of recipient
-     * @param amount_ The amount of dino dollar to mint to
+     * @param amount_ The amount of dino mee to mint to
      * @return whether the process has been done
      */
     function mint(address recipient_, uint256 amount_) public onlyOperator returns (bool) {

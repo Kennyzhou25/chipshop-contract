@@ -68,13 +68,13 @@ contract Boardroom is ShareWrapper, ContractGuard {
     // flags
     bool public initialized = false;
 
-    IERC20 public dollar;
+    IERC20 public mee;
     ITreasury public treasury;
 
     mapping(address => Boardseat) public directors;
     BoardSnapshot[] public boardHistory;
 
-    // protocol parameters - https://github.com/MidasCore/midasdollar-protocol/tree/master/docs/ProtocolParameters.md
+    // protocol parameters - https://github.com/wantanmee-finance/wantanmee-contracts/tree/master/docs/ProtocolParameters.md
     uint256 public withdrawLockupEpochs;
     uint256 public rewardLockupEpochs;
 
@@ -116,11 +116,11 @@ contract Boardroom is ShareWrapper, ContractGuard {
     /* ========== GOVERNANCE ========== */
 
     function initialize(
-        IERC20 _dollar,
+        IERC20 _mee,
         IERC20 _share,
         ITreasury _treasury
     ) public notInitialized {
-        dollar = _dollar;
+        mee = _mee;
         share = _share;
         treasury = _treasury;
 
@@ -181,8 +181,8 @@ contract Boardroom is ShareWrapper, ContractGuard {
         return treasury.nextEpochPoint();
     }
 
-    function getDollarPrice() external view returns (uint256) {
-        return treasury.getDollarPrice();
+    function getEthPrice() external view returns (uint256) {
+        return treasury.getEthPrice();
     }
 
     // =========== Director getters
@@ -225,7 +225,7 @@ contract Boardroom is ShareWrapper, ContractGuard {
             require(directors[msg.sender].epochTimerStart.add(rewardLockupEpochs) <= treasury.epoch(), "Boardroom: still in reward lockup");
             directors[msg.sender].epochTimerStart = treasury.epoch(); // reset timer
             directors[msg.sender].rewardEarned = 0;
-            dollar.safeTransfer(msg.sender, reward);
+            mee.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -245,13 +245,13 @@ contract Boardroom is ShareWrapper, ContractGuard {
         });
         boardHistory.push(newSnapshot);
 
-        dollar.safeTransferFrom(msg.sender, address(this), amount);
+        mee.safeTransferFrom(msg.sender, address(this), amount);
         emit RewardAdded(msg.sender, amount);
     }
 
     function governanceRecoverUnsupported(IERC20 _token, uint256 _amount, address _to) external onlyOperator {
         // do not allow to drain core tokens
-        require(address(_token) != address(dollar), "dollar");
+        require(address(_token) != address(mee), "mee");
         require(address(_token) != address(share), "share");
         _token.safeTransfer(_to, _amount);
     }

@@ -445,7 +445,7 @@
   },
   {
     "inputs": [],
-    "name": "getDollarUpdatedPrice",
+    "name": "getEthUpdatedPrice",
     "outputs": [
       {
         "internalType": "uint256",

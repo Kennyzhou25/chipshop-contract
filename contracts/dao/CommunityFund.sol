@@ -16,7 +16,7 @@ import "../interfaces/IShareRewardPool.sol";
 import "../interfaces/IPancakeswapPool.sol";
 
 /**
- * @dev This contract will collect vesting Shares, stake to the Boardroom and rebalance MDO, BUSD, WBNB according to DAO.
+ * @dev This contract will collect vesting Shares, stake to the Boardroom and rebalance MEE, BUSD, WBNB according to DAO.
  */
 contract CommunityFund {
     using SafeERC20 for IERC20;
@@ -32,10 +32,10 @@ contract CommunityFund {
     bool public publicAllowed; // set to true to allow public to call rebalance()
 
     // price
-    uint256 public dollarPriceToSell; // to rebalance when expansion
-    uint256 public dollarPriceToBuy; // to rebalance when contraction
+    uint256 public meePriceToSell; // to rebalance when expansion
+    uint256 public meePriceToBuy; // to rebalance when contraction
 
-    address public dollar = address(0x35e869B7456462b81cdB5e6e42434bD27f3F788c);
+    address public mee = address(0x35e869B7456462b81cdB5e6e42434bD27f3F788c);
     address public share = address(0x242E46490397ACCa94ED930F2C4EdF16250237fa);
     address public bond = address(0xCaD2109CC2816D47a796cB7a0B57988EC7611541);
 
@@ -46,20 +46,20 @@ contract CommunityFund {
     address public wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
 
     address public boardroom = address(0xFF0b41ad7a85430FEbBC5220fd4c7a68013F2C0d);
-    address public dollarOracle = address(0x26593B4E6a803aac7f39955bd33C6826f266D7Fc);
+    address public meeOracle = address(0x26593B4E6a803aac7f39955bd33C6826f266D7Fc);
     address public treasury = address(0xD3372603Db4087FF5D797F91839c0Ca6b9aF294a);
 
     // Pancakeswap
     IUniswapV2Router public pancakeRouter = IUniswapV2Router(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
     mapping(address => mapping(address => address[])) public uniswapPaths;
 
-    // DAO parameters - https://docs.midasdollar.fi/DAO
+    // DAO parameters - https://docs.wantanmee.finance/DAO
     uint256[] public expansionPercent;
     uint256[] public contractionPercent;
 
     address public strategist;
 
-    mapping(address => uint256) public maxAmountToTrade; // MDO, BUSD, WBNB
+    mapping(address => uint256) public maxAmountToTrade; // MEE, BUSD, WBNB
 
     address public shareRewardPool = address(0xecC17b190581C60811862E5dF8c9183dA98BD08a);
     mapping(address => uint256) public shareRewardPoolId; // [BUSD, USDT, BDO, bCash] -> [Pool_id]: 0, 1, 3, 4
@@ -101,29 +101,29 @@ contract CommunityFund {
     /* ========== GOVERNANCE ========== */
 
     function initialize(
-        address _dollar,
+        address _mee,
         address _bond,
         address _share,
         address _busd,
         address _wbnb,
         address _boardroom,
-        address _dollarOracle,
+        address _meeOracle,
         address _treasury,
         IUniswapV2Router _pancakeRouter
     ) public notInitialized {
-        dollar = _dollar;
+        mee = _mee;
         bond = _bond;
         share = _share;
         busd = _busd;
         wbnb = _wbnb;
         boardroom = _boardroom;
-        dollarOracle = _dollarOracle;
+        meeOracle = _meeOracle;
         treasury = _treasury;
         pancakeRouter = _pancakeRouter;
-        dollarPriceToSell = 1500 finney; // $1.5
-        dollarPriceToBuy = 800 finney; // $0.8
-        expansionPercent = [3000, 6800, 200]; // dollar (30%), BUSD (68%), WBNB (2%) during expansion period
-        contractionPercent = [8800, 1160, 40]; // dollar (88%), BUSD (11.6%), WBNB (0.4%) during contraction period
+        meePriceToSell = 1500 finney; // $1.5
+        meePriceToBuy = 800 finney; // $0.8
+        expansionPercent = [3000, 6800, 200]; // mee (30%), BUSD (68%), WBNB (2%) during expansion period
+        contractionPercent = [8800, 1160, 40]; // mee (88%), BUSD (11.6%), WBNB (0.4%) during contraction period
         publicAllowed = true;
         initialized = true;
         operator = msg.sender;
@@ -155,42 +155,42 @@ contract CommunityFund {
         lpPairAddress[_tokenB] = _lpAdd;
     }
 
-    function setDollarOracle(address _dollarOracle) external onlyOperator {
-        dollarOracle = _dollarOracle;
+    function setDollarOracle(address _meeOracle) external onlyOperator {
+        meeOracle = _meeOracle;
     }
 
     function setPublicAllowed(bool _publicAllowed) external onlyStrategist {
         publicAllowed = _publicAllowed;
     }
 
-    function setExpansionPercent(uint256 _dollarPercent, uint256 _busdPercent, uint256 _wbnbPercent) external onlyStrategist {
-        require(_dollarPercent.add(_busdPercent).add(_wbnbPercent) == 10000, "!100%");
-        expansionPercent[0] = _dollarPercent;
+    function setExpansionPercent(uint256 _meePercent, uint256 _busdPercent, uint256 _wbnbPercent) external onlyStrategist {
+        require(_meePercent.add(_busdPercent).add(_wbnbPercent) == 10000, "!100%");
+        expansionPercent[0] = _meePercent;
         expansionPercent[1] = _busdPercent;
         expansionPercent[2] = _wbnbPercent;
     }
 
-    function setContractionPercent(uint256 _dollarPercent, uint256 _busdPercent, uint256 _wbnbPercent) external onlyStrategist {
-        require(_dollarPercent.add(_busdPercent).add(_wbnbPercent) == 10000, "!100%");
-        contractionPercent[0] = _dollarPercent;
+    function setContractionPercent(uint256 _meePercent, uint256 _busdPercent, uint256 _wbnbPercent) external onlyStrategist {
+        require(_meePercent.add(_busdPercent).add(_wbnbPercent) == 10000, "!100%");
+        contractionPercent[0] = _meePercent;
         contractionPercent[1] = _busdPercent;
         contractionPercent[2] = _wbnbPercent;
     }
 
-    function setMaxAmountToTrade(uint256 _dollarAmount, uint256 _busdAmount, uint256 _wbnbAmount) external onlyStrategist {
-        maxAmountToTrade[dollar] = _dollarAmount;
+    function setMaxAmountToTrade(uint256 _meeAmount, uint256 _busdAmount, uint256 _wbnbAmount) external onlyStrategist {
+        maxAmountToTrade[mee] = _meeAmount;
         maxAmountToTrade[busd] = _busdAmount;
         maxAmountToTrade[wbnb] = _wbnbAmount;
     }
 
-    function setDollarPriceToSell(uint256 _dollarPriceToSell) external onlyStrategist {
-        require(_dollarPriceToSell >= 950 finney && _dollarPriceToSell <= 2000 finney, "out of range"); // [$0.95, $2.00]
-        dollarPriceToSell = _dollarPriceToSell;
+    function setDollarPriceToSell(uint256 _meePriceToSell) external onlyStrategist {
+        require(_meePriceToSell >= 950 finney && _meePriceToSell <= 2000 finney, "out of range"); // [$0.95, $2.00]
+        meePriceToSell = _meePriceToSell;
     }
 
-    function setDollarPriceToBuy(uint256 _dollarPriceToBuy) external onlyStrategist {
-        require(_dollarPriceToBuy >= 500 finney && _dollarPriceToBuy <= 1050 finney, "out of range"); // [$0.50, $1.05]
-        dollarPriceToBuy = _dollarPriceToBuy;
+    function setDollarPriceToBuy(uint256 _meePriceToBuy) external onlyStrategist {
+        require(_meePriceToBuy >= 500 finney && _meePriceToBuy <= 1050 finney, "out of range"); // [$0.50, $1.05]
+        meePriceToBuy = _meePriceToBuy;
     }
 
     function setUnirouterPath(address _input, address _output, address[] memory _path) external onlyStrategist {
@@ -223,32 +223,32 @@ contract CommunityFund {
         return IBoardroom(boardroom).earned(address(this));
     }
 
-    function tokenBalances() public view returns (uint256 _dollarBal, uint256 _busdBal, uint256 _wbnbBal, uint256 _totalBal) {
-        _dollarBal = IERC20(dollar).balanceOf(address(this));
+    function tokenBalances() public view returns (uint256 _meeBal, uint256 _busdBal, uint256 _wbnbBal, uint256 _totalBal) {
+        _meeBal = IERC20(mee).balanceOf(address(this));
         _busdBal = IERC20(busd).balanceOf(address(this));
         _wbnbBal = IERC20(wbnb).balanceOf(address(this));
-        _totalBal = _dollarBal.add(_busdBal).add(_wbnbBal);
+        _totalBal = _meeBal.add(_busdBal).add(_wbnbBal);
     }
 
-    function tokenPercents() public view returns (uint256 _dollarPercent, uint256 _busdPercent, uint256 _wbnbPercent) {
-        (uint256 _dollarBal, uint256 _busdBal, uint256 _wbnbBal, uint256 _totalBal) = tokenBalances();
+    function tokenPercents() public view returns (uint256 _meePercent, uint256 _busdPercent, uint256 _wbnbPercent) {
+        (uint256 _meeBal, uint256 _busdBal, uint256 _wbnbBal, uint256 _totalBal) = tokenBalances();
         if (_totalBal > 0) {
-            _dollarPercent = _dollarBal.mul(10000).div(_totalBal);
+            _meePercent = _meeBal.mul(10000).div(_totalBal);
             _busdPercent = _busdBal.mul(10000).div(_totalBal);
             _wbnbPercent = _wbnbBal.mul(10000).div(_totalBal);
         }
     }
 
-    function getDollarPrice() public view returns (uint256 dollarPrice) {
-        try IOracle(dollarOracle).consult(dollar, 1e18) returns (uint144 price) {
+    function getEthPrice() public view returns (uint256 meePrice) {
+        try IOracle(meeOracle).consult(mee, 1e18) returns (uint144 price) {
             return uint256(price);
         } catch {
             revert("failed to consult price");
         }
     }
 
-    function getDollarUpdatedPrice() public view returns (uint256 _dollarPrice) {
-        try IOracle(dollarOracle).twap(dollar, 1e18) returns (uint144 price) {
+    function getEthUpdatedPrice() public view returns (uint256 _meePrice) {
+        try IOracle(meeOracle).twap(mee, 1e18) returns (uint144 price) {
             return uint256(price);
         } catch {
             revert("failed to consult price");
@@ -264,7 +264,7 @@ contract CommunityFund {
     }
 
     function claimAndRestake() public checkPublicAllow {
-        if (IBoardroom(boardroom).canClaimReward(address(this))) {// only restake more if at this epoch we could claim pending dollar rewards
+        if (IBoardroom(boardroom).canClaimReward(address(this))) {// only restake more if at this epoch we could claim pending mee rewards
             if (earned() > 0) {
                 IBoardroom(boardroom).claimReward();
             }
@@ -278,53 +278,53 @@ contract CommunityFund {
     }
 
     function rebalance() public checkPublicAllow {
-        (uint256 _dollarBal, uint256 _busdBal, uint256 _wbnbBal, uint256 _totalBal) = tokenBalances();
+        (uint256 _meeBal, uint256 _busdBal, uint256 _wbnbBal, uint256 _totalBal) = tokenBalances();
         if (_totalBal > 0) {
-            uint256 _dollarPercent = _dollarBal.mul(10000).div(_totalBal);
+            uint256 _meePercent = _meeBal.mul(10000).div(_totalBal);
             uint256 _busdPercent = _busdBal.mul(10000).div(_totalBal);
             uint256 _wbnbPercent = _wbnbBal.mul(10000).div(_totalBal);
-            uint256 _dollarPrice = getDollarUpdatedPrice();
-            if (_dollarPrice >= dollarPriceToSell) {// expansion: sell MDO
-                if (_dollarPercent > expansionPercent[0]) {
-                    uint256 _sellingMdo = _dollarBal.mul(_dollarPercent.sub(expansionPercent[0])).div(10000);
+            uint256 _meePrice = getEthUpdatedPrice();
+            if (_meePrice >= meePriceToSell) {// expansion: sell MEE
+                if (_meePercent > expansionPercent[0]) {
+                    uint256 _sellingMee = _meeBal.mul(_meePercent.sub(expansionPercent[0])).div(10000);
                     if (_busdPercent >= expansionPercent[1]) {// enough BUSD
                         if (_wbnbPercent < expansionPercent[2]) {// short of WBNB: buy WBNB
-                            _swapToken(dollar, wbnb, _sellingMdo);
+                            _swapToken(mee, wbnb, _sellingMee);
                         } else {
                             if (_busdPercent.sub(expansionPercent[1]) <= _wbnbPercent.sub(expansionPercent[2])) {// has more WBNB than BUSD: buy BUSD
-                                _swapToken(dollar, busd, _sellingMdo);
+                                _swapToken(mee, busd, _sellingMee);
                             } else {// has more BUSD than WBNB: buy WBNB
-                                _swapToken(dollar, wbnb, _sellingMdo);
+                                _swapToken(mee, wbnb, _sellingMee);
                             }
                         }
                     } else {// short of BUSD
                         if (_wbnbPercent >= expansionPercent[2]) {// enough WBNB: buy BUSD
-                            _swapToken(dollar, busd, _sellingMdo);
+                            _swapToken(mee, busd, _sellingMee);
                         } else {// short of WBNB
-                            uint256 _sellingMdoToBusd = _sellingMdo.div(2);
-                            _swapToken(dollar, busd, _sellingMdoToBusd);
-                            _swapToken(dollar, wbnb, _sellingMdo.sub(_sellingMdoToBusd));
+                            uint256 _sellingMeeToBusd = _sellingMee.div(2);
+                            _swapToken(mee, busd, _sellingMeeToBusd);
+                            _swapToken(mee, wbnb, _sellingMee.sub(_sellingMeeToBusd));
                         }
                     }
                 }
-            } else if (_dollarPrice <= dollarPriceToBuy && (msg.sender == operator || msg.sender == strategist)) {// contraction: buy MDO
+            } else if (_meePrice <= meePriceToBuy && (msg.sender == operator || msg.sender == strategist)) {// contraction: buy MEE
                 if (_busdPercent >= contractionPercent[1]) {// enough BUSD
                     if (_wbnbPercent <= contractionPercent[2]) {// short of WBNB: sell BUSD
                         uint256 _sellingBUSD = _busdBal.mul(_busdPercent.sub(contractionPercent[1])).div(10000);
-                        _swapToken(busd, dollar, _sellingBUSD);
+                        _swapToken(busd, mee, _sellingBUSD);
                     } else {
                         if (_busdPercent.sub(contractionPercent[1]) > _wbnbPercent.sub(contractionPercent[2])) {// has more BUSD than WBNB: sell BUSD
                             uint256 _sellingBUSD = _busdBal.mul(_busdPercent.sub(contractionPercent[1])).div(10000);
-                            _swapToken(busd, dollar, _sellingBUSD);
+                            _swapToken(busd, mee, _sellingBUSD);
                         } else {// has more WBNB than BUSD: sell WBNB
                             uint256 _sellingWBNB = _wbnbBal.mul(_wbnbPercent.sub(contractionPercent[2])).div(10000);
-                            _swapToken(wbnb, dollar, _sellingWBNB);
+                            _swapToken(wbnb, mee, _sellingWBNB);
                         }
                     }
                 } else {// short of BUSD
                     if (_wbnbPercent > contractionPercent[2]) {// enough WBNB: sell WBNB
                         uint256 _sellingWBNB = _wbnbBal.mul(_wbnbPercent.sub(contractionPercent[2])).div(10000);
-                        _swapToken(wbnb, dollar, _sellingWBNB);
+                        _swapToken(wbnb, mee, _sellingWBNB);
                     }
                 }
             }
@@ -338,35 +338,35 @@ contract CommunityFund {
         rebalance();
     }
 
-    function buyBonds(uint256 _dollarAmount) external onlyStrategist {
-        uint256 _dollarPrice = ITreasury(treasury).getDollarPrice();
-        ITreasury(treasury).buyBonds(_dollarAmount, _dollarPrice);
-        emit BoughtBonds(_dollarAmount);
+    function buyBonds(uint256 _meeAmount) external onlyStrategist {
+        uint256 _meePrice = ITreasury(treasury).getEthPrice();
+        ITreasury(treasury).buyBonds(_meeAmount, _meePrice);
+        emit BoughtBonds(_meeAmount);
     }
 
     function redeemBonds(uint256 _bondAmount) external onlyStrategist {
-        uint256 _dollarPrice = ITreasury(treasury).getDollarPrice();
-        ITreasury(treasury).redeemBonds(_bondAmount, _dollarPrice);
+        uint256 _meePrice = ITreasury(treasury).getEthPrice();
+        ITreasury(treasury).redeemBonds(_bondAmount, _meePrice);
         emit RedeemedBonds(_bondAmount);
     }
 
-    function forceSell(address _buyingToken, uint256 _dollarAmount) external onlyStrategist {
-        require(getDollarUpdatedPrice() >= dollarPriceToBuy, "price is too low to sell");
-        _swapToken(dollar, _buyingToken, _dollarAmount);
+    function forceSell(address _buyingToken, uint256 _meeAmount) external onlyStrategist {
+        require(getEthUpdatedPrice() >= meePriceToBuy, "price is too low to sell");
+        _swapToken(mee, _buyingToken, _meeAmount);
     }
 
     function forceBuy(address _sellingToken, uint256 _sellingAmount) external onlyStrategist {
-        require(getDollarUpdatedPrice() <= dollarPriceToSell, "price is too high to buy");
-        _swapToken(_sellingToken, dollar, _sellingAmount);
+        require(getEthUpdatedPrice() <= meePriceToSell, "price is too high to buy");
+        _swapToken(_sellingToken, mee, _sellingAmount);
     }
 
     function trimNonCoreToken(address _sellingToken) public onlyStrategist {
-        require(_sellingToken != dollar &&
+        require(_sellingToken != mee &&
         _sellingToken != bond && _sellingToken != share &&
         _sellingToken != busd && _sellingToken != wbnb, "core");
         uint256 _bal = IERC20(_sellingToken).balanceOf(address(this));
         if (_bal > 0) {
-            _swapToken(_sellingToken, dollar, _bal);
+            _swapToken(_sellingToken, mee, _bal);
         }
     }
 
@@ -388,13 +388,13 @@ contract CommunityFund {
     }
 
     function _addLiquidity(address _tokenB, uint256 _amountADesired) internal {
-        // tokenA is always MDO
-        _addLiquidity2(dollar, _tokenB, _amountADesired, IERC20(_tokenB).balanceOf(address(this)));
+        // tokenA is always MEE
+        _addLiquidity2(mee, _tokenB, _amountADesired, IERC20(_tokenB).balanceOf(address(this)));
     }
 
     function _removeLiquidity(address _lpAdd, address _tokenB, uint256 _liquidity) internal {
-        // tokenA is always MDO
-        _removeLiquidity2(_lpAdd, dollar, _tokenB, _liquidity);
+        // tokenA is always MEE
+        _removeLiquidity2(_lpAdd, mee, _tokenB, _liquidity);
     }
 
     function _addLiquidity2(address _tokenA, address _tokenB, uint256 _amountADesired, uint256 amountBDesired) internal {
@@ -415,10 +415,10 @@ contract CommunityFund {
 
     /* ========== PROVIDE LP AND STAKE TO SHARE POOL ========== */
 
-    function depositToSharePool(address _tokenB, uint256 _dollarAmount) external onlyStrategist {
+    function depositToSharePool(address _tokenB, uint256 _meeAmount) external onlyStrategist {
         address _lpAdd = lpPairAddress[_tokenB];
         uint256 _before = IERC20(_lpAdd).balanceOf(address(this));
-        _addLiquidity(_tokenB, _dollarAmount);
+        _addLiquidity(_tokenB, _meeAmount);
         uint256 _after = IERC20(_lpAdd).balanceOf(address(this));
         uint256 _lpBal = _after.sub(_before);
         require(_lpBal > 0, "!_lpBal");

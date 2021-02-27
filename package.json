@@ -1,8 +1,8 @@
 {
-  "name": "midasdollar-protocol",
+  "name": "wantanmee-contracts",
   "version": "1.0.0",
   "description": "A lightweight implementation of the Basis Protocol on Binance smart-chain",
-  "repository": "https://github.com/MidasCore/midasdollar-protocol",
+  "repository": "https://github.com/wantanmee-finance/wantanmee-contracts",
   "license": "MIT",
   "scripts": {
     "verify": "hardhat etherscan-verify",

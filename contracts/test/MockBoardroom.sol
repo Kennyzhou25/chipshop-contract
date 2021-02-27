@@ -14,7 +14,7 @@ contract MockBoardroom is IBoardroom, Operator {
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public dollar;
+    IERC20 public mee;
     IERC20 public share;
 
     uint256 private _totalSupply;
@@ -22,8 +22,8 @@ contract MockBoardroom is IBoardroom, Operator {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _dollar, address _share) public {
-        dollar = IERC20(_dollar);
+    constructor(address _mee, address _share) public {
+        mee = IERC20(_mee);
         share = IERC20(_share);
     }
 
@@ -53,7 +53,7 @@ contract MockBoardroom is IBoardroom, Operator {
         return 0;
     }
 
-    function getDollarPrice() external override view returns (uint256) {
+    function getEthPrice() external override view returns (uint256) {
         return 0;
     }
 
@@ -61,7 +61,7 @@ contract MockBoardroom is IBoardroom, Operator {
 
     function allocateSeigniorage(uint256 amount) external override onlyOperator {
         require(amount > 0, "Boardroom: Cannot allocate 0");
-        dollar.safeTransferFrom(msg.sender, address(this), amount);
+        mee.safeTransferFrom(msg.sender, address(this), amount);
         emit RewardAdded(msg.sender, amount);
     }
 
@@ -81,7 +81,7 @@ contract MockBoardroom is IBoardroom, Operator {
     }
 
     function claimReward() external override {
-        dollar.safeTransfer(msg.sender, earned(msg.sender));
+        mee.safeTransfer(msg.sender, earned(msg.sender));
     }
 
     function setOperator(address _operator) external override onlyOperator {

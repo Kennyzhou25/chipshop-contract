@@ -18,7 +18,7 @@ contract Oracle is IEpoch {
 
     /* ========== STATE VARIABLES ========== */
 
-    address public constant dollar = address(0x35e869B7456462b81cdB5e6e42434bD27f3F788c);
+    address public constant mee = address(0x35e869B7456462b81cdB5e6e42434bD27f3F788c);
 
     // governance
     address public operator;
@@ -128,7 +128,7 @@ contract Oracle is IEpoch {
         price1CumulativeLast = price1Cumulative;
         blockTimestampLast = blockTimestamp;
 
-        epochDollarPrice[epoch()] = consult(dollar, 1e18);
+        epochDollarPrice[epoch()] = consult(mee, 1e18);
         emit Updated(price0Cumulative, price1Cumulative);
     }
 
