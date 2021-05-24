@@ -1,6 +1,8 @@
 # ChipShop Finance
 
-[![MythXBadge](https://badgen.net/https/api.mythx.io/v1/projects/64fe9c72-2a73-471b-94aa-30225288f328/badge/data?cache=300&icon=https://raw.githubusercontent.com/ConsenSys/mythx-github-badge/main/logo_white.svg)](https://docs.mythx.io/dashboard/github-badges)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![MythXBadge](https://badgen.net/https/api.mythx.io/v1/projects/64fe9c72-2a73-471b-94aa-30225288f328/badge/data?cache=300&icon=https://raw.githubusercontent.com/ConsenSys/mythx-github-badge/main/logo_white.svg)](https://docs.mythx.io/dashboard/github-badges) ![GitHub top language](https://img.shields.io/github/languages/top/HeadChip/chipshop-contracts) ![GitHub issues](https://img.shields.io/github/issues-raw/HeadChip/chipshop-contracts)
+
+
 
 Chipshop Finance is an ambitious experimental economy project on the Binance Smart Chain (BSC). The aim of this project is to become the longest lasting and most successful stablecoin on the BSC, learning from the mistakes of others which went under-pegged. It is a fork of Wantan Mee, a lightweight implementation of the [Basis Protocol](basis.io) on Ethereum.
 
