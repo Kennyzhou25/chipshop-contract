@@ -1,8 +1,8 @@
 {
-  "name": "wantanmee-contracts",
+  "name": "chipshop-contracts",
   "version": "1.0.0",
-  "description": "A lightweight implementation of the Basis Protocol on Binance smart-chain",
-  "repository": "https://github.com/wantanmee-finance/wantanmee-contracts",
+  "description": "An extended implementation of the Basis Protocol on Binance smart-chain",
+  "repository": "https://github.com/HeadChip/chipshop-contracts",
   "license": "MIT",
   "scripts": {
     "verify": "hardhat etherscan-verify",
@@ -24,14 +24,13 @@
     "flat:contracts": "sol-merger 'contracts/**/*.sol' ./build/contracts-flat"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^3.3.0",
+    "@openzeppelin/contracts": "^4.1.0",
     "@openzeppelin/contracts-ethereum-package": "^3.0.0",
     "@openzeppelin/contracts-upgradeable": "^3.3.0",
     "@uniswap/lib": "^1.1.2",
     "@uniswap/v2-core": "^1.0.1"
   },
   "devDependencies": {
-    "ethereum-waffle": "^3.2.2",
     "@ethereum-waffle/chai": "^3.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.0.2-rc.2",
     "@nomiclabs/hardhat-truffle5": "^2.0.0",
@@ -56,6 +55,7 @@
     "eslint-plugin-jsx-a11y": "^6.4.1",
     "eslint-plugin-react": "^7.21.5",
     "eth-sig-util": "^2.5.3",
+    "ethereum-waffle": "^3.2.2",
     "ethers": "^5.0.19",
     "hardhat": "^2.0.3",
     "hardhat-contract-sizer": "^2.0.2",

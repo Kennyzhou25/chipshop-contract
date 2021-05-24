@@ -1,4 +1,6 @@
-pragma solidity 0.6.12;
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.4;
 
 contract ContractGuard {
     mapping(uint256 => mapping(address => bool)) private _status;
@@ -14,9 +16,7 @@ contract ContractGuard {
     modifier onlyOneBlock() {
         require(!checkSameOriginReentranted(), "ContractGuard: one block, one function");
         require(!checkSameSenderReentranted(), "ContractGuard: one block, one function");
-
         _;
-
         _status[block.number][tx.origin] = true;
         _status[block.number][msg.sender] = true;
     }

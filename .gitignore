@@ -1,14 +1,13 @@
 .idea/
 .env
 node_modules/
-
 build/
 .DS_Store
 coverage/
 coverage.json
-
 hardhat.config.ts
 truffle-config.js
-
+yarn.lock
+package-lock.json
 *.log
 !deployments/*.log

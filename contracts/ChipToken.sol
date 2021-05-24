@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.4;
+
+import "./owner/Operator.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+
+
+contract ChipToken is ERC20Burnable, Destructor {
+
+    using SafeMath for uint256;
+
+		address public DAO = 0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f;
+
+    uint256 public constant INITIAL_DISTRIBUTION = 50 ether;
+    uint256 public constant DAO_FUND = 10 ether;
+    bool public rewardPoolDistributed = false;
+
+
+    constructor() public ERC20("ChipShop Token", "CHIP") {
+        _mint(DAO, DAO_FUND);                 // Mint 10 CHIPs to DAO.
+        _mint(_msgSender(), 0.1 ether);       // Mint 0.1 CHIPs to deployer.
+    }
+
+
+    function mint(address recipient, uint256 amount) external onlyOperator returns (bool) {
+        uint256 balanceBefore = balanceOf(recipient);
+        _mint(recipient, amount);
+        uint256 balanceAfter = balanceOf(recipient);
+        return balanceAfter > balanceBefore;
+    }
+
+    function distributeReward(address _distributionPool) external onlyOperator {
+        require(!rewardPoolDistributed, "ChipToken.distributeReward(): Can distribute only once.");
+        require(_distributionPool != address(0), "ChipToken.distributeReward(): Not a distribution pool address.");
+        rewardPoolDistributed = true;
+        _mint(_distributionPool, INITIAL_DISTRIBUTION);
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20) {
+        super._beforeTokenTransfer(from, to, amount);
+    }
+}

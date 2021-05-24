@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 interface IBoardroom {
     function balanceOf(address _director) external view returns (uint256);
@@ -31,5 +31,9 @@ interface IBoardroom {
 
     function allocateSeigniorage(uint256 _amount) external;
 
-    function governanceRecoverUnsupported(address _token, uint256 _amount, address _to) external;
+    function governanceRecoverUnsupported(
+        address _token,
+        uint256 _amount,
+        address _to
+    ) external;
 }

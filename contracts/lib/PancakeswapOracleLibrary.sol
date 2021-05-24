@@ -1,10 +1,12 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.4;
 
 import "./FixedPoint.sol";
-import "../interfaces/IUniswapV2Pair.sol";
+import "../interfaces/IPancakePair.sol";
 
 // library with helper methods for oracles that are concerned with computing average prices
-library UniswapV2OracleLibrary {
+library PancakeswapOracleLibrary {
     using FixedPoint for *;
 
     // helper function that returns the current block timestamp within the range of uint32, i.e. [0, 2**32 - 1]
@@ -23,11 +25,11 @@ library UniswapV2OracleLibrary {
         )
     {
         blockTimestamp = currentBlockTimestamp();
-        price0Cumulative = IUniswapV2Pair(pair).price0CumulativeLast();
-        price1Cumulative = IUniswapV2Pair(pair).price1CumulativeLast();
+        price0Cumulative = IPancakePair(pair).price0CumulativeLast();
+        price1Cumulative = IPancakePair(pair).price1CumulativeLast();
 
         // if time has elapsed since the last update on the pair, mock the accumulated price values
-        (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = IUniswapV2Pair(pair).getReserves();
+        (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = IPancakePair(pair).getReserves();
         if (blockTimestampLast != blockTimestamp) {
             // subtraction overflow is desired
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;

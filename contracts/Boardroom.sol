@@ -1,21 +1,25 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-
+import "./owner/Operator.sol";
 import "./utils/ContractGuard.sol";
-import "./interfaces/IBasisAsset.sol";
+import "./interfaces/IEpoch.sol";
 import "./interfaces/ITreasury.sol";
+import "./interfaces/IBasisAsset.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract ShareWrapper {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public share;
+    IERC20 public FISH = IERC20(0x3b9bCeD4576DE29D9aE8CbF17898189aa6a3692b);
 
     uint256 private _totalSupply;
+
     mapping(address => uint256) private _balances;
 
     function totalSupply() public view returns (uint256) {
@@ -29,24 +33,23 @@ contract ShareWrapper {
     function stake(uint256 amount) public virtual {
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
-        share.safeTransferFrom(msg.sender, address(this), amount);
+        FISH.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(uint256 amount) public virtual {
         uint256 directorShare = _balances[msg.sender];
-        require(directorShare >= amount, "Boardroom: withdraw request greater than staked amount");
+        require(directorShare >= amount, "Boardroom.withdraw(): Share amount less than withdrawal amount.");
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = directorShare.sub(amount);
-        share.safeTransfer(msg.sender, amount);
     }
 }
 
-contract Boardroom is ShareWrapper, ContractGuard {
-    using SafeERC20 for IERC20;
+contract Boardroom is ShareWrapper, ContractGuard, Destructor {
     using Address for address;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    /* ========== DATA STRUCTURES ========== */
+    // Data structures.
 
     struct Boardseat {
         uint256 lastSnapshotIndex;
@@ -60,25 +63,25 @@ contract Boardroom is ShareWrapper, ContractGuard {
         uint256 rewardPerShare;
     }
 
-    /* ========== STATE VARIABLES ========== */
+    // State variables.
 
-    // governance
-    address public operator;
-
-    // flags
     bool public initialized = false;
 
-    IERC20 public mee;
+    // Governance.
+
+    address public DAO = 0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f;
+
+    IERC20 public CHIP;
     ITreasury public treasury;
 
     mapping(address => Boardseat) public directors;
+
     BoardSnapshot[] public boardHistory;
 
-    // protocol parameters - https://github.com/wantanmee-finance/wantanmee-contracts/tree/master/docs/ProtocolParameters.md
     uint256 public withdrawLockupEpochs;
     uint256 public rewardLockupEpochs;
 
-    /* ========== EVENTS ========== */
+    // Events.
 
     event Initialized(address indexed executor, uint256 at);
     event Staked(address indexed user, uint256 amount);
@@ -86,15 +89,10 @@ contract Boardroom is ShareWrapper, ContractGuard {
     event RewardPaid(address indexed user, uint256 reward);
     event RewardAdded(address indexed user, uint256 reward);
 
-    /* ========== Modifiers =============== */
-
-    modifier onlyOperator() {
-        require(operator == msg.sender, "Boardroom: caller is not the operator");
-        _;
-    }
+    // Modifiers.
 
     modifier directorExists {
-        require(balanceOf(msg.sender) > 0, "Boardroom: The director does not exist");
+        require(balanceOf(msg.sender) > 0, "Boardroom.directorExists(): The director does not exist.");
         _;
     }
 
@@ -109,45 +107,30 @@ contract Boardroom is ShareWrapper, ContractGuard {
     }
 
     modifier notInitialized {
-        require(!initialized, "Boardroom: already initialized");
+        require(!initialized, "Boardroom.notInitialized(): Already initialized.");
         _;
     }
 
-    /* ========== GOVERNANCE ========== */
-
     function initialize(
-        IERC20 _mee,
-        IERC20 _share,
+        IERC20 _CHIP,
+        IERC20 _FISH,
         ITreasury _treasury
-    ) public notInitialized {
-        mee = _mee;
-        share = _share;
+    ) external notInitialized {
+        CHIP = _CHIP;
+        FISH = _FISH;
         treasury = _treasury;
-
-        BoardSnapshot memory genesisSnapshot = BoardSnapshot({time : block.number, rewardReceived : 0, rewardPerShare : 0});
-        boardHistory.push(genesisSnapshot);
-
-        withdrawLockupEpochs = 6; // Lock for 6 epochs (36-48h) before release withdraw
-        rewardLockupEpochs = 3; // Lock for 3 epochs (18-24h) before release claimReward
-
+        boardHistory.push(BoardSnapshot({time: block.number, rewardReceived: 0, rewardPerShare: 0}));
+        withdrawLockupEpochs = 6; // Lock for 6 epochs (24-36h) before release withdraw.
+        rewardLockupEpochs = 3; // Lock for 3 epochs (12-18h) before release claimReward.
         initialized = true;
-        operator = msg.sender;
         emit Initialized(msg.sender, block.number);
     }
 
-    function setOperator(address _operator) external onlyOperator {
-        operator = _operator;
-    }
-
     function setLockUp(uint256 _withdrawLockupEpochs, uint256 _rewardLockupEpochs) external onlyOperator {
-        require(_withdrawLockupEpochs >= _rewardLockupEpochs && _withdrawLockupEpochs <= 56, "_withdrawLockupEpochs: out of range"); // <= 2 week
+        require(_withdrawLockupEpochs >= _rewardLockupEpochs && _withdrawLockupEpochs <= 56, "Boardroom.setLockUp(): Out of range."); // <= 2 week.
         withdrawLockupEpochs = _withdrawLockupEpochs;
         rewardLockupEpochs = _rewardLockupEpochs;
     }
-
-    /* ========== VIEW FUNCTIONS ========== */
-
-    // =========== Snapshot getters
 
     function latestSnapshotIndex() public view returns (uint256) {
         return boardHistory.length.sub(1);
@@ -185,32 +168,37 @@ contract Boardroom is ShareWrapper, ContractGuard {
         return treasury.getEthPrice();
     }
 
-    // =========== Director getters
+    // Director getters.
 
-    function rewardPerShare() public view returns (uint256) {
+    function rewardPerShare() external view returns (uint256) {
         return getLatestSnapshot().rewardPerShare;
     }
 
     function earned(address director) public view returns (uint256) {
         uint256 latestRPS = getLatestSnapshot().rewardPerShare;
         uint256 storedRPS = getLastSnapshotOf(director).rewardPerShare;
-
         return balanceOf(director).mul(latestRPS.sub(storedRPS)).div(1e18).add(directors[director].rewardEarned);
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    // Mutators.
 
-    function stake(uint256 amount) public override onlyOneBlock updateReward(msg.sender) {
-        require(amount > 0, "Boardroom: Cannot stake 0");
-        super.stake(amount);
-        directors[msg.sender].epochTimerStart = treasury.epoch(); // reset timer
-        emit Staked(msg.sender, amount);
+    function stakeChip(uint256 amount) external onlyOneBlock updateReward(msg.sender) {
+        require(amount > 0, "Boardroom.stakeChip(): Cannot stake 0.");
+        directors[msg.sender].epochTimerStart = treasury.epoch(); // Reset timer.
+        stake(amount);
     }
 
     function withdraw(uint256 amount) public override onlyOneBlock directorExists updateReward(msg.sender) {
-        require(amount > 0, "Boardroom: Cannot withdraw 0");
-        require(directors[msg.sender].epochTimerStart.add(withdrawLockupEpochs) <= treasury.epoch(), "Boardroom: still in withdraw lockup");
+        require(amount > 0, "Boardroom.withdraw(): Cannot withdraw 0.");
+        require(directors[msg.sender].epochTimerStart.add(withdrawLockupEpochs) <= treasury.epoch(), "Boardroom.withdraw(): Still in withdraw lockup.");
         claimReward();
+        uint256 ethPrice = treasury.getEthPrice();
+        uint256 priceOne = 1 ether;
+        uint256 feeToDAO = 10; // 10% withdraw fee when chip price is below 1.05 eth.
+        if (ethPrice >= priceOne.mul(105).div(100)) feeToDAO = 2; // otherwise 2% fee.
+        uint256 feeAmount = amount.mul(feeToDAO).div(100);
+        FISH.safeTransfer(msg.sender, amount.sub(feeAmount));
+        FISH.safeTransfer(DAO, feeAmount);
         super.withdraw(amount);
         emit Withdrawn(msg.sender, amount);
     }
@@ -222,37 +210,31 @@ contract Boardroom is ShareWrapper, ContractGuard {
     function claimReward() public updateReward(msg.sender) {
         uint256 reward = directors[msg.sender].rewardEarned;
         if (reward > 0) {
-            require(directors[msg.sender].epochTimerStart.add(rewardLockupEpochs) <= treasury.epoch(), "Boardroom: still in reward lockup");
-            directors[msg.sender].epochTimerStart = treasury.epoch(); // reset timer
+            require(directors[msg.sender].epochTimerStart.add(rewardLockupEpochs) <= treasury.epoch(), "Boardroom.claimReward(): Still in reward lockup.");
+            directors[msg.sender].epochTimerStart = treasury.epoch(); // Reset timer.
             directors[msg.sender].rewardEarned = 0;
-            mee.safeTransfer(msg.sender, reward);
+            CHIP.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
 
     function allocateSeigniorage(uint256 amount) external onlyOneBlock onlyOperator {
-        require(amount > 0, "Boardroom: Cannot allocate 0");
-        require(totalSupply() > 0, "Boardroom: Cannot allocate when totalSupply is 0");
-
-        // Create & add new snapshot
+        require(amount > 0, "Boardroom.allocateSeigniorage(): Cannot allocate 0.");
+        require(totalSupply() > 0, "Boardroom.allocateSeigniorage(): Cannot allocate when total supply is 0.");
         uint256 prevRPS = getLatestSnapshot().rewardPerShare;
         uint256 nextRPS = prevRPS.add(amount.mul(1e18).div(totalSupply()));
-
-        BoardSnapshot memory newSnapshot = BoardSnapshot({
-            time: block.number,
-            rewardReceived: amount,
-            rewardPerShare: nextRPS
-        });
-        boardHistory.push(newSnapshot);
-
-        mee.safeTransferFrom(msg.sender, address(this), amount);
+        boardHistory.push(BoardSnapshot({time: block.number, rewardReceived: amount, rewardPerShare: nextRPS}));
+        CHIP.safeTransferFrom(msg.sender, address(this), amount);
         emit RewardAdded(msg.sender, amount);
     }
 
-    function governanceRecoverUnsupported(IERC20 _token, uint256 _amount, address _to) external onlyOperator {
-        // do not allow to drain core tokens
-        require(address(_token) != address(mee), "mee");
-        require(address(_token) != address(share), "share");
+    function governanceRecoverUnsupported(
+        IERC20 _token,
+        uint256 _amount,
+        address _to
+    ) external onlyOperator {
+        require(address(_token) != address(CHIP), "Boardroom.governanceRecoverUnsupported(): Not a chip token.");
+        require(address(_token) != address(FISH), "Boardroom.governanceRecoverUnsupported(): Not a fish token.");
         _token.safeTransfer(_to, _amount);
     }
 }

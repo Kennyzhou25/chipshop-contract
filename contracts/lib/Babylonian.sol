@@ -1,4 +1,6 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
+
+pragma solidity 0.8.4;
 
 library Babylonian {
     function sqrt(uint256 y) internal pure returns (uint256 z) {
