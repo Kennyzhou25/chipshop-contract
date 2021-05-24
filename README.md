@@ -15,9 +15,9 @@ Chipshop Finance is an ambitious experimental economy project on the Binance Sma
 
 Basis is an algorithmic stablecoin protocol where the money supply is dynamically adjusted to meet changes in money demand.  
 
-- When demand is rising, the blockchain will create more Wantan Mee. The expanded supply is designed to bring the Basis price back down.
-- When demand is falling, the blockchain will buy back Wantan Mee. The contracted supply is designed to restore Basis price.
-- The Basis protocol is designed to expand and contract supply similarly to the way central banks buy and sell fiscal debt to stabilize purchasing power. For this reason, we refer to Wantan Mee as having an algorithmic central bank.
+- When demand is rising, the blockchain will create more tokens. The expanded supply is designed to bring the Basis price back down.
+- When demand is falling, the blockchain will buy back tokens. The contracted supply is designed to restore Basis price.
+- The Basis protocol is designed to expand and contract supply similarly to the way central banks buy and sell fiscal debt to stabilize purchasing power. For this reason, we refer to ChipShop as having an algorithmic central bank.
 
 Read the [Basis Whitepaper](http://basis.io/basis_whitepaper_en.pdf) for more details into the protocol. 
 
