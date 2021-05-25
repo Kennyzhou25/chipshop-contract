@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 
 // Note: This pool has no minter key of CHIPs (rewards). Instead, the governance will call
-//			 CHIPs distributeReward method and send reward to this pool at the beginning.
+//       CHIPs distributeReward method and send reward to this pool at the beginning.
 
 contract ChipRewardPool is Destructor {
 
@@ -44,10 +44,10 @@ contract ChipRewardPool is Destructor {
     uint256 public startBlock;                      // The block number when CHIPS minting starts.
     uint256 public endBlock;                        // The block number when CHIPS minting ends.
     uint256 public constant BLOCKS_PER_DAY = 28800; // 86400 / 3;
-		uint256 public rewardDuration = 10;             // Days.
+    uint256 public rewardDuration = 10;             // Days.
     uint256 public totalRewards = 50 ether;
     uint256 public rewardPerBlock;
-		bool public isMintStarted = false;
+    bool public isMintStarted = false;
 
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
@@ -87,7 +87,7 @@ contract ChipRewardPool is Destructor {
         }
     }
 
-		// Add a new lp token to the pool. Can only be called by the owner.
+    // Add a new lp token to the pool. Can only be called by the owner.
     function add(uint256 _allocPoint, IERC20 _lpToken, bool _withUpdate, uint256 _lastRewardBlock) external onlyOperator {
         checkPoolDuplicate(_lpToken);
         if (_withUpdate) {

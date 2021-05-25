@@ -13,7 +13,7 @@ contract ChipToken is ERC20Burnable, Destructor {
 
     using SafeMath for uint256;
 
-		address public DAO = 0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f;
+    address public DAO = 0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f;
 
     uint256 public constant INITIAL_DISTRIBUTION = 50 ether;
     uint256 public constant DAO_FUND = 10 ether;
@@ -33,11 +33,11 @@ contract ChipToken is ERC20Burnable, Destructor {
         return balanceAfter > balanceBefore;
     }
 
-    function distributeReward(address _distributionPool) external onlyOperator {
+    function distributeReward(address distributionPool) external onlyOperator {
         require(!rewardPoolDistributed, "ChipToken.distributeReward(): Can distribute only once.");
-        require(_distributionPool != address(0), "ChipToken.distributeReward(): Not a distribution pool address.");
+        require(distributionPool != address(0), "ChipToken.distributeReward(): Not a distribution pool address.");
         rewardPoolDistributed = true;
-        _mint(_distributionPool, INITIAL_DISTRIBUTION);
+        _mint(distributionPool, INITIAL_DISTRIBUTION);
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20) {

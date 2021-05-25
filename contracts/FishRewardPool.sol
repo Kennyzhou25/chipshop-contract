@@ -40,8 +40,8 @@ contract FishRewardPool is Destructor {
     uint256 public startBlock;                      // The block number when FISH minting starts.
     uint256 public endBlock;                        // The block number when FISH minting ends.
     uint256 public constant BLOCKS_PER_DAY = 28800; // 86400 / 3;
-		uint256 public rewardDuration = 365;            // Days.
-    uint256 public totalRewards = 8.4 ether;
+    uint256 public rewardDuration = 365;            // Days.
+    uint256 public totalRewards = 440 ether;
     uint256 public rewardPerBlock;
     bool public isMintStarted = false;
 
@@ -83,14 +83,14 @@ contract FishRewardPool is Destructor {
         }
     }
 
-		// Add a new lp token to the pool. Can only be called by the owner.
+    // Add a new lp token to the pool. Can only be called by the owner.
     function add(uint256 _allocPoint, IERC20 _lpToken, bool _withUpdate, uint256 _lastRewardBlock) external onlyOperator {
         checkPoolDuplicate(_lpToken);
         if (_withUpdate) {
             massUpdatePools();
         }
         if (block.number < startBlock) {
-            // Chef is sleeping.
+            // The chef is sleeping.
             if (_lastRewardBlock == 0) {
                 _lastRewardBlock = startBlock;
             } else {
@@ -99,7 +99,7 @@ contract FishRewardPool is Destructor {
                 }
             }
         } else {
-            // Chef is cooking.
+            // The chef is cooking.
             if (_lastRewardBlock == 0 || _lastRewardBlock < block.number) {
                 _lastRewardBlock = block.number;
             }
@@ -124,14 +124,12 @@ contract FishRewardPool is Destructor {
         massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
         if (pool.isStarted) {
-            totalAllocPoint = totalAllocPoint.sub(pool.allocPoint).add(
-                _allocPoint
-            );
+            totalAllocPoint = totalAllocPoint.sub(pool.allocPoint).add(_allocPoint);
         }
         pool.allocPoint = _allocPoint;
     }
 
-    // Return accumulate rewards over the given _from to _to block.
+    // Return accumulated rewards over the given _from to _to block.
     function getGeneratedReward(uint256 _from, uint256 _to) public view returns (uint256) {
         if (_from >= _to) return 0;
         if (_to <= startBlock) {
@@ -170,7 +168,7 @@ contract FishRewardPool is Destructor {
     // Update reward variables for all pools. Be careful of gas spending!
     function massUpdatePools() public {
         uint256 length = poolInfo.length;
-				require(length < 6, "FishRewardPool.massUpdatePools(): Pool size exceeded.");
+        require(length < 6, "FishRewardPool.massUpdatePools(): Pool size exceeded.");
         for (uint256 pid = 0; pid < length; ++pid) {
             updatePool(pid);
         }
@@ -228,7 +226,7 @@ contract FishRewardPool is Destructor {
         address _sender = msg.sender;
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_sender];
-				require(user.amount >= _amount, "FishRewardPool.withdraw(): User amount less than withdrawal amount.");
+        require(user.amount >= _amount, "FishRewardPool.withdraw(): User amount less than withdrawal amount.");
         updatePool(_pid);
         uint256 _pending = user.amount.mul(pool.accFishPerShare).div(1e18).sub(user.rewardDebt);
         if (_pending > 0) {
@@ -272,12 +270,12 @@ contract FishRewardPool is Destructor {
     function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external onlyOperator {
         if (block.number < endBlock + BLOCKS_PER_DAY * 180) {
             // Do not allow to drain lpToken if less than 180 days after farming.
-						require(_token != FISH, "FishRewardPool.governanceRecoverUnsupported(): Not a fish token.");
+            require(_token != FISH, "FishRewardPool.governanceRecoverUnsupported(): Not a fish token.");
             uint256 length = poolInfo.length;
-						require(length < 6, "FishRewardPool.governanceRecoverUnsupported(): Pool size exceeded.");
+            require(length < 6, "FishRewardPool.governanceRecoverUnsupported(): Pool size exceeded.");
             for (uint256 pid = 0; pid < length; ++pid) {
                 PoolInfo storage pool = poolInfo[pid];
-								require(_token != pool.lpToken, "FishRewardPool.governanceRecoverUnsupported(): Skipping liquidity provider token.");
+                require(_token != pool.lpToken, "FishRewardPool.governanceRecoverUnsupported(): Skipping liquidity provider token.");
             }
         }
         _token.safeTransfer(to, amount);

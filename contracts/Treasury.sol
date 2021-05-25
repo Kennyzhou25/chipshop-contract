@@ -18,6 +18,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
+
 contract Treasury is ContractGuard, ITreasury, Destructor {
     using SafeERC20 for IERC20;
     using Address for address;
@@ -53,6 +54,10 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
     address public boardroom;
     address public boardroomSecond;
     address public CHIPOracle;
+
+    address public BNB;
+    address public CHIP_BNB;
+    address public FISH_BNB;
 
     IChipSwap public ChipSwapMechanism;
     IFishRewardPool public fishPool_v2;
@@ -242,7 +247,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         address _MPEA,
         address _FISH,
         uint256 _startTime
-    ) external notInitialized {
+    ) external onlyOperator notInitialized {
         CHIP = _CHIP;
         MPEA = _MPEA;
         FISH = _FISH;
@@ -423,7 +428,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         IBasisAsset(MPEA).mint(msg.sender, _bondAmount);
         epochSupplyContractionLeft = epochSupplyContractionLeft.sub(_CHIPAmount);
         _updateEthPrice();
-        history[_epoch].bonded.add(_bondAmount);
+        history[_epoch - 1].bonded = history[_epoch - 1].bonded.add(_bondAmount);
         emit BoughtBonds(msg.sender, _CHIPAmount, _bondAmount);
     }
 
@@ -442,7 +447,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         seigniorageSaved = seigniorageSaved.sub(Math.min(seigniorageSaved, _CHIPAmount));
         IBasisAsset(MPEA).burnFrom(msg.sender, _bondAmount);
         IERC20(CHIP).safeTransfer(msg.sender, _CHIPAmount);
-        history[_epoch].redeemed.add(_CHIPAmount);
+        history[_epoch - 1].redeemed = history[_epoch - 1].redeemed.add(_CHIPAmount);
         _updateEthPrice();
         emit RedeemedBonds(msg.sender, _CHIPAmount, _bondAmount);
     }
@@ -480,31 +485,22 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         previousEpochDollarPrice = getEthPrice();
         uint256 CHIPSupply = IERC20(CHIP).totalSupply().sub(seigniorageSaved);
         uint256 ExpansionPercent;
-        if (CHIPSupply < 500 ether)
-            ExpansionPercent = 300; // 3%
-        else if (CHIPSupply >= 500 ether && CHIPSupply < 1000 ether)
-            ExpansionPercent = 200; // 2%
-        else if (CHIPSupply >= 1000 ether && CHIPSupply < 2000 ether)
-            ExpansionPercent = 150; // 1.5%
-        else if (CHIPSupply >= 2000 ether && CHIPSupply < 5000 ether)
-            ExpansionPercent = 125; // 1.25%
-        else if (CHIPSupply >= 5000 ether && CHIPSupply < 10000 ether)
-            ExpansionPercent = 100; // 1%
-        else if (CHIPSupply >= 10000 ether && CHIPSupply < 20000 ether)
-            ExpansionPercent = 75; // 0.75%
-        else if (CHIPSupply >= 20000 ether && CHIPSupply < 50000 ether)
-            ExpansionPercent = 50; // 0.5%
-        else if (CHIPSupply >= 50000 ether && CHIPSupply < 100000 ether)
-            ExpansionPercent = 25; // 0.25%
-        else if (CHIPSupply >= 100000 ether && CHIPSupply < 200000 ether)
-            ExpansionPercent = 15; // 0.15%
-        else ExpansionPercent = 10; // 0.1%
+        if(CHIPSupply < 500 ether) ExpansionPercent = 300;                                      // 3%
+        else if(CHIPSupply >= 500 ether && CHIPSupply < 1000 ether) ExpansionPercent = 200;     // 2%
+        else if(CHIPSupply >= 1000 ether && CHIPSupply < 2000 ether) ExpansionPercent = 150;    // 1.5%
+        else if(CHIPSupply >= 2000 ether && CHIPSupply < 5000 ether) ExpansionPercent = 125;    // 1.25%
+        else if(CHIPSupply >= 5000 ether && CHIPSupply < 10000 ether) ExpansionPercent = 100;   // 1%
+        else if(CHIPSupply >= 10000 ether && CHIPSupply < 20000 ether) ExpansionPercent = 75;   // 0.75%
+        else if(CHIPSupply >= 20000 ether && CHIPSupply < 50000 ether) ExpansionPercent = 50;   // 0.5%
+        else if(CHIPSupply >= 50000 ether && CHIPSupply < 100000 ether) ExpansionPercent = 25;  // 0.25%
+        else if(CHIPSupply >= 100000 ether && CHIPSupply < 200000 ether) ExpansionPercent = 15; // 0.15%
+        else ExpansionPercent = 10;                                                             // 0.1%
         maxSupplyExpansionPercent = ExpansionPercent;
         if (_epoch < bootstrapEpochs) {
             // 3 first epochs expansion.
             _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
             ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
-            fishPool_v2.set(4, 0); // Disable MPEA/CHIP pool when expansion phase.
+            fishPool_v2.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
             history[_epoch].expanded_amount = CHIPSupply.mul(ExpansionPercent).div(10000);
         } else {
             if (previousEpochDollarPrice > CHIPPriceCeiling) {
@@ -548,6 +544,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
             } else {
                 // Contraction phase.
                 fishPool_v2.set(4, 3000); // Enable MPEA/CHIP pool when contraction phase.
+                maxSupplyExpansionPercent = 0;
             }
         }
         if (allocateSeigniorageSalary > 0) {
@@ -592,16 +589,15 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
     function swapChipToFish(uint256 ChipAmount) external {
         uint256 FishPricePerChip = getFishAmountPerChip();
         uint256 FishAmount = ChipAmount.mul(FishPricePerChip).div(1e18);
-        ChipSwapMechanism.Swap(msg.sender, ChipAmount, FishAmount);
+        ChipSwapMechanism.swap(msg.sender, ChipAmount, FishAmount);
         ERC20Burnable(CHIP).burnFrom(msg.sender, ChipAmount);
     }
 
     function getFishAmountPerChip() public view returns (uint256) {
-        address BNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c; // BNB address.
-        uint256 ChipBalance = IERC20(CHIP).balanceOf(address(0x726Baa131EA46F70F78Bb97FA85cE7003D441498)); // CHIP/BNB pool.
-        uint256 FishBalance = IERC20(FISH).balanceOf(address(0x5bdafc5EB67D943C63Ad2b3b12A263e1824b5766)); // FISH/BNB pool.
-        uint256 rate1 = uint256(1e18).mul(ChipBalance).div(IERC20(BNB).balanceOf(address(0x726Baa131EA46F70F78Bb97FA85cE7003D441498)));
-        uint256 rate2 = uint256(1e18).mul(FishBalance).div(IERC20(BNB).balanceOf(address(0x5bdafc5EB67D943C63Ad2b3b12A263e1824b5766)));
+        uint256 ChipBalance = IERC20(CHIP).balanceOf(CHIP_BNB);  // CHIP/BNB pool.
+        uint256 FishBalance = IERC20(FISH).balanceOf(FISH_BNB);  // FISH/BNB pool.
+        uint256 rate1 = uint256(1e18).mul(ChipBalance).div(IERC20(BNB).balanceOf(CHIP_BNB));
+        uint256 rate2 = uint256(1e18).mul(FishBalance).div(IERC20(BNB).balanceOf(FISH_BNB));
         return uint256(1e18).mul(rate2).div(rate1);
     }
 
@@ -615,5 +611,11 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
 
     function getEpochHistory() external view returns (epochHistory[] memory) {
         return history;
+    }
+
+    function setTokenAddress(address _BNB, address _CHIP_BNB, address _FISH_BNB) external onlyOperator {
+        BNB = _BNB  ;
+        CHIP_BNB = _CHIP_BNB;
+        FISH_BNB = _FISH_BNB;
     }
 }

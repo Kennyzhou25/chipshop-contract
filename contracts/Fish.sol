@@ -9,11 +9,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 
-contract FishToken is ERC20Burnable, Destructor {
+contract Fish is ERC20Burnable, Destructor {
 
     using SafeMath for uint256;
 
-		address public teamFund = 0x7C593d2C99c75495E435D423740Dfa72123e2483;
+    address public teamFund = 0x7C593d2C99c75495E435D423740Dfa72123e2483;
     address public daoFund = 0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f;
 
     // Total max supply 600 fish.
@@ -81,11 +81,11 @@ contract FishToken is ERC20Burnable, Destructor {
         }
     }
 
-    function distributeReward(address _farmingIncentiveFund) external onlyOperator {
+    function distributeReward(address farmingIncentiveFund) external onlyOperator {
         require(!rewardPoolDistributed, "FishToken.distributeReward(): Can distribute only once.");
-        require(_farmingIncentiveFund != address(0), "FishToken.distributeReward(): Not a farming incentive fund address.");
+        require(farmingIncentiveFund != address(0), "FishToken.distributeReward(): Not a farming incentive fund address.");
         rewardPoolDistributed = true;
-        _mint(_farmingIncentiveFund, FARMING_POOL_REWARD_ALLOCATION);
+        _mint(farmingIncentiveFund, FARMING_POOL_REWARD_ALLOCATION);
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20) {

@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 // Note: The owner of this contract will be the Treasury contract.
 
-contract ChipSwapMechanism is Ownable, Destructor {
+contract ChipSwapMechanism is Destructor {
 
     using SafeMath for uint256;
 
@@ -38,7 +38,7 @@ contract ChipSwapMechanism is Ownable, Destructor {
     }
 
 
-    function swap(address account, uint256 _chipAmount, uint256 _fishAmount) external isSwappable onlyOwner {
+    function swap(address account, uint256 _chipAmount, uint256 _fishAmount) external isSwappable onlyOperator {
         require(getFishBalance() >= _fishAmount, "ChipSwapMechanism.swap(): Insufficient FISH balance.");
         require(getChipBalance(account) >= _chipAmount, "ChipSwapMechanism.swap(): Insufficient CHIP balance.");
         require(availableFish >= _fishAmount, "ChipSwapMechanism.swap(): Insufficient FISH population.");
@@ -48,7 +48,7 @@ contract ChipSwapMechanism is Ownable, Destructor {
         emit SwapExecuted(account, _chipAmount, _fishAmount);
     }
 
-    function withdrawFish(uint256 _amount) private onlyOwner {
+    function withdrawFish(uint256 _amount) private onlyOperator {
         require(getFishBalance() >= _amount, "ChipSwapMechanism.withdrawFish(): Insufficient FISH balance.");
         FISH.transfer(msg.sender, _amount);
     }
@@ -61,7 +61,7 @@ contract ChipSwapMechanism is Ownable, Destructor {
         return CHIPS.balanceOf(user);
     }
 
-    function unlockFish(uint _hours) external onlyOwner {
+    function unlockFish(uint _hours) external onlyOperator {
         uint256 unlockFishAmount = hourlyAllocatedFish.mul(_hours);
         if(unlockFishAmount > lockedFish) unlockFishAmount = lockedFish;
         lockedFish = lockedFish.sub(unlockFishAmount);

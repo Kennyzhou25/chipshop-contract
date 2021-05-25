@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 
-contract MpeaToken is ERC20Burnable, Destructor {
+contract Mpea is ERC20Burnable, Destructor {
 
     constructor() public ERC20("ChipShop Bond", "MPEA") {
         _mint(_msgSender(), 0.1 ether); // Send 0.1 ether to deployer.

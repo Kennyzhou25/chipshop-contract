@@ -12,11 +12,12 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+
 contract ShareWrapper {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public FISH = IERC20(0x3b9bCeD4576DE29D9aE8CbF17898189aa6a3692b);
+    IERC20 public FISH;
 
     uint256 private _totalSupply;
 
@@ -41,8 +42,10 @@ contract ShareWrapper {
         require(directorShare >= amount, "Boardroom.withdraw(): Share amount less than withdrawal amount.");
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = directorShare.sub(amount);
+        FISH.safeTransfer(msg.sender, amount);
     }
 }
+
 
 contract Boardroom is ShareWrapper, ContractGuard, Destructor {
     using Address for address;
@@ -107,7 +110,7 @@ contract Boardroom is ShareWrapper, ContractGuard, Destructor {
     }
 
     modifier notInitialized {
-        require(!initialized, "Boardroom.notInitialized(): Already initialized.");
+        require(!initialized, "Boardroom: already initialized");
         _;
     }
 
@@ -115,13 +118,13 @@ contract Boardroom is ShareWrapper, ContractGuard, Destructor {
         IERC20 _CHIP,
         IERC20 _FISH,
         ITreasury _treasury
-    ) external notInitialized {
+    ) external onlyOperator notInitialized {
         CHIP = _CHIP;
         FISH = _FISH;
         treasury = _treasury;
         boardHistory.push(BoardSnapshot({time: block.number, rewardReceived: 0, rewardPerShare: 0}));
-        withdrawLockupEpochs = 6; // Lock for 6 epochs (24-36h) before release withdraw.
-        rewardLockupEpochs = 3; // Lock for 3 epochs (12-18h) before release claimReward.
+        withdrawLockupEpochs = 6; // Lock for 6 epochs (36h) before release withdraw.
+        rewardLockupEpochs = 3; // Lock for 3 epochs (18h) before release claimReward.
         initialized = true;
         emit Initialized(msg.sender, block.number);
     }
@@ -182,10 +185,11 @@ contract Boardroom is ShareWrapper, ContractGuard, Destructor {
 
     // Mutators.
 
-    function stakeChip(uint256 amount) external onlyOneBlock updateReward(msg.sender) {
-        require(amount > 0, "Boardroom.stakeChip(): Cannot stake 0.");
+    function stake(uint256 amount) public override onlyOneBlock updateReward(msg.sender) {
+        require(amount > 0, "Boardroom.stake(): Cannot stake 0.");
         directors[msg.sender].epochTimerStart = treasury.epoch(); // Reset timer.
-        stake(amount);
+        super.stake(amount);
+        emit Staked(msg.sender, amount);
     }
 
     function withdraw(uint256 amount) public override onlyOneBlock directorExists updateReward(msg.sender) {
@@ -195,7 +199,7 @@ contract Boardroom is ShareWrapper, ContractGuard, Destructor {
         uint256 ethPrice = treasury.getEthPrice();
         uint256 priceOne = 1 ether;
         uint256 feeToDAO = 10; // 10% withdraw fee when chip price is below 1.05 eth.
-        if (ethPrice >= priceOne.mul(105).div(100)) feeToDAO = 2; // otherwise 2% fee.
+        if (ethPrice >= priceOne.mul(105).div(100)) feeToDAO = 2; // Otherwise 2% fee.
         uint256 feeAmount = amount.mul(feeToDAO).div(100);
         FISH.safeTransfer(msg.sender, amount.sub(feeAmount));
         FISH.safeTransfer(DAO, feeAmount);

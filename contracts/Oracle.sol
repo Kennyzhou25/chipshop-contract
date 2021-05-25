@@ -11,18 +11,20 @@ import "./interfaces/IPancakePair.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-// Fixed window oracle that recomputes the average price for the entire period once every period.
+
+// Note: Fixed window oracle that recomputes the average price for the entire period once every period.
 // The price average is only guaranteed to be over at least 1 period, but may be over a longer period.
+
 contract Oracle is IEpoch, Destructor {
     using FixedPoint for *;
     using SafeMath for uint256;
 
-    address public CHIP = address(0xe5A35542F037b120aC4746917E9522A2D704d3c6);
-    address public ETH_BNB_LP = 0x74E4716E431f45807DCF19f284c7aA99F18a4fbc;
-    address public ETH_BUSD_LP = 0x7213a321F1855CF1779f42c0CD85d3D95291D34C;
-    IERC20 public ETH = IERC20(0x2170Ed0880ac9A755fd29B2688956BD959F933F8);
-    IERC20 public BNB = IERC20(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
-    IERC20 public BUSD = IERC20(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
+    address public CHIP;
+    address public ETH_BNB_LP;
+    address public ETH_BUSD_LP;
+    IERC20 public ETH;
+    IERC20 public BNB;
+    IERC20 public BUSD;
 
     bool public initialized = false;
 
@@ -94,7 +96,7 @@ contract Oracle is IEpoch, Destructor {
     }
 
     // _pair is CHIP/BNB LP, _pair_1 is CHIP/BUSD LP
-    function initialize(IPancakePair _pair, IPancakePair _pair_1) external notInitialized {
+    function initialize(IPancakePair _pair, IPancakePair _pair_1) external onlyOperator notInitialized {
         pair = _pair;
         token0 = pair.token0();
         token1 = pair.token1();
@@ -171,6 +173,11 @@ contract Oracle is IEpoch, Destructor {
             require(_token == token1, "Oracle: INVALID_TOKEN");
             _amountOut = price1Average.mul(_amountIn).decode144();
         }
+        uint256 ETHBalance = ETH.balanceOf(ETH_BNB_LP);
+        uint256 BNBBalance = BNB.balanceOf(ETH_BNB_LP);
+        uint256 tmp = uint256(_amountOut);
+        tmp = tmp.mul(ETHBalance).div(BNBBalance);
+        _amountOut = uint144(tmp);
     }
 
     // Twap of CHIP/BNB LP.

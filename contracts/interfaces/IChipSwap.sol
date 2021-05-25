@@ -5,7 +5,7 @@ pragma solidity 0.8.4;
 interface IChipSwap {
     function unlockFish(uint256 _hours) external;
 
-    function Swap(
+    function swap(
         address user,
         uint256 _chipAmount,
         uint256 _fishAmount
