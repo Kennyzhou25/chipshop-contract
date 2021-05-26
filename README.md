@@ -30,7 +30,7 @@ Basis was shut down in 2018, due to regulatory concerns its Bond and Share token
 
 ## The ChipShop Protocol
 
-ChipShop differs from the original Basis Project in several meaningful ways which are fully described in the [documentation](https://chipshop-finance.gitbook.io/chipshop-finance/)
+ChipShop differs from the original Basis Project in several meaningful ways which are fully described in the [documentation](https://chipshop-finance.gitbook.io/chipshop-finance/).
 
 
 ## Conclusion
