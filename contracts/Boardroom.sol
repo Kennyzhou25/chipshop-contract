@@ -2,16 +2,16 @@
 
 pragma solidity 0.8.4;
 
-import "./owner/Operator.sol";
-import "./utils/ContractGuard.sol";
-import "./interfaces/IEpoch.sol";
-import "./interfaces/ITreasury.sol";
-import "./interfaces/IBasisAsset.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "./owner/Operator.sol";
+import "./utils/ContractGuard.sol";
+import "./interfaces/IEpoch.sol";
+import "./interfaces/ITreasury.sol";
+import "./interfaces/IBasisAsset.sol";
 
 contract ShareWrapper {
     using SafeMath for uint256;
@@ -42,7 +42,6 @@ contract ShareWrapper {
         require(directorShare >= amount, "Boardroom.withdraw(): Share amount less than withdrawal amount.");
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = directorShare.sub(amount);
-        FISH.safeTransfer(msg.sender, amount);
     }
 }
 

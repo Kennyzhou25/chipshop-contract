@@ -2,15 +2,15 @@
 
 pragma solidity 0.8.4;
 
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import "./owner/Operator.sol";
 import "./lib/Babylonian.sol";
 import "./lib/FixedPoint.sol";
 import "./lib/PancakeswapOracleLibrary.sol";
 import "./interfaces/IEpoch.sol";
 import "./interfaces/IPancakePair.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 
 // Note: Fixed window oracle that recomputes the average price for the entire period once every period.
 // The price average is only guaranteed to be over at least 1 period, but may be over a longer period.

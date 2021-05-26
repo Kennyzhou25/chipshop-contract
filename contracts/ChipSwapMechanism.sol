@@ -2,12 +2,12 @@
 
 pragma solidity 0.8.4;
 
-import "./owner/Operator.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
+import "./owner/Operator.sol";
 
 // Note: The owner of this contract will be the Treasury contract.
 

@@ -2,14 +2,14 @@
 
 pragma solidity 0.8.4;
 
-import "./owner/Operator.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
+import "./owner/Operator.sol";
 
-contract ChipToken is ERC20Burnable, Destructor {
+contract Chip is ERC20Burnable, Destructor {
 
     using SafeMath for uint256;
 
@@ -34,8 +34,8 @@ contract ChipToken is ERC20Burnable, Destructor {
     }
 
     function distributeReward(address distributionPool) external onlyOperator {
-        require(!rewardPoolDistributed, "ChipToken.distributeReward(): Can distribute only once.");
-        require(distributionPool != address(0), "ChipToken.distributeReward(): Not a distribution pool address.");
+        require(!rewardPoolDistributed, "Chip.distributeReward(): Can distribute only once.");
+        require(distributionPool != address(0), "Chip.distributeReward(): Not a distribution pool address.");
         rewardPoolDistributed = true;
         _mint(distributionPool, INITIAL_DISTRIBUTION);
     }

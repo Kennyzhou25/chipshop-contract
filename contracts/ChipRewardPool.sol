@@ -2,12 +2,12 @@
 
 pragma solidity 0.8.4;
 
-import "./owner/Operator.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "./owner/Operator.sol";
 
 // Note: This pool has no minter key of CHIPs (rewards). Instead, the governance will call
 //       CHIPs distributeReward method and send reward to this pool at the beginning.
@@ -64,7 +64,7 @@ contract ChipRewardPool is Destructor {
     }
 
 
-    function startMint() external onlyOperator { // It can be called by operator only once.
+    function startMint() external onlyOwner { // It can be called by owner only once.
         require(isMintStarted == false, "ChipRewardPool.startMint(): Minting has started already.");
         isMintStarted = true;
         startBlock = block.number;

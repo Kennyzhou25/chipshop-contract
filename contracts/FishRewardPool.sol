@@ -2,12 +2,12 @@
 
 pragma solidity 0.8.4;
 
-import "./owner/Operator.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "./owner/Operator.sol";
 
 contract FishRewardPool is Destructor {
 
@@ -60,7 +60,7 @@ contract FishRewardPool is Destructor {
     }
 
 
-    function startMint() external onlyOperator { // It can be called by operator only once.
+    function startMint() external onlyOwner { // It can be called by owner only once.
         require(isMintStarted == false, "FishRewardPool.startMint(): Minting has started already.");
         isMintStarted = true;
         startBlock = block.number;
@@ -282,13 +282,13 @@ contract FishRewardPool is Destructor {
     }
 
     // Update pool versioning.
-    function changePoolVersion() external onlyOperator {
+    function changePoolVersion() external onlyOwner {
         require(version == 1, "FishRewardPool.changePoolVersion(): Already updated version.");
         require(poolInfo.length > 4, "FishRewardPool.changePoolVersion(): Not enough pools.");
         version = 2;
         set(0, 3000);
         set(1, 3000);
-        set(2, 3000);
+        set(2, 6000);
         set(3, 1000);
         set(4, 0);
     }
