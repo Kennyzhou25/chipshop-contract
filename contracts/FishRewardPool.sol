@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -39,7 +39,7 @@ contract FishRewardPool is Destructor {
     uint256 public totalAllocPoint = 0;             // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public startBlock;                      // The block number when FISH minting starts.
     uint256 public endBlock;                        // The block number when FISH minting ends.
-    uint256 public constant BLOCKS_PER_DAY = 28800; // 86400 / 3;
+    uint256 public constant BLOCKS_PER_DAY = 100; // 86400 / 3;
     uint256 public rewardDuration = 365;            // Days.
     uint256 public totalRewards = 440 ether;
     uint256 public rewardPerBlock;
@@ -57,22 +57,7 @@ contract FishRewardPool is Destructor {
         if (_FISH != address(0)) FISH = IERC20(_FISH);
         startBlock = _startBlock;
         endBlock = startBlock.add(BLOCKS_PER_DAY.mul(rewardDuration));
-    }
-
-
-    function startMint() external onlyOwner { // It can be called by owner only once.
-        require(isMintStarted == false, "FishRewardPool.startMint(): Minting has started already.");
-        isMintStarted = true;
-        startBlock = block.number;
-        endBlock = startBlock.add(BLOCKS_PER_DAY.mul(rewardDuration));
         rewardPerBlock = totalRewards.div(endBlock.sub(startBlock));
-        uint256 length = poolInfo.length;
-        require(length < 6, "FishRewardPool.startMint(): Pool size exceeded.");
-        for(uint256 pid = 0 ; pid < length ; pid ++) {
-            poolInfo[pid].lastRewardBlock = startBlock;
-            poolInfo[pid].accFishPerShare = 0;
-        }
-        massUpdatePools();
     }
 
     function checkPoolDuplicate(IERC20 _lpToken) internal view {
@@ -120,7 +105,8 @@ contract FishRewardPool is Destructor {
     }
 
     // Update the given pool's FISH allocation point. Can only be called by the owner.
-    function set(uint256 _pid, uint256 _allocPoint) public onlyOperator {
+    function set(uint256 _pid, uint256 _allocPoint) public {
+        require(isOperator() || _msgSender() == owner(), "invalid operator");
         massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
         if (pool.isStarted) {
@@ -291,5 +277,19 @@ contract FishRewardPool is Destructor {
         set(2, 6000);
         set(3, 1000);
         set(4, 0);
+    }
+
+    function getPoolStatus() external view returns(uint256) {
+        uint256 status;
+        if(block.number <= startBlock) status = 0;
+        else if(block.number > endBlock) status = 2;
+        else status = 1;
+        return status;
+    }
+
+    function isReadyPoolV2() external view returns(bool) {
+        if(version == 2) return false;
+        if(block.number >= startBlock.add(BLOCKS_PER_DAY.mul(7))) return true;
+        return false;
     }
 }

@@ -72,6 +72,7 @@
     "solhint-plugin-prettier": "0.0.5",
     "solidity-coverage": "^0.7.11",
     "truffle-assertions": "^0.9.1",
+    "truffle-hdwallet-provider": "^1.0.17",
     "truffle-plugin-verify": "^0.4.0",
     "truffle-privatekey-provider": "^1.3.0",
     "ts-node": "^9.0.0",

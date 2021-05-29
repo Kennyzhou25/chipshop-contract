@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -43,11 +43,12 @@ contract ChipRewardPool is Destructor {
     uint256 public totalAllocPoint = 0;             // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public startBlock;                      // The block number when CHIPS minting starts.
     uint256 public endBlock;                        // The block number when CHIPS minting ends.
-    uint256 public constant BLOCKS_PER_DAY = 28800; // 86400 / 3;
+    uint256 public constant BLOCKS_PER_DAY = 100; // 86400 / 3;
     uint256 public rewardDuration = 10;             // Days.
     uint256 public totalRewards = 50 ether;
     uint256 public rewardPerBlock;
-    bool public isMintStarted = false;
+    // bool public isMintStarted = false;
+    bool public isChipBnbStarted = false;
 
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
@@ -61,22 +62,7 @@ contract ChipRewardPool is Destructor {
         if (_CHIPS != address(0)) CHIPS = IERC20(_CHIPS);
         startBlock = _startBlock;
         endBlock = startBlock.add(BLOCKS_PER_DAY.mul(rewardDuration));
-    }
-
-
-    function startMint() external onlyOwner { // It can be called by owner only once.
-        require(isMintStarted == false, "ChipRewardPool.startMint(): Minting has started already.");
-        isMintStarted = true;
-        startBlock = block.number;
-        endBlock = startBlock.add(BLOCKS_PER_DAY.mul(rewardDuration));
         rewardPerBlock = totalRewards.div(endBlock.sub(startBlock));
-        uint256 length = poolInfo.length;
-        require(length < 6, "ChipRewardPool.startMint(): Pool size exceeded.");
-        for(uint256 pid = 0 ; pid < length ; pid ++) {
-            poolInfo[pid].lastRewardBlock = startBlock;
-            poolInfo[pid].accChipsPerShare = 0;
-        }
-        massUpdatePools();
     }
 
     function checkPoolDuplicate(IERC20 _lpToken) internal view {
@@ -124,7 +110,7 @@ contract ChipRewardPool is Destructor {
     }
 
     // Update the given pool's CHIPs allocation point. Can only be called by the owner.
-    function set(uint256 _pid, uint256 _allocPoint) external onlyOperator {
+    function set(uint256 _pid, uint256 _allocPoint) public onlyOperator {
         massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
         if (pool.isStarted) {
@@ -291,5 +277,24 @@ contract ChipRewardPool is Destructor {
             }
         }
         _token.safeTransfer(to, amount);
+    }
+
+    function startChipBnbPool() external onlyOwner {
+        require(block.number >= startBlock.add(BLOCKS_PER_DAY) && isChipBnbStarted == false, "too earlier");
+        isChipBnbStarted = true;
+        set(4, 99000);
+    }
+
+    function isReadyChipBnb() external view returns(bool) {
+        if(block.number >= startBlock.add(BLOCKS_PER_DAY) && isChipBnbStarted == false) return true;
+        return false;
+    }
+
+    function getPoolStatus() external view returns(uint256) {
+        uint256 status;
+        if(block.number <= startBlock) status = 0;
+        else if(block.number > endBlock) status = 2;
+        else status = 1;
+        return status;
     }
 }

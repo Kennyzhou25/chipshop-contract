@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -151,10 +151,10 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
     function nextEpochLength() public view override returns (uint256 _length) {
         if (_epoch <= bootstrapEpochs) {
             // 28 first epochs with 8h long.
-            _length = 5 minutes;
+            _length = 10 minutes;
         } else {
             uint256 CHIPPrice = getEthPrice();
-            _length = (CHIPPrice > CHIPPriceCeiling) ? 5 minutes : 5 minutes;
+            _length = (CHIPPrice > CHIPPriceCeiling) ? 10 minutes : 10 minutes;
         }
     }
 
@@ -251,7 +251,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         MPEA = _MPEA;
         FISH = _FISH;
         startTime = _startTime;
-        lastEpochTime = _startTime.sub(6 hours);
+        lastEpochTime = _startTime.sub(10 minutes);
         CHIPPriceOne = 10**18;
         CHIPPriceCeiling = CHIPPriceOne.mul(10001).div(10000);
         maxSupplyExpansionPercent = 300; // Up to 3.0% supply for expansion.
@@ -279,7 +279,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
     function resetStartTime(uint256 _startTime) external onlyOperator {
         require(_epoch == 0, "already started");
         startTime = _startTime;
-        lastEpochTime = _startTime.sub(6 hours);
+        lastEpochTime = _startTime.sub(10 minutes);
     }
 
     function setBoardroom(address _boardroom) external onlyOperator {

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -24,7 +24,7 @@ contract Operator is Context, Ownable {
         _;
     }
 
-    function isOperator() external view returns (bool) {
+    function isOperator() public view returns (bool) {
         return _msgSender() == _operator;
     }
 
