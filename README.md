@@ -35,7 +35,7 @@ ChipShop differs from the original Basis Project in several meaningful ways whic
 
 ## Conclusion
 
-ChipShop is an example of us being strong supporters of algorithmic stablecoins in particular and DeFi in general. However, it is an experiment and participants should take great caution and learn more about the seigniorage concept to avoid any potential loss.
+ChipShop is an example of us being strong supporters of algorithmic stablecoins in particular and DeFi in general. However, it is an experiment and participants should take great caution and learn more about [the seigniorage concept](https://blog.bitmex.com/wp-content/uploads/2018/06/A-Note-on-Cryptocurrency-Stabilisation-Seigniorage-Shares.pdf) to avoid any potential loss.
 
 #### Community channels:
 
