@@ -161,7 +161,7 @@ contract Oracle is IEpoch, Destructor {
     }
 
     // This will always return 0 before update has been called successfully for the first time.
-    // This function returns BNB-based price of CHIP.
+    // This function returns average of BNB-based and BUSD-based price of CHIP.
     function consult(address _token, uint256 _amountIn) public view returns (uint144 _amountOut) {
         if (priceAppreciation > 0) {
             uint256 _added = _amountIn.mul(priceAppreciation).div(1e18);
@@ -173,10 +173,27 @@ contract Oracle is IEpoch, Destructor {
             require(_token == token1, "Oracle: INVALID_TOKEN");
             _amountOut = price1Average.mul(_amountIn).decode144();
         }
+
+        uint144 _amountOut2;
+        if (_token == token0_1) {
+            _amountOut2 = price0Average_1.mul(_amountIn).decode144();
+        } else {
+            require(_token == token1_1, "Oracle: INVALID_TOKEN");
+            _amountOut2 = price1Average_1.mul(_amountIn).decode144();
+        }
+
         uint256 ETHBalance = ETH.balanceOf(ETH_BNB_LP);
         uint256 BNBBalance = BNB.balanceOf(ETH_BNB_LP);
         uint256 tmp = uint256(_amountOut);
         tmp = tmp.mul(ETHBalance).div(BNBBalance);
+
+        uint256 ETHBalance_1 = ETH.balanceOf(ETH_BUSD_LP);
+        uint256 BUSDBalance = BUSD.balanceOf(ETH_BUSD_LP);
+        uint256 tmp_1 = uint256(_amountOut2);
+        tmp_1 = tmp_1.mul(ETHBalance_1).div(BUSDBalance);
+
+        tmp = tmp.add(tmp_1).div(2);
+
         _amountOut = uint144(tmp);
     }
 

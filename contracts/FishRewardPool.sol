@@ -201,7 +201,7 @@ contract FishRewardPool is Destructor {
             if(version == 2) feeToDAO = _amount.mul(2).div(100); // 2% fee when deposit in version 2.
             pool.lpToken.safeTransferFrom(_sender, address(this), _amount.sub(feeToDAO));
             pool.lpToken.safeTransferFrom(_sender, DAO, feeToDAO);
-            user.amount = user.amount.add(_amount);
+            user.amount = user.amount.add(_amount.sub(feeToDAO));
         }
         user.rewardDebt = user.amount.mul(pool.accFishPerShare).div(1e18);
         emit Deposit(_sender, _pid, _amount);

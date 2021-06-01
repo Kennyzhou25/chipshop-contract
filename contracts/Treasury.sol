@@ -126,8 +126,6 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         _;
     }
 
-    // Views.
-
     // State.
 
     function isMigrated() external view returns (bool) {
@@ -411,7 +409,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         require(_epoch >= bootstrapEpochs, "Treasury: still in boostrap");
         require(_CHIPAmount > 0, "Treasury: cannot purchase bonds with zero amount");
         uint256 CHIPPrice = getEthPrice();
-        require(CHIPPrice == targetPrice, "Treasury: CHIP price moved.");
+
         require(
             CHIPPrice < CHIPPriceOne, // price < 1 ETH.
             "Treasury: CHIP Price not eligible for bond purchase."
@@ -434,7 +432,6 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
     function redeemBonds(uint256 _bondAmount, uint256 targetPrice) external override onlyOneBlock checkCondition checkOperator {
         require(_bondAmount > 0, "Treasury: Cannot redeem bonds with zero amount.");
         uint256 CHIPPrice = getEthPrice();
-        require(CHIPPrice == targetPrice, "Treasury: CHIP price moved.");
         require(
             CHIPPrice > CHIPPriceCeiling, // price > $1.01.
             "Treasury: CHIP Price not eligible for bond purchase."
@@ -542,6 +539,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
                 }
             } else {
                 // Contraction phase.
+                ChipSwapMechanism.unlockFish(4); // When contraction phase, 4 hours worth fish will be unlocked.
                 fishPool_v2.set(4, 3000); // Enable MPEA/CHIP pool when contraction phase.
                 maxSupplyExpansionPercent = 0;
             }

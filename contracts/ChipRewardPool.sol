@@ -44,7 +44,7 @@ contract ChipRewardPool is Destructor {
     uint256 public startBlock;                      // The block number when CHIPS minting starts.
     uint256 public endBlock;                        // The block number when CHIPS minting ends.
     uint256 public constant BLOCKS_PER_DAY = 100; // 86400 / 3;
-    uint256 public rewardDuration = 10;             // Days.
+    uint256 public rewardDuration = 9;             // Days.
     uint256 public totalRewards = 50 ether;
     uint256 public rewardPerBlock;
     // bool public isMintStarted = false;
@@ -205,7 +205,7 @@ contract ChipRewardPool is Destructor {
         if (_amount > 0) {
             uint256 FeeToDAO = 0;
             if(_pid != 4){
-                // In case of BNB, BUSD, BTD, MDO pool, users have to pay 1% fee when they deposit.
+                // In case of BNB, BUSD, BTD, BTS pool, users have to pay 1% fee when they deposit.
                 FeeToDAO = _amount.div(100);
             }
             pool.lpToken.safeTransferFrom(_sender, DAO, FeeToDAO);
