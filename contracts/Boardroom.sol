@@ -49,6 +49,8 @@ contract Boardroom is ShareWrapper, ContractGuard, Destructor {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
+    // Data structures.
+
     struct Boardseat {
         uint256 lastSnapshotIndex;
         uint256 rewardEarned;
