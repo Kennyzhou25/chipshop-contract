@@ -32,7 +32,6 @@ contract ChipRewardPool is Destructor {
         bool isStarted;           // Has lastRewardBlock passed?
     }
 
-
     IERC20 public CHIPS;
 
     PoolInfo[] public poolInfo;
@@ -42,11 +41,11 @@ contract ChipRewardPool is Destructor {
     uint256 public totalAllocPoint = 0;             // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public startBlock;                      // The block number when CHIPS minting starts.
     uint256 public endBlock;                        // The block number when CHIPS minting ends.
+    uint256 public timeLockBlock;
     uint256 public constant BLOCKS_PER_DAY = 28800; // 86400 / 3;
-    uint256 public rewardDuration = 9;             // Days.
+    uint256 public rewardDuration = 10;             // Days.
     uint256 public totalRewards = 50 ether;
     uint256 public rewardPerBlock;
-    bool public isChipBnbStarted = false;
 
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
@@ -61,6 +60,7 @@ contract ChipRewardPool is Destructor {
         startBlock = _startBlock;
         endBlock = startBlock.add(BLOCKS_PER_DAY.mul(rewardDuration));
         rewardPerBlock = totalRewards.div(endBlock.sub(startBlock));
+        timeLockBlock = startBlock.add(BLOCKS_PER_DAY.mul(rewardDuration.add(1)));
     }
 
     function checkPoolDuplicate(IERC20 _lpToken) internal view {
@@ -71,8 +71,9 @@ contract ChipRewardPool is Destructor {
         }
     }
 
-    // Add a new lp token to the pool. Can only be called by the owner.
+    // Add a new lp token to the pool. Can only be called by the owner. can add only 5 lp token.
     function add(uint256 _allocPoint, IERC20 _lpToken, bool _withUpdate, uint256 _lastRewardBlock) external onlyOperator {
+        require(poolInfo.length < 5, "ChipRewardPool: can't add pool anymore");
         checkPoolDuplicate(_lpToken);
         if (_withUpdate) {
             massUpdatePools();
@@ -109,6 +110,7 @@ contract ChipRewardPool is Destructor {
 
     // Update the given pool's CHIPs allocation point. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint) public onlyOperator {
+        require(block.number > timeLockBlock, "ChipRewardPool: Locked");
         massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
         if (pool.isStarted) {
@@ -156,7 +158,7 @@ contract ChipRewardPool is Destructor {
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
-    function massUpdatePools() public {
+    function massUpdatePools() internal {
         uint256 length = poolInfo.length;
         require(length < 6, "ChipRewardPool.massUpdatePools(): Pool size exceeded.");
         for (uint256 pid = 0; pid < length; ++pid) {
@@ -165,7 +167,7 @@ contract ChipRewardPool is Destructor {
     }
 
     // Update reward variables of the given pool to be up-to-date.
-    function updatePool(uint256 _pid) public {
+    function updatePool(uint256 _pid) internal {
         PoolInfo storage pool = poolInfo[_pid];
         if (block.number <= pool.lastRewardBlock) {
             return;
@@ -264,6 +266,7 @@ contract ChipRewardPool is Destructor {
     }
 
     function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external onlyOperator {
+        require(block.number > timeLockBlock, "ChipRewardPool: locked");
         if (block.number < endBlock + BLOCKS_PER_DAY * 180) {
             // Do not allow to drain lpToken if less than 180 days after farming.
             require(_token != CHIPS, "ChipRewardPool.governanceRecoverUnsupported(): Not a chip token.");
@@ -275,17 +278,6 @@ contract ChipRewardPool is Destructor {
             }
         }
         _token.safeTransfer(to, amount);
-    }
-
-    function startChipBnbPool() external onlyOwner {
-        require(block.number >= startBlock.add(BLOCKS_PER_DAY) && isChipBnbStarted == false, "too earlier");
-        isChipBnbStarted = true;
-        set(4, 99000);
-    }
-
-    function isReadyChipBnb() external view returns(bool) {
-        if(block.number >= startBlock.add(BLOCKS_PER_DAY) && isChipBnbStarted == false) return true;
-        return false;
     }
 
     function getPoolStatus() external view returns(uint256) {
