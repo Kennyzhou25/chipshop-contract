@@ -19,7 +19,6 @@ contract Chip is ERC20Burnable, Destructor {
     uint256 public constant DAO_FUND = 10 ether;
     bool public rewardPoolDistributed = false;
 
-
     constructor() public ERC20("ChipShop Token", "CHIP") {
         _mint(DAO, DAO_FUND);                 // Mint 10 CHIPs to DAO.
         _mint(_msgSender(), 0.1 ether);       // Mint 0.1 CHIPs to deployer.

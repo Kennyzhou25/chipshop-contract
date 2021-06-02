@@ -19,7 +19,6 @@ contract ChipRewardPool is Destructor {
 
     address public DAO = 0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f;
 
-
     struct UserInfo {
         uint256 amount;     // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt.
@@ -43,11 +42,10 @@ contract ChipRewardPool is Destructor {
     uint256 public totalAllocPoint = 0;             // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public startBlock;                      // The block number when CHIPS minting starts.
     uint256 public endBlock;                        // The block number when CHIPS minting ends.
-    uint256 public constant BLOCKS_PER_DAY = 100; // 86400 / 3;
+    uint256 public constant BLOCKS_PER_DAY = 28800; // 86400 / 3;
     uint256 public rewardDuration = 9;             // Days.
     uint256 public totalRewards = 50 ether;
     uint256 public rewardPerBlock;
-    // bool public isMintStarted = false;
     bool public isChipBnbStarted = false;
 
 

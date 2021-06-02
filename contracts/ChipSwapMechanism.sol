@@ -22,21 +22,17 @@ contract ChipSwapMechanism is Destructor {
     uint256 public lockedFish = 50 ether;
     uint256 public hourlyAllocatedFish = lockedFish.div(365).div(24);
 
-
     event SwapExecuted(address indexed Address, uint256 chipAmount, uint256 fishAmount);
-
 
     constructor(address _chips, address _fish) public {
         CHIPS = ERC20Burnable(_chips);
         FISH = ERC20Burnable(_fish);
     }
 
-
     modifier isSwappable() {
         require(CHIPS.totalSupply() >= 60 ether, "ChipSwapMechanism.isSwappable(): Insufficient supply.");
         _;
     }
-
 
     function swap(address account, uint256 _chipAmount, uint256 _fishAmount) external isSwappable onlyOperator {
         require(getFishBalance() >= _fishAmount, "ChipSwapMechanism.swap(): Insufficient FISH balance.");

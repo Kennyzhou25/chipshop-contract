@@ -15,7 +15,6 @@ contract Mpea is ERC20Burnable, Destructor {
         _mint(_msgSender(), 0.1 ether); // Send 0.1 ether to deployer.
     }
 
-
     function mint(address recipient, uint256 amount) external onlyOperator returns (bool) {
         uint256 balanceBefore = balanceOf(recipient);
         _mint(recipient, amount);
