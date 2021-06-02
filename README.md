@@ -10,10 +10,6 @@ Chipshop Finance is an ambitious experimental economy project on the Binance Sma
 
 chipshop.finance - by Cybermonk Security - Pending
 
-[Sushiswap - by PeckShield](https://github.com/peckshield/publications/blob/master/audit_reports/PeckShield-Audit-Report-SushiSwap-v1.0.pdf)
-
-[Timelock - by Openzeppelin Security](https://blog.openzeppelin.com/compound-finance-patch-audit)
-
 [BasisCash - by CertiK](https://www.dropbox.com/s/ed5vxvaple5e740/REP-Basis-Cash-06_11_2020.pdf)
 
 ## History of Basis
