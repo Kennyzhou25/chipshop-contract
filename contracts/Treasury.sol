@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -126,8 +126,6 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         _;
     }
 
-    // Views.
-
     // State.
 
     function isMigrated() external view returns (bool) {
@@ -150,11 +148,11 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
 
     function nextEpochLength() public view override returns (uint256 _length) {
         if (_epoch <= bootstrapEpochs) {
-            // 28 first epochs with 8h long.
-            _length = 5 minutes;
+            // 3 first epochs with 6h long.
+            _length = 6 hours;
         } else {
             uint256 CHIPPrice = getEthPrice();
-            _length = (CHIPPrice > CHIPPriceCeiling) ? 5 minutes : 5 minutes;
+            _length = (CHIPPrice > CHIPPriceCeiling) ? 6 hours : 4 hours;
         }
     }
 
@@ -338,7 +336,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         uint256 _marketingFundSharedPercent
     ) external onlyOperator {
         require(_daoFund != address(0), "zero");
-        require(_daoFundSharedPercent <= 3500, "out of range"); // <= 30%
+        require(_daoFundSharedPercent <= 3500, "out of range"); // <= 35%
         require(_secondBoardRoomFund != address(0), "zero");
         require(_secondBoardRoomFundSharedPercent <= 1000, "out of range"); // <= 10%
         require(_marketingFund != address(0), "zero");
@@ -411,7 +409,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         require(_epoch >= bootstrapEpochs, "Treasury: still in boostrap");
         require(_CHIPAmount > 0, "Treasury: cannot purchase bonds with zero amount");
         uint256 CHIPPrice = getEthPrice();
-        require(CHIPPrice == targetPrice, "Treasury: CHIP price moved.");
+
         require(
             CHIPPrice < CHIPPriceOne, // price < 1 ETH.
             "Treasury: CHIP Price not eligible for bond purchase."
@@ -434,7 +432,6 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
     function redeemBonds(uint256 _bondAmount, uint256 targetPrice) external override onlyOneBlock checkCondition checkOperator {
         require(_bondAmount > 0, "Treasury: Cannot redeem bonds with zero amount.");
         uint256 CHIPPrice = getEthPrice();
-        require(CHIPPrice == targetPrice, "Treasury: CHIP price moved.");
         require(
             CHIPPrice > CHIPPriceCeiling, // price > $1.01.
             "Treasury: CHIP Price not eligible for bond purchase."
@@ -542,6 +539,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
                 }
             } else {
                 // Contraction phase.
+                ChipSwapMechanism.unlockFish(4); // When contraction phase, 4 hours worth fish will be unlocked.
                 fishPool_v2.set(4, 3000); // Enable MPEA/CHIP pool when contraction phase.
                 maxSupplyExpansionPercent = 0;
             }

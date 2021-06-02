@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 interface IBoardroom {
     function balanceOf(address _director) external view returns (uint256);

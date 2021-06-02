@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -18,7 +18,6 @@ contract Chip is ERC20Burnable, Destructor {
     uint256 public constant INITIAL_DISTRIBUTION = 50 ether;
     uint256 public constant DAO_FUND = 10 ether;
     bool public rewardPoolDistributed = false;
-
 
     constructor() public ERC20("ChipShop Token", "CHIP") {
         _mint(DAO, DAO_FUND);                 // Mint 10 CHIPs to DAO.

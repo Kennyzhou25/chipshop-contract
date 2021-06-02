@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
@@ -18,9 +18,7 @@ contract ShareWrapper {
     using SafeERC20 for IERC20;
 
     IERC20 public FISH;
-
     uint256 private _totalSupply;
-
     mapping(address => uint256) private _balances;
 
     function totalSupply() public view returns (uint256) {
@@ -51,8 +49,6 @@ contract Boardroom is ShareWrapper, ContractGuard, Destructor {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    // Data structures.
-
     struct Boardseat {
         uint256 lastSnapshotIndex;
         uint256 rewardEarned;
@@ -75,11 +71,8 @@ contract Boardroom is ShareWrapper, ContractGuard, Destructor {
 
     IERC20 public CHIP;
     ITreasury public treasury;
-
     mapping(address => Boardseat) public directors;
-
     BoardSnapshot[] public boardHistory;
-
     uint256 public withdrawLockupEpochs;
     uint256 public rewardLockupEpochs;
 
