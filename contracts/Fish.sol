@@ -20,9 +20,9 @@ contract Fish is ERC20Burnable, Destructor {
     uint256 public constant FARMING_POOL_REWARD_ALLOCATION = 440 ether;
     uint256 public constant TEAM_FUND_POOL_ALLOCATION = 60 ether;
     uint256 public constant DAO_FUND_POOL_ALLOCATION = 50 ether;
-    uint256 public constant CHIPSWAP_ALLOCATION = 50 ether;
-    uint256 public constant VESTING_DURATION = 365 days;
-    uint256 public startTime;
+    uint256 public constant CHIPSWAP_ALLOCATION = 50 ether;         // Allocated by treasury contract automatically to chipswap mechanism 50/365/24 fish per hour.
+    uint256 public constant VESTING_DURATION = 1825 minutes;
+    uint256 public startTime;                                       // Vesting starts from contract creation time.
     uint256 public endTime;
     uint256 public teamFundRewardRate = TEAM_FUND_POOL_ALLOCATION / VESTING_DURATION;
     uint256 public daoFundRewardRate = DAO_FUND_POOL_ALLOCATION / VESTING_DURATION;

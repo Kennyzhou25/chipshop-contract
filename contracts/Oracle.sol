@@ -49,7 +49,9 @@ contract Oracle is IEpoch, Destructor {
     FixedPoint.uq112x112 public price1Average_1;
 
     address public treasury;
+
     mapping(uint256 => uint256) public epochDollarPrice;
+
     uint256 public priceAppreciation;
 
     event Initialized(address indexed executor, uint256 at);

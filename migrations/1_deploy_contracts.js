@@ -10,21 +10,17 @@ const ChipSwapMechanism = artifacts.require("ChipSwapMechanism");
 const Oracle = artifacts.require("Oracle");
 const Treasury = artifacts.require("Treasury");
 
-// const chipAddress = "0xedDD4bB8Fa49A815bb0B7F15875117308393d76b";
-// const fishAddress = "0xbAA0eE13b1371a0Ce9B631AB06A2BFBB4B667bE8";
-
-const chipStartBlock = 8009960;
-const fishStartBlock = 8067560;
+const startBlockNumber = 30000000;
 
 module.exports = function(deployer) {
   deployer.deploy(Chip).then(() => {
     console.log(`Chip Address: ${ Chip.address }`);
-    deployer.deploy(ChipRewardPool, Chip.address, chipStartBlock).then(() => {
+    deployer.deploy(ChipRewardPool, Chip.address, startBlockNumber).then(() => {
       console.log(`ChipRewardPool Address: ${ ChipRewardPool.address }`);
     });
     deployer.deploy(Fish).then(() => {
       console.log(`Fish Address: ${ Fish.address }`);
-      deployer.deploy(FishRewardPool, Fish.address, fishStartBlock).then(() => {
+      deployer.deploy(FishRewardPool, Fish.address, startBlockNumber).then(() => {
         console.log(`FishRewardPool Address: ${ FishRewardPool.address }`);
       });
       deployer.deploy(ChipSwapMechanism, Chip.address, Fish.address).then(() => {

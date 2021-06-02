@@ -148,11 +148,11 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
 
     function nextEpochLength() public view override returns (uint256 _length) {
         if (_epoch <= bootstrapEpochs) {
-            // 3 first epochs with 6h long.
-            _length = 6 hours;
+            // 28 first epochs with 8h long.
+            _length = 10 minutes;
         } else {
             uint256 CHIPPrice = getEthPrice();
-            _length = (CHIPPrice > CHIPPriceCeiling) ? 6 hours : 4 hours;
+            _length = (CHIPPrice > CHIPPriceCeiling) ? 10 minutes : 10 minutes;
         }
     }
 
@@ -249,7 +249,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         MPEA = _MPEA;
         FISH = _FISH;
         startTime = _startTime;
-        lastEpochTime = _startTime.sub(6 hours);
+        lastEpochTime = _startTime.sub(10 minutes);
         CHIPPriceOne = 10**18;
         CHIPPriceCeiling = CHIPPriceOne.mul(10001).div(10000);
         maxSupplyExpansionPercent = 300; // Up to 3.0% supply for expansion.
@@ -259,7 +259,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         maxSupplyContractionPercent = 350; // Up to 3.5% supply for contraction (to burn CHIP and mint MPEA).
         maxDeptRatioPercent = 5000; // Up to 50% supply of MEB to purchase.
         bootstrapEpochs = 3; // First 3 epochs with expansion.
-        bootstrapSupplyExpansionPercent = 350;
+        bootstrapSupplyExpansionPercent = 300;
         seigniorageSaved = IERC20(CHIP).balanceOf(address(this)); // Set seigniorageSaved to its balance.
         allocateSeigniorageSalary = 0.001 ether; // 0.001 CHIP salary for calling allocateSeigniorage.
         maxDiscountRate = 13e17; // 30% - when purchasing bond.
@@ -277,7 +277,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
     function resetStartTime(uint256 _startTime) external onlyOperator {
         require(_epoch == 0, "already started");
         startTime = _startTime;
-        lastEpochTime = _startTime.sub(6 hours);
+        lastEpochTime = _startTime.sub(10 minutes);
     }
 
     function setBoardroom(address _boardroom) external onlyOperator {
@@ -336,7 +336,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
         uint256 _marketingFundSharedPercent
     ) external onlyOperator {
         require(_daoFund != address(0), "zero");
-        require(_daoFundSharedPercent <= 3500, "out of range"); // <= 35%
+        require(_daoFundSharedPercent <= 3500, "out of range"); // <= 30%
         require(_secondBoardRoomFund != address(0), "zero");
         require(_secondBoardRoomFundSharedPercent <= 1000, "out of range"); // <= 10%
         require(_marketingFund != address(0), "zero");
