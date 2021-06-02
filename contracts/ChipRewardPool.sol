@@ -19,6 +19,7 @@ contract ChipRewardPool is Destructor {
 
     address public DAO = 0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f;
 
+
     struct UserInfo {
         uint256 amount;     // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt.
