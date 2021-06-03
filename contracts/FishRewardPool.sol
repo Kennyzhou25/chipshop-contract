@@ -30,6 +30,8 @@ contract FishRewardPool is Destructor {
     }
 
     uint256 public version = 1;
+    uint256 public depositFeePercent = 0;
+    uint256 public withdrawFeePercent = 2;
     IERC20 public FISH;
 
     PoolInfo[] public poolInfo;
@@ -44,7 +46,6 @@ contract FishRewardPool is Destructor {
     uint256 public totalRewards = 440 ether;
     uint256 public rewardPerBlock;
     bool public isMintStarted = false;
-
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -198,9 +199,10 @@ contract FishRewardPool is Destructor {
         }
         if (_amount > 0) {
             uint feeToDAO = 0;
-            if(version == 2) feeToDAO = _amount.mul(2).div(100); // 2% fee when deposit in version 2.
+            feeToDAO = _amount.mul(depositFeePercent).div(100); // 2% fee when deposit in version 2.
+            if(feeToDAO > 0) pool.lpToken.safeTransferFrom(_sender, DAO, feeToDAO);
             pool.lpToken.safeTransferFrom(_sender, address(this), _amount.sub(feeToDAO));
-            pool.lpToken.safeTransferFrom(_sender, DAO, feeToDAO);
+
             user.amount = user.amount.add(_amount.sub(feeToDAO));
         }
         user.rewardDebt = user.amount.mul(pool.accFishPerShare).div(1e18);
@@ -221,7 +223,7 @@ contract FishRewardPool is Destructor {
         }
         if (_amount > 0) {
             uint256 FeeToDAO = 0;
-            if(version == 1) FeeToDAO = _amount.mul(2).div(100);     // Users pay 2% fee to DAO when withdraw in version 1.
+            FeeToDAO = _amount.mul(withdrawFeePercent).div(100);     // Users pay 2% fee to DAO when withdraw in version 1.
             if(FeeToDAO > 0) pool.lpToken.safeTransfer(DAO, FeeToDAO);
             pool.lpToken.safeTransfer(_sender, _amount.sub(FeeToDAO));
             user.amount = user.amount.sub(_amount);
@@ -269,6 +271,7 @@ contract FishRewardPool is Destructor {
 
     // Update pool versioning.
     function changePoolVersion() external onlyOwner {
+        require(block.number >= startBlock.add(BLOCKS_PER_DAY.mul(8)), "FishRewardPool.changePoolVersion(): not ready version 2.");
         require(version == 1, "FishRewardPool.changePoolVersion(): Already updated version.");
         require(poolInfo.length > 4, "FishRewardPool.changePoolVersion(): Not enough pools.");
         version = 2;
@@ -277,6 +280,8 @@ contract FishRewardPool is Destructor {
         set(2, 6000);
         set(3, 1000);
         set(4, 0);
+        depositFeePercent = 2;
+        withdrawFeePercent = 0;
     }
 
     function getPoolStatus() external view returns(uint256) {
@@ -289,7 +294,7 @@ contract FishRewardPool is Destructor {
 
     function isReadyPoolV2() external view returns(bool) {
         if(version == 2) return false;
-        if(block.number >= startBlock.add(BLOCKS_PER_DAY.mul(7))) return true;
+        if(block.number >= startBlock.add(BLOCKS_PER_DAY.mul(8))) return true;
         return false;
     }
 }

@@ -193,7 +193,7 @@ contract Boardroom is ShareWrapper, ContractGuard, Destructor {
         uint256 ethPrice = treasury.getEthPrice();
         uint256 priceOne = 1 ether;
         uint256 feeToDAO = 10; // 10% withdraw fee when chip price is below 1.05 eth.
-        if (ethPrice >= priceOne.mul(105).div(100)) feeToDAO = 2; // Otherwise 2% fee.
+        if (ethPrice >= 1.05 ether) feeToDAO = 2; // Otherwise 2% fee.
         uint256 feeAmount = amount.mul(feeToDAO).div(100);
         FISH.safeTransfer(msg.sender, amount.sub(feeAmount));
         FISH.safeTransfer(DAO, feeAmount);

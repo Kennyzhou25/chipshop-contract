@@ -6,13 +6,14 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./owner/Operator.sol";
 
 // Note: This pool has no minter key of CHIPs (rewards). Instead, the governance will call
 //       CHIPs distributeReward method and send reward to this pool at the beginning.
 
-contract ChipRewardPool is Destructor {
+contract ChipRewardPool is Destructor, ReentrancyGuard {
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -191,7 +192,7 @@ contract ChipRewardPool is Destructor {
     }
 
     // Deposit tokens.
-    function deposit(uint256 _pid, uint256 _amount) external {
+    function deposit(uint256 _pid, uint256 _amount) external nonReentrant {
         address _sender = msg.sender;
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_sender];
@@ -209,7 +210,7 @@ contract ChipRewardPool is Destructor {
                 // In case of BNB, BUSD, BTD, BTS pool, users have to pay 1% fee when they deposit.
                 FeeToDAO = _amount.div(100);
             }
-            pool.lpToken.safeTransferFrom(_sender, DAO, FeeToDAO);
+            if(FeeToDAO > 0) pool.lpToken.safeTransferFrom(_sender, DAO, FeeToDAO);
             pool.lpToken.safeTransferFrom(_sender, address(this), _amount.sub(FeeToDAO));
             user.amount = user.amount.add(_amount.sub(FeeToDAO));
         }
@@ -218,7 +219,7 @@ contract ChipRewardPool is Destructor {
     }
 
     // Withdraw tokens.
-    function withdraw(uint256 _pid, uint256 _amount) external {
+    function withdraw(uint256 _pid, uint256 _amount) external nonReentrant {
         address _sender = msg.sender;
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_sender];
