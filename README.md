@@ -8,7 +8,7 @@ Chipshop Finance is an ambitious experimental economy project on the Binance Sma
 
 ## Audit
 
-chipshop.finance - by Cybermonk Security - Pending
+[chipshop.finance - by Cybermonk Security](https://github.com/HeadChip/chipshop-contracts/blob/master/contracts/CF.Audit.Report.pdf)
 
 [BasisCash - by CertiK](https://www.dropbox.com/s/ed5vxvaple5e740/REP-Basis-Cash-06_11_2020.pdf)
 
