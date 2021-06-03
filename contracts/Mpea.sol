@@ -13,7 +13,7 @@ contract Mpea is ERC20Burnable, Destructor {
 
     address public daoFund = 0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f;
 
-    constructor() public ERC20("ChipShop Bond", "MPEA") {
+    constructor() public ERC20("ChipShop Bond", "MPEAS") {
         _mint(daoFund, 0.1 ether); // Send 0.1 ether to deployer.
     }
 
