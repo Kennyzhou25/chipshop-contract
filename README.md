@@ -28,7 +28,7 @@ Basis was shut down in 2018, due to regulatory concerns its Bond and Share token
 
 ChipShop differs from the original Basis Project in several meaningful ways which are fully described in the [documentation](https://chipshop-finance.gitbook.io/chipshop-finance/).
 
-## Contracts on Binance Smart Chain Mainnet
+## Contracts on BSC Mainnet
 
 - Chip Address: [0x7a4Feb21b86281F7D345dEDE500c9C51881b948B](https://bscscan.com/address/0x7a4Feb21b86281F7D345dEDE500c9C51881b948B)
 - Fish Address: [0xD47c524ae4Cf0f941D0Dd03b44CD9C80dd4238d6](https://bscscan.com/address/0xD47c524ae4Cf0f941D0Dd03b44CD9C80dd4238d6)
