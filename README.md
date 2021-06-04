@@ -14,7 +14,7 @@
 
 ## History of Basis
 
-Basis is an algorithmic stablecoin protocol where the money supply is dynamically adjusted to meet changes in money demand.  
+[Basis](https://basis.io) is an algorithmic stablecoin protocol where the money supply is dynamically adjusted to meet changes in money demand.  
 
 - When demand is rising, the blockchain will create more tokens. The expanded supply is designed to bring the Basis price back down.
 - When demand is falling, the blockchain will buy back tokens. The contracted supply is designed to restore Basis price.
