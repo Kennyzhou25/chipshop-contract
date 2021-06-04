@@ -28,6 +28,22 @@ Basis was shut down in 2018, due to regulatory concerns its Bond and Share token
 
 ChipShop differs from the original Basis Project in several meaningful ways which are fully described in the [documentation](https://chipshop-finance.gitbook.io/chipshop-finance/).
 
+## Contracts on Binance Smart Chain Mainnet
+
+- Chip Address: [0x7a4Feb21b86281F7D345dEDE500c9C51881b948B](https://bscscan.com/address/0x7a4Feb21b86281F7D345dEDE500c9C51881b948B)
+- Fish Address: [0xD47c524ae4Cf0f941D0Dd03b44CD9C80dd4238d6](https://bscscan.com/address/0xD47c524ae4Cf0f941D0Dd03b44CD9C80dd4238d6)
+- Mpea Address: [0x23A47619f784F109582f07C01D8a72512ba9D0E1](https://bscscan.com/address/0x23A47619f784F109582f07C01D8a72512ba9D0E1)
+- Boardroom Address: [0xF248A509eAb50cf1434aaB51657a83D8A1fE7D37](https://bscscan.com/address/0xF248A509eAb50cf1434aaB51657a83D8A1fE7D37)
+- ChipSwapMechanism Address: [0x6978fE796aB57Cd1a17365cbfd40F17FebC35847](https://bscscan.com/address/0x6978fE796aB57Cd1a17365cbfd40F17FebC35847)
+- Oracle Address: [0x17C676E8D5E668f25862E2Bb05136822fC15e80a](https://bscscan.com/address/0x17C676E8D5E668f25862E2Bb05136822fC15e80a)
+- Treasury : [0x3f55589B1f87849738B0a2346A34ccfD632194a3](https://bscscan.com/address/0x3f55589B1f87849738B0a2346A34ccfD632194a3)
+- ChipRewardPool Address: [0x55fD847363fF4cAb4032722f54455B4a7E3160af](https://bscscan.com/address/0x55fD847363fF4cAb4032722f54455B4a7E3160af)
+- FishRewardPool Address : [0xCb6bf08b2872b8d606a09338bEa0019623b773F7](https://bscscan.com/address/0xCb6bf08b2872b8d606a09338bEa0019623b773F7)
+- CHIP/BNB LP : [0x5C70d3b80d09f4D4E5a444dd6C57F125402B9b85](https://bscscan.com/address/0x5C70d3b80d09f4D4E5a444dd6C57F125402B9b85)
+- CHIP/BUSD LP : [0x2BB44bad04D3c33556f67E896095637512813DBC](https://bscscan.com/address/0x2BB44bad04D3c33556f67E896095637512813DBC)
+- FISH/BNB LP : [0x2F5e90ddc8bFF69cbB05D631485985f7169a1cd8](https://bscscan.com/address/0x2F5e90ddc8bFF69cbB05D631485985f7169a1cd8)
+- CHIP/BTD LP : [0x2d7a4246818AF5106BD53aEE846eF7dDA1Ca6CDE](https://bscscan.com/address/0x2d7a4246818AF5106BD53aEE846eF7dDA1Ca6CDE)
+- MPEA/CHIP LP : [0x8c47dBD96B22E0D96c3c26880e63FB09f1509C57](https://bscscan.com/address/0x8c47dBD96B22E0D96c3c26880e63FB09f1509C57)
 
 ## Conclusion
 
