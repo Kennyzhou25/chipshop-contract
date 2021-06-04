@@ -4,7 +4,7 @@
 
 
 
-Chipshop Finance is an ambitious experimental economy project on the Binance Smart Chain (BSC). The aim of this project is to become the longest lasting and most successful stablecoin on the BSC, learning from the mistakes of others which went under-pegged. It is a fork of Wantan Mee, a lightweight implementation of the [Basis Protocol](https://basis.io) on Ethereum.
+[Chipshop Finance](https://chipshop.finance) is an ambitious experimental economy project on the Binance Smart Chain (BSC). The aim of this project is to become the longest lasting and most successful stablecoin on the BSC, learning from the mistakes of others which went under-pegged. It is a fork of Wantan Mee, a lightweight implementation of the [Basis Protocol](https://basis.io) on Ethereum.
 
 ## Audit
 
