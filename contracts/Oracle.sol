@@ -15,7 +15,7 @@ import "./interfaces/IPancakePair.sol";
 // Note: Fixed window oracle that recomputes the average price for the entire period once every period.
 // The price average is only guaranteed to be over at least 1 period, but may be over a longer period.
 
-contract Oracle is IEpoch, Destructor {
+contract Oracle is IEpoch, Operator {
     using FixedPoint for *;
     using SafeMath for uint256;
 

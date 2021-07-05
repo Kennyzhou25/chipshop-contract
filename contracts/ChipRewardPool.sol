@@ -13,7 +13,7 @@ import "./owner/Operator.sol";
 // Note: This pool has no minter key of CHIPs (rewards). Instead, the governance will call
 //       CHIPs distributeReward method and send reward to this pool at the beginning.
 
-contract ChipRewardPool is Destructor, ReentrancyGuard {
+contract ChipRewardPool is Operator, ReentrancyGuard {
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;

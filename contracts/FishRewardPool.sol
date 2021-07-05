@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./owner/Operator.sol";
 
-contract FishRewardPool is Destructor {
+contract FishRewardPool is Operator {
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -29,9 +29,6 @@ contract FishRewardPool is Destructor {
         bool isStarted;          // Has lastRewardBlock passed?
     }
 
-    uint256 public version = 1;
-    uint256 public depositFeePercent = 0;
-    uint256 public withdrawFeePercent = 2;
     IERC20 public FISH;
 
     PoolInfo[] public poolInfo;
@@ -45,7 +42,6 @@ contract FishRewardPool is Destructor {
     uint256 public rewardDuration = 365;            // Days.
     uint256 public totalRewards = 440 ether;
     uint256 public rewardPerBlock;
-    bool public isMintStarted = false;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -198,12 +194,8 @@ contract FishRewardPool is Destructor {
             }
         }
         if (_amount > 0) {
-            uint feeToDAO = 0;
-            feeToDAO = _amount.mul(depositFeePercent).div(100); // 2% fee when deposit in version 2.
-            if(feeToDAO > 0) pool.lpToken.safeTransferFrom(_sender, DAO, feeToDAO);
-            pool.lpToken.safeTransferFrom(_sender, address(this), _amount.sub(feeToDAO));
-
-            user.amount = user.amount.add(_amount.sub(feeToDAO));
+            pool.lpToken.safeTransferFrom(_sender, address(this), _amount);
+            user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accFishPerShare).div(1e18);
         emit Deposit(_sender, _pid, _amount);
@@ -222,10 +214,7 @@ contract FishRewardPool is Destructor {
             emit RewardPaid(_sender, _pending);
         }
         if (_amount > 0) {
-            uint256 FeeToDAO = 0;
-            FeeToDAO = _amount.mul(withdrawFeePercent).div(100);     // Users pay 2% fee to DAO when withdraw in version 1.
-            if(FeeToDAO > 0) pool.lpToken.safeTransfer(DAO, FeeToDAO);
-            pool.lpToken.safeTransfer(_sender, _amount.sub(FeeToDAO));
+            pool.lpToken.safeTransfer(_sender, _amount);
             user.amount = user.amount.sub(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accFishPerShare).div(1e18);
@@ -269,32 +258,11 @@ contract FishRewardPool is Destructor {
         _token.safeTransfer(to, amount);
     }
 
-    // Update pool versioning.
-    function changePoolVersion() external onlyOwner {
-        require(block.number >= startBlock.add(BLOCKS_PER_DAY.mul(8)), "FishRewardPool.changePoolVersion(): not ready version 2.");
-        require(version == 1, "FishRewardPool.changePoolVersion(): Already updated version.");
-        require(poolInfo.length > 4, "FishRewardPool.changePoolVersion(): Not enough pools.");
-        version = 2;
-        set(0, 3000);
-        set(1, 3000);
-        set(2, 6000);
-        set(3, 1000);
-        set(4, 0);
-        depositFeePercent = 2;
-        withdrawFeePercent = 0;
-    }
-
     function getPoolStatus() external view returns(uint256) {
         uint256 status;
         if(block.number <= startBlock) status = 0;
         else if(block.number > endBlock) status = 2;
         else status = 1;
         return status;
-    }
-
-    function isReadyPoolV2() external view returns(bool) {
-        if(version == 2) return false;
-        if(block.number >= startBlock.add(BLOCKS_PER_DAY.mul(8))) return true;
-        return false;
     }
 }

@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 import "./owner/Operator.sol";
 
-contract Mpea is ERC20Burnable, Destructor {
+contract Mpea is ERC20Burnable, Operator {
 
     address public daoFund = 0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f;
 

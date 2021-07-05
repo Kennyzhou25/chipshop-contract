@@ -11,7 +11,7 @@ import "./owner/Operator.sol";
 
 // Note: The owner of this contract will be the Treasury contract.
 
-contract ChipSwapMechanism is Destructor {
+contract ChipSwapMechanism is Operator {
 
     using SafeMath for uint256;
 
@@ -21,7 +21,6 @@ contract ChipSwapMechanism is Destructor {
     uint256 public availableFish = 0;
     uint256 public lockedFish = 50 ether;
     uint256 public hourlyAllocatedFish = lockedFish.div(365).div(24);
-
 
     event SwapExecuted(address indexed Address, uint256 chipAmount, uint256 fishAmount);
 
@@ -37,13 +36,19 @@ contract ChipSwapMechanism is Destructor {
         _;
     }
 
-
     function swap(address account, uint256 _chipAmount, uint256 _fishAmount) external isSwappable onlyOperator {
+        uint256 extraFish = getFishBalance().sub(lockedFish).sub(availableFish);
+
         require(getFishBalance() >= _fishAmount, "ChipSwapMechanism.swap(): Insufficient FISH balance.");
         require(getChipBalance(account) >= _chipAmount, "ChipSwapMechanism.swap(): Insufficient CHIP balance.");
-        require(availableFish >= _fishAmount, "ChipSwapMechanism.swap(): Insufficient FISH population.");
+        require(availableFish.add(extraFish) >= _fishAmount, "ChipSwapMechanism.swap(): Insufficient FISH population.");
         require(account != address(0x0), "ChipSwapMechanism.swap(): Invalid address.");
-        availableFish = availableFish.sub(_fishAmount);
+        if(availableFish < _fishAmount){
+            availableFish = 0;
+        }else{
+            availableFish = availableFish.sub(_fishAmount);
+        }
+
         FISH.transfer(account, _fishAmount);
         emit SwapExecuted(account, _chipAmount, _fishAmount);
     }
@@ -66,5 +71,9 @@ contract ChipSwapMechanism is Destructor {
         if(unlockFishAmount > lockedFish) unlockFishAmount = lockedFish;
         lockedFish = lockedFish.sub(unlockFishAmount);
         availableFish = availableFish.add(unlockFishAmount);
+    }
+
+    function getAvailableFish() external view returns (uint256) {
+        return getFishBalance().sub(lockedFish);
     }
 }

@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 import "./owner/Operator.sol";
 
-contract Chip is ERC20Burnable, Destructor {
+contract Chip is ERC20Burnable, Operator {
 
     using SafeMath for uint256;
 

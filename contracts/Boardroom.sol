@@ -44,7 +44,7 @@ contract ShareWrapper {
 }
 
 
-contract Boardroom is ShareWrapper, ContractGuard, Destructor {
+contract Boardroom is ShareWrapper, ContractGuard, Operator {
     using Address for address;
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -233,5 +233,13 @@ contract Boardroom is ShareWrapper, ContractGuard, Destructor {
         require(address(_token) != address(CHIP), "Boardroom.governanceRecoverUnsupported(): Not a chip token.");
         require(address(_token) != address(FISH), "Boardroom.governanceRecoverUnsupported(): Not a fish token.");
         _token.safeTransfer(_to, _amount);
+    }
+
+    function getClaimEpoch() external view returns (uint256) {
+        return directors[_msgSender()].epochTimerStart.add(rewardLockupEpochs);
+    }
+
+    function getWithdrawEpoch() external view returns (uint256) {
+        return directors[_msgSender()].epochTimerStart.add(withdrawLockupEpochs);
     }
 }

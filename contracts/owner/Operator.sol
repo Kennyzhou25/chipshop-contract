@@ -38,9 +38,3 @@ contract Operator is Context, Ownable {
         _operator = newOperator_;
     }
 }
-
-contract Destructor is Operator {
-    function SelfDestruct(address payable addr) external onlyOperator {
-        selfdestruct(addr);
-    }
-}

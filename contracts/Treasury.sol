@@ -19,7 +19,7 @@ import "./interfaces/IBoardroom.sol";
 import "./interfaces/IBasisAsset.sol";
 import "./interfaces/IFishRewardPool.sol";
 
-contract Treasury is ContractGuard, ITreasury, Destructor {
+contract Treasury is ContractGuard, ITreasury, Operator {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -117,7 +117,7 @@ contract Treasury is ContractGuard, ITreasury, Destructor {
     }
 
     modifier checkOperator {
-        require(IBasisAsset(CHIP).operator() == address(this) && IBasisAsset(MPEA).operator() == address(this) && Operator(boardroom).operator() == address(this), "Treasury: Bad permissions.");
+        require(IBasisAsset(CHIP).operator() == address(this) && IBasisAsset(MPEA).operator() == address(this) && Operator(boardroom).operator() == address(this) && Operator(FISH).operator() == address(this), "Treasury: Bad permissions.");
         _;
     }
 
