@@ -286,7 +286,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
 
     function setBoardroom(address _boardroom) external onlyOperator {
         boardroom = _boardroom;
-        emit boardRoomFundSet(boardroom);
+        emit boardroomFundSet(boardroom);
     }
 
     function setBoardroomSecond(address _boardroom2) external onlyOperator {

@@ -38,7 +38,7 @@ contract Fish is ERC20Burnable, Operator {
         endTime = startTime.add(VESTING_DURATION);
         teamFundLastClaimed = startTime;
         daoFundLastClaimed = startTime;
-        _mint(daoFund, 0.1 ether); // Send 0.1 ether to deployer.
+        // _mint(daoFund, 0.1 ether); // Send 0.1 ether to deployer.
     }
 
 

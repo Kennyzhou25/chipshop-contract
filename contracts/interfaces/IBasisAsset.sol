@@ -12,4 +12,6 @@ interface IBasisAsset {
     function isOperator() external returns (bool);
 
     function operator() external view returns (address);
+
+    function balanceOf(address addr) external view returns (uint256);
 }

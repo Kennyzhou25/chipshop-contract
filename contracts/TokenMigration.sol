@@ -1,12 +1,12 @@
-pragma solidity ^0.4.0;
+pragma solidity ^0.8.0;
 
 import "./interfaces/IBasisAsset.sol";
 
 contract TokenMigration {
 
-    IBasisAsset public oldChip = IBasisAsset(0x7a4Feb21b86281F7D345dEDE500c9C51881b948B);
-    IBasisAsset public oldFish = IBasisAsset(0xD47c524ae4Cf0f941D0Dd03b44CD9C80dd4238d6);
-    IBasisAsset public oldMpea = IBasisAsset(0x23A47619f784F109582f07C01D8a72512ba9D0E1);
+    IBasisAsset public oldChip = IBasisAsset(0x8d92474DE93aB8C0De11C29db7c1628772bEd484);
+    IBasisAsset public oldFish = IBasisAsset(0xd092C8aD4B8dAB3174553d580E185c4AB3F31d7C);
+    IBasisAsset public oldMpea = IBasisAsset(0xd4B702dF46F0Efa69f06dC6e31162962A9c77Df3);
 
     IBasisAsset public newChip;
     IBasisAsset public newFish;
