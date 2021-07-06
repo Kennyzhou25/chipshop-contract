@@ -13,7 +13,7 @@ contract TokenMigration {
     IBasisAsset public newMpea;
 
     constructor(IBasisAsset _newChip, IBasisAsset _newFish, IBasisAsset _newMpea) {
-        newFish = _newFish;
+        newChip = _newChip;
         newFish = _newFish;
         newMpea = _newMpea;
     }
