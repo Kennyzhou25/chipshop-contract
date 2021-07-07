@@ -17,32 +17,35 @@ const chipStartBlock = 8009960;
 const fishStartBlock = 8067560;
 
 module.exports = function(deployer) {
+  // deployer.deploy(Chip).then(() => {
+  //   console.log(`Chip Address: ${ Chip.address }`);
+  //   deployer.deploy(ChipRewardPool, Chip.address, chipStartBlock).then(() => {
+  //     console.log(`ChipRewardPool Address: ${ ChipRewardPool.address }`);
+  //   });
+  //   deployer.deploy(Fish).then(() => {
+  //     console.log(`Fish Address: ${ Fish.address }`);
+  //     deployer.deploy(FishRewardPool, Fish.address, fishStartBlock).then(() => {
+  //       console.log(`FishRewardPool Address: ${ FishRewardPool.address }`);
+  //     });
+  //     deployer.deploy(ChipSwapMechanism, Chip.address, Fish.address).then(() => {
+  //       console.log(`ChipSwapMechanism Address: ${ ChipSwapMechanism.address }`);
+  //     });
+  //   });
+  // });
+  //
+  // deployer.deploy(Boardroom).then(() => {
+  //   console.log(`Boardroom Address: ${ Boardroom.address }`);
+  // });
+  // deployer.deploy(Oracle).then(() => {
+  //   console.log(`Oracle Address: ${ Oracle.address }`);
+  // });
+  // deployer.deploy(Treasury).then(() => {
+  //   console.log(`Treasury Address: ${ Treasury.address }`);
+  // });
+  // deployer.deploy(Mpea).then(() => {
+  //   console.log(`Mpea Address: ${ Mpea.address }`);
+  // });
   deployer.deploy(Chip).then(() => {
-    console.log(`Chip Address: ${ Chip.address }`);
-    deployer.deploy(ChipRewardPool, Chip.address, chipStartBlock).then(() => {
-      console.log(`ChipRewardPool Address: ${ ChipRewardPool.address }`);
-    });
-    deployer.deploy(Fish).then(() => {
-      console.log(`Fish Address: ${ Fish.address }`);
-      deployer.deploy(FishRewardPool, Fish.address, fishStartBlock).then(() => {
-        console.log(`FishRewardPool Address: ${ FishRewardPool.address }`);
-      });
-      deployer.deploy(ChipSwapMechanism, Chip.address, Fish.address).then(() => {
-        console.log(`ChipSwapMechanism Address: ${ ChipSwapMechanism.address }`);
-      });
-    });
-  });
-
-  deployer.deploy(Boardroom).then(() => {
-    console.log(`Boardroom Address: ${ Boardroom.address }`);
-  });
-  deployer.deploy(Oracle).then(() => {
-    console.log(`Oracle Address: ${ Oracle.address }`);
-  });
-  deployer.deploy(Treasury).then(() => {
-    console.log(`Treasury Address: ${ Treasury.address }`);
-  });
-  deployer.deploy(Mpea).then(() => {
-    console.log(`Mpea Address: ${ Mpea.address }`);
+    console.log(`Chip Address: ${Chip.address}`);
   });
 };

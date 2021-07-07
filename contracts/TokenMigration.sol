@@ -33,6 +33,6 @@ contract TokenMigration {
     function migrateMpea() external {
         uint256 oldBalance = oldMpea.balanceOf(msg.sender);
         oldMpea.burnFrom(msg.sender, oldBalance);
-        newMpea.mint(msg.sender, oldBalance);
+        newChip.mint(msg.sender, oldBalance);
     }
 }
