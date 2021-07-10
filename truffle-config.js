@@ -87,7 +87,6 @@ module.exports = {
       provider: () => new HDWalletProvider(MNEMONIC, `https://data-seed-prebsc-1-s1.binance.org:8545`),
       network_id: 97,
       networkCheckTimeout: 120000,
-      gas: 4000000,
       timeoutBlocks: 200,
       skipDryRun: true
     },

@@ -17,7 +17,7 @@ const TokenMigration = artifacts.require("TokenMigration");
 const chipStartBlock = 8009960;
 const fishStartBlock = 10464233;
 
-module.exports = function(deployer) {
+module.exports = async function(deployer) {
   // deployer.deploy(Chip).then(() => {
   //   console.log(`Chip Address: ${ Chip.address }`);
   //   // deployer.deploy(ChipRewardPool, Chip.address, chipStartBlock).then(() => {
@@ -46,10 +46,11 @@ module.exports = function(deployer) {
   // deployer.deploy(Oracle).then(() => {
   //   console.log(`Oracle Address: ${ Oracle.address }`);
   // });
-  deployer.deploy(Treasury).then(() => {
-    console.log(`Treasury Address: ${ Treasury.address }`);
-  });
-
+  // deployer.deploy(Treasury).then(() => {
+  //   console.log(`Treasury Address: ${ Treasury.address }`);
+  // });
+  const treasuryAddress = await deployer.deploy(Treasury);
+  console.log('treasuryAddress: ', treasuryAddress);
   // deployer.deploy(Chip).then(() => {
   //   console.log(`Chip Address: ${ Chip.address }`);
   // });

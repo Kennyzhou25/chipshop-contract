@@ -32,7 +32,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         uint256 epochID;
         uint256 bonded;
         uint256 redeemed;
-        uint256 expanded_amount;
+        uint256 expandedAmount;
         uint256 epochPrice;
     }
 
@@ -136,7 +136,9 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function nextEpochLength() public view override returns (uint256 _length) {
-        if (_epoch <= bootstrapEpochs) _length = 6 hours;
+        if (_epoch <= bootstrapEpochs) {
+            _length = 6 hours;
+        }
         else {
             uint256 CHIPPrice = getEthPrice();
             _length = (CHIPPrice > CHIPPriceCeiling) ? 6 hours : 4 hours;
@@ -182,19 +184,26 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         if (_CHIPPrice > CHIPPriceCeiling) {
             uint256 _totalDollar = IERC20(CHIP).balanceOf(address(this));
             uint256 _rate = getBondPremiumRate();
-            if (_rate > 0) _redeemableBonds = _totalDollar.mul(1e18).div(_rate);
+            if (_rate > 0) {
+                _redeemableBonds = _totalDollar.mul(1e18).div(_rate);
+            }
         }
     }
 
     function getBondDiscountRate() public view returns (uint256 _rate) {
         uint256 _CHIPPrice = getEthPrice();
         if (_CHIPPrice <= CHIPPriceOne) {
-            if (discountPercent == 0) _rate = CHIPPriceOne;
+            if (discountPercent == 0) {
+                _rate = CHIPPriceOne;
+            }
             else {
-                uint256 _bondAmount = CHIPPriceOne.mul(1e18).div(_CHIPPrice); // To burn 1 CHIP.
+                uint256 _bondAmount = CHIPPriceOne.mul(1e18).div(_CHIPPrice);
+                // To burn 1 CHIP.
                 uint256 _discountAmount = _bondAmount.sub(CHIPPriceOne).mul(discountPercent).div(10000);
                 _rate = CHIPPriceOne.add(_discountAmount);
-                if (maxDiscountRate > 0 && _rate > maxDiscountRate) _rate = maxDiscountRate;
+                if (maxDiscountRate > 0 && _rate > maxDiscountRate) {
+                    _rate = maxDiscountRate;
+                }
             }
         }
     }
@@ -202,11 +211,15 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     function getBondPremiumRate() public view returns (uint256 _rate) {
         uint256 _CHIPPrice = getEthPrice();
         if (_CHIPPrice > CHIPPriceCeiling) {
-            if (premiumPercent == 0) _rate = CHIPPriceOne;
+            if (premiumPercent == 0) {
+                _rate = CHIPPriceOne;
+            }
             else {
                 uint256 _premiumAmount = _CHIPPrice.sub(CHIPPriceOne).mul(premiumPercent).div(10000);
                 _rate = CHIPPriceOne.add(_premiumAmount);
-                if (maxDiscountRate > 0 && _rate > maxDiscountRate) _rate = maxDiscountRate;
+                if (maxDiscountRate > 0 && _rate > maxDiscountRate){
+                    _rate = maxDiscountRate;
+                }
             }
         }
     }
@@ -217,7 +230,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         FISH = _FISH;
         startTime = _startTime;
         lastEpochTime = _startTime.sub(6 hours);
-        CHIPPriceOne = 10**18;
+        CHIPPriceOne = 10 ** 18;
         CHIPPriceCeiling = CHIPPriceOne.mul(10001).div(10000);
         maxSupplyExpansionPercent = 300;
         maxSupplyExpansionPercentInDebtPhase = 300;
@@ -238,7 +251,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         secondBoardRoomFundSharedPercent = 0;
         marketingFundSharedPercent = 0;
         initialized = true;
-        history.push(epochHistory({epochID: _epoch, bonded: 0, redeemed: 0, expanded_amount: 0, epochPrice: 0}));
+        history.push(epochHistory({epochID : _epoch, bonded : 0, redeemed : 0, expandedAmount : 0, epochPrice : 0}));
 
         emit Initialized(msg.sender, block.number);
     }
@@ -292,8 +305,10 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function setBootstrapParams(uint256 _bootstrapEpochs, uint256 _bootstrapSupplyExpansionPercent) external onlyOperator {
-        require(_bootstrapEpochs <= 90, "_bootstrapSupplyExpansionPercent: out of range"); // <= 1 month
-        require(_bootstrapSupplyExpansionPercent >= 100 && _bootstrapSupplyExpansionPercent <= 1000, "_bootstrapSupplyExpansionPercent: out of range"); // [1%, 10%]
+        require(_bootstrapEpochs <= 90, "_bootstrapSupplyExpansionPercent: out of range");
+        // <= 1 month
+        require(_bootstrapSupplyExpansionPercent >= 100 && _bootstrapSupplyExpansionPercent <= 1000, "_bootstrapSupplyExpansionPercent: out of range");
+        // [1%, 10%]
         bootstrapEpochs = _bootstrapEpochs;
         bootstrapSupplyExpansionPercent = _bootstrapSupplyExpansionPercent;
     }
@@ -345,7 +360,8 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function setMintingFactorForPayingDebt(uint256 _mintingFactorForPayingDebt) external onlyOperator {
-        require(_mintingFactorForPayingDebt >= 10000 && _mintingFactorForPayingDebt <= 20000, "_mintingFactorForPayingDebt: out of range"); // [100%, 200%]
+        require(_mintingFactorForPayingDebt >= 10000 && _mintingFactorForPayingDebt <= 20000, "_mintingFactorForPayingDebt: out of range");
+        // [100%, 200%]
         mintingFactorForPayingDebt = _mintingFactorForPayingDebt;
     }
 
@@ -442,31 +458,65 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         inDebtPhase = false;
         _updateEthPrice();
         previousEpochDollarPrice = getEthPrice();
-        history.push(epochHistory({epochID: _epoch.add(1), bonded: 0, redeemed: 0, expanded_amount: 0, epochPrice: previousEpochDollarPrice}));
+        history.push(epochHistory({epochID : _epoch.add(1), bonded : 0, redeemed : 0, expandedAmount : 0, epochPrice : previousEpochDollarPrice}));
         uint256 CHIPSupply = IERC20(CHIP).totalSupply().sub(seigniorageSaved);
         uint256 ExpansionPercent;
-        if(CHIPSupply < 500 ether) ExpansionPercent = 300;                                      // 3%
-        else if(CHIPSupply >= 500 ether && CHIPSupply < 1000 ether) ExpansionPercent = 200;     // 2%
-        else if(CHIPSupply >= 1000 ether && CHIPSupply < 2000 ether) ExpansionPercent = 150;    // 1.5%
-        else if(CHIPSupply >= 2000 ether && CHIPSupply < 5000 ether) ExpansionPercent = 125;    // 1.25%
-        else if(CHIPSupply >= 5000 ether && CHIPSupply < 10000 ether) ExpansionPercent = 100;   // 1%
-        else if(CHIPSupply >= 10000 ether && CHIPSupply < 20000 ether) ExpansionPercent = 75;   // 0.75%
-        else if(CHIPSupply >= 20000 ether && CHIPSupply < 50000 ether) ExpansionPercent = 50;   // 0.5%
-        else if(CHIPSupply >= 50000 ether && CHIPSupply < 100000 ether) ExpansionPercent = 25;  // 0.25%
-        else if(CHIPSupply >= 100000 ether && CHIPSupply < 200000 ether) ExpansionPercent = 15; // 0.15%
-        else ExpansionPercent = 10;                                                             // 0.1%
+        if (CHIPSupply < 500 ether) {
+            ExpansionPercent = 300;
+        }
+        // 3%
+        else if (CHIPSupply >= 500 ether && CHIPSupply < 1000 ether) {
+            ExpansionPercent = 200;
+        }
+        // 2%
+        else if (CHIPSupply >= 1000 ether && CHIPSupply < 2000 ether) {
+            ExpansionPercent = 150;
+        }
+        // 1.5%
+        else if (CHIPSupply >= 2000 ether && CHIPSupply < 5000 ether) {
+            ExpansionPercent = 125;
+        }
+        // 1.25%
+        else if (CHIPSupply >= 5000 ether && CHIPSupply < 10000 ether) {
+            ExpansionPercent = 100;
+        }
+        // 1%
+        else if (CHIPSupply >= 10000 ether && CHIPSupply < 20000 ether) {
+            ExpansionPercent = 75;
+        }
+        // 0.75%
+        else if (CHIPSupply >= 20000 ether && CHIPSupply < 50000 ether) {
+            ExpansionPercent = 50;
+        }
+        // 0.5%
+        else if (CHIPSupply >= 50000 ether && CHIPSupply < 100000 ether) {
+            ExpansionPercent = 25;
+        }
+        // 0.25%
+        else if (CHIPSupply >= 100000 ether && CHIPSupply < 200000 ether) {
+            ExpansionPercent = 15;
+        }
+        // 0.15%
+        else {
+            ExpansionPercent = 10;
+        }
+        // 0.1%
         maxSupplyExpansionPercent = ExpansionPercent;
         if (_epoch < bootstrapEpochs) {
             // 3 first epochs expansion.
             _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
-            ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
-            fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
-            history[_epoch.add(1)].expanded_amount = CHIPSupply.mul(ExpansionPercent).div(10000);
+            ChipSwapMechanism.unlockFish(6);
+            // When expansion phase, 6 hours worth fish will be unlocked.
+            fishPool.set(4, 0);
+            // Disable MPEA/CHIP pool when expansion phase.
+            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
         } else {
             if (previousEpochDollarPrice > CHIPPriceCeiling) {
                 // Expansion ($CHIP Price > 1 ETH): there is some seigniorage to be allocated
-                fishPool.set(4, 0); // Disable MPEA/CHIP pool when expansion phase.
-                ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
+                fishPool.set(4, 0);
+                // Disable MPEA/CHIP pool when expansion phase.
+                ChipSwapMechanism.unlockFish(6);
+                // When expansion phase, 6 hours worth fish will be unlocked.
                 uint256 bondSupply = IERC20(MPEA).totalSupply();
                 uint256 _percentage = previousEpochDollarPrice.sub(CHIPPriceOne);
                 uint256 _savedForBond;
@@ -474,16 +524,20 @@ contract Treasury is ContractGuard, ITreasury, Operator {
                 if (seigniorageSaved >= bondSupply.mul(bondDepletionFloorPercent).div(10000)) {
                     // Saved enough to pay dept, mint as usual rate.
                     uint256 _mse = ExpansionPercent.mul(1e14);
-                    if (_percentage > _mse) _percentage = _mse;
+                    if (_percentage > _mse) {
+                        _percentage = _mse;
+                    }
 
                     _savedForBoardRoom = CHIPSupply.mul(_percentage).div(1e18);
-                    history[_epoch].expanded_amount = CHIPSupply.mul(_percentage).div(1e18);
+                    history[_epoch].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
                 } else {
                     uint256 _mse = ExpansionPercent.mul(1e14);
-                    if (_percentage > _mse) _percentage = _mse;
+                    if (_percentage > _mse) {
+                        _percentage = _mse;
+                    }
 
                     uint256 _seigniorage = CHIPSupply.mul(_percentage).div(1e18);
-                    history[_epoch].expanded_amount = CHIPSupply.mul(_percentage).div(1e18);
+                    history[_epoch].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
                     _savedForBoardRoom = _seigniorage.mul(seigniorageExpansionFloorPercent).div(10000);
                     _savedForBond = _seigniorage.sub(_savedForBoardRoom);
                     if (mintingFactorForPayingDebt > 0) {
@@ -491,7 +545,9 @@ contract Treasury is ContractGuard, ITreasury, Operator {
                         _savedForBond = _savedForBond.mul(mintingFactorForPayingDebt).div(10000);
                     }
                 }
-                if (_savedForBoardRoom > 0) _sendToBoardRoom(_savedForBoardRoom);
+                if (_savedForBoardRoom > 0) {
+                    _sendToBoardRoom(_savedForBoardRoom);
+                }
 
                 if (_savedForBond > 0) {
                     seigniorageSaved = seigniorageSaved.add(_savedForBond);
@@ -499,8 +555,10 @@ contract Treasury is ContractGuard, ITreasury, Operator {
                     emit TreasuryFunded(block.timestamp, _savedForBond);
                 }
             } else {
-                ChipSwapMechanism.unlockFish(4); // When contraction phase, 4 hours worth fish will be unlocked.
-                fishPool.set(4, 3000); // Enable MPEA/CHIP pool when contraction phase.
+                ChipSwapMechanism.unlockFish(4);
+                // When contraction phase, 4 hours worth fish will be unlocked.
+                fishPool.set(4, 3000);
+                // Enable MPEA/CHIP pool when contraction phase.
                 maxSupplyExpansionPercent = 0;
             }
         }
