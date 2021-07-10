@@ -88,13 +88,6 @@ contract Fish is ERC20Burnable, Operator {
         _mint(farmingIncentiveFund, FARMING_POOL_REWARD_ALLOCATION);
     }
 
-    function mint(address recipient, uint256 amount) external onlyOperator returns (bool) {
-        uint256 balanceBefore = balanceOf(recipient);
-        _mint(recipient, amount);
-        uint256 balanceAfter = balanceOf(recipient);
-        return balanceAfter > balanceBefore;
-    }
-
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override(ERC20) {
         super._beforeTokenTransfer(from, to, amount);
     }
