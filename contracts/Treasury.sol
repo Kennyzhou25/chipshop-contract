@@ -24,12 +24,15 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     using Address for address;
     using SafeMath for uint256;
 
+    // State variables.
+
     bool public migrated = false;
     bool public initialized = false;
     bool public inDebtPhase = false;
 
+    // Epoch.
+
     struct epochHistory {
-        uint256 epochID;
         uint256 bonded;
         uint256 redeemed;
         uint256 expandedAmount;
@@ -38,23 +41,29 @@ contract Treasury is ContractGuard, ITreasury, Operator {
 
     epochHistory[] public history;
 
-    address public CHIP;
-    address public FISH;
-    address public MPEA;
-    address public boardroom;
-    address public boardroomSecond;
-    address public CHIPOracle;
-    address public BNB;
-    address public CHIP_BNB;
-    address public FISH_BNB;
-
-    IChipSwap public ChipSwapMechanism;
-    IFishRewardPool public fishPool;
-
     uint256 public startTime;
     uint256 public lastEpochTime;
     uint256 private _epoch = 0;
     uint256 public epochSupplyContractionLeft = 0;
+
+    // Core components.
+
+    address public CHIP;
+    address public FISH;
+    address public MPEA;
+
+    address public boardroom;
+    address public boardroomSecond;
+    address public CHIPOracle;
+
+    address public BNB = address(0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd);
+    address public CHIP_BNB = address(0x1d7849432A840c9e088D5915af81e19f5E976B5E);
+    address public FISH_BNB = address(0x261332524aFC6D945dEa05E6c35Db1610d1B9C98);
+
+    IChipSwap public ChipSwapMechanism;
+    IFishRewardPool public fishPool;
+
+    // Price.
 
     uint256 public CHIPPriceOne;
     uint256 public CHIPPriceCeiling;
@@ -69,17 +78,19 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     uint256 public bootstrapSupplyExpansionPercent;
     uint256 public previousEpochDollarPrice;
     uint256 public allocateSeigniorageSalary;
-    uint256 public maxDiscountRate;
-    uint256 public maxPremiumRate;
+    uint256 public maxDiscountRate; // When purchasing MPEA.
+    uint256 public maxPremiumRate; // When redeeming MPEA.
     uint256 public discountPercent;
     uint256 public premiumPercent;
-    uint256 public mintingFactorForPayingDebt;
+    uint256 public mintingFactorForPayingDebt; // Print extra CHIP during dept phase.
     address public daoFund;
     uint256 public daoFundSharedPercent;
     address public secondBoardRoomFund;
     uint256 public secondBoardRoomFundSharedPercent;
     address public marketingFund;
     uint256 public marketingFundSharedPercent;
+
+    // Events.
 
     event Initialized(address indexed executor, uint256 at);
     event Migration(address indexed target);
@@ -90,9 +101,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     event DaoFundFunded(uint256 timestamp, uint256 seigniorage);
     event SecondBoardRoomFundFunded(uint256 timestamp, uint256 seigniorage);
     event MarketingFundFunded(uint256 timestamp, uint256 seigniorage);
-    event secondBoardroomFundSet(address boardroomSecond);
-    event boardroomFundSet(address boardroom);
-    event extraFundsFunded(address daoFund, address secondBoardroomFund, address marketingFund);
+    event BoardroomSecondSet(address _boardroom2);
 
     modifier checkCondition {
         require(!migrated, "Treasury: Migrated.");
@@ -110,7 +119,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     modifier checkOperator {
-        require(IBasisAsset(CHIP).operator() == address(this) && IBasisAsset(MPEA).operator() == address(this) && Operator(boardroom).operator() == address(this) && Operator(FISH).operator() == address(this), "Treasury: Bad permissions.");
+        require(IBasisAsset(CHIP).operator() == address(this) && IBasisAsset(FISH).operator() == address(this) && IBasisAsset(MPEA).operator() == address(this) && Operator(boardroom).operator() == address(this), "Treasury: Bad permissions.");
         _;
     }
 
@@ -119,13 +128,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         _;
     }
 
-    function isMigrated() external view returns (bool) {
-        return migrated;
-    }
-
-    function isInitialized() external view returns (bool) {
-        return initialized;
-    }
+    // Epoch.
 
     function epoch() external view override returns (uint256) {
         return _epoch;
@@ -137,14 +140,15 @@ contract Treasury is ContractGuard, ITreasury, Operator {
 
     function nextEpochLength() public view override returns (uint256 _length) {
         if (_epoch <= bootstrapEpochs) {
+            // 3 first epochs with 6h long.
             _length = 6 hours;
-        }
-        else {
+        } else {
             uint256 CHIPPrice = getEthPrice();
             _length = (CHIPPrice > CHIPPriceCeiling) ? 6 hours : 4 hours;
         }
     }
 
+    // Oracle.
     function getEthPrice() public view override returns (uint256 CHIPPrice) {
         try IOracle(CHIPOracle).consult(CHIP, 1e18) returns (uint144 price) {
             return uint256(price);
@@ -160,6 +164,8 @@ contract Treasury is ContractGuard, ITreasury, Operator {
             revert("Treasury: failed to consult CHIP price from the oracle");
         }
     }
+
+    // Budget.
 
     function getReserve() external view returns (uint256) {
         return seigniorageSaved;
@@ -194,11 +200,10 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         uint256 _CHIPPrice = getEthPrice();
         if (_CHIPPrice <= CHIPPriceOne) {
             if (discountPercent == 0) {
+                // No discount.
                 _rate = CHIPPriceOne;
-            }
-            else {
-                uint256 _bondAmount = CHIPPriceOne.mul(1e18).div(_CHIPPrice);
-                // To burn 1 CHIP.
+            } else {
+                uint256 _bondAmount = CHIPPriceOne.mul(1e18).div(_CHIPPrice); // To burn 1 CHIP.
                 uint256 _discountAmount = _bondAmount.sub(CHIPPriceOne).mul(discountPercent).div(10000);
                 _rate = CHIPPriceOne.add(_discountAmount);
                 if (maxDiscountRate > 0 && _rate > maxDiscountRate) {
@@ -212,47 +217,52 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         uint256 _CHIPPrice = getEthPrice();
         if (_CHIPPrice > CHIPPriceCeiling) {
             if (premiumPercent == 0) {
+                // No premium bonus.
                 _rate = CHIPPriceOne;
-            }
-            else {
+            } else {
                 uint256 _premiumAmount = _CHIPPrice.sub(CHIPPriceOne).mul(premiumPercent).div(10000);
                 _rate = CHIPPriceOne.add(_premiumAmount);
-                if (maxDiscountRate > 0 && _rate > maxDiscountRate){
+                if (maxDiscountRate > 0 && _rate > maxDiscountRate) {
                     _rate = maxDiscountRate;
                 }
             }
         }
     }
 
-    function initialize(address _CHIP, address _MPEA, address _FISH, uint256 _startTime) external onlyOperator notInitialized {
+    // Governance.
+
+    function initialize(
+        address _CHIP,
+        address _MPEA,
+        address _FISH,
+        uint256 _startTime
+    ) external onlyOperator notInitialized {
         CHIP = _CHIP;
         MPEA = _MPEA;
         FISH = _FISH;
         startTime = _startTime;
         lastEpochTime = _startTime.sub(6 hours);
-        CHIPPriceOne = 10 ** 18;
+        CHIPPriceOne = 10**18;
         CHIPPriceCeiling = CHIPPriceOne.mul(10001).div(10000);
-        maxSupplyExpansionPercent = 300;
-        maxSupplyExpansionPercentInDebtPhase = 300;
-        bondDepletionFloorPercent = 10000;
-        seigniorageExpansionFloorPercent = 5000;
-        maxSupplyContractionPercent = 350;
-        maxDeptRatioPercent = 5000;
-        bootstrapEpochs = 3;
+        maxSupplyExpansionPercent = 300; // Up to 3.0% supply for expansion.
+        maxSupplyExpansionPercentInDebtPhase = 300; // Up to 3% supply for expansion in debt phase (to pay debt faster).
+        bondDepletionFloorPercent = 10000; // 100% of Bond supply for depletion floor.
+        seigniorageExpansionFloorPercent = 5000; // At least 50% of expansion reserved for boardroom.
+        maxSupplyContractionPercent = 350; // Up to 3.5% supply for contraction (to burn CHIP and mint MPEA).
+        maxDeptRatioPercent = 5000; // Up to 50% supply of MEB to purchase.
+        bootstrapEpochs = 3; // First 3 epochs with expansion.
         bootstrapSupplyExpansionPercent = 300;
-        seigniorageSaved = IERC20(CHIP).balanceOf(address(this));
-        allocateSeigniorageSalary = 0.001 ether;
-        maxDiscountRate = 13e17;
-        maxPremiumRate = 13e17;
-        discountPercent = 0;
-        premiumPercent = 6500;
-        mintingFactorForPayingDebt = 10000;
-        daoFundSharedPercent = 3500;
+        seigniorageSaved = IERC20(CHIP).balanceOf(address(this)); // Set seigniorageSaved to its balance.
+        allocateSeigniorageSalary = 0.001 ether; // 0.001 CHIP salary for calling allocateSeigniorage.
+        maxDiscountRate = 13e17; // 30% - when purchasing bond.
+        maxPremiumRate = 13e17; // 30% - when redeeming bond.
+        discountPercent = 0; // No discount.
+        premiumPercent = 6500; // 65% premium.
+        mintingFactorForPayingDebt = 10000; // 100%
+        daoFundSharedPercent = 3500; // 35% toward DAO Fund.
         secondBoardRoomFundSharedPercent = 0;
         marketingFundSharedPercent = 0;
         initialized = true;
-        history.push(epochHistory({epochID : _epoch, bonded : 0, redeemed : 0, expandedAmount : 0, epochPrice : 0}));
-
         emit Initialized(msg.sender, block.number);
     }
 
@@ -262,53 +272,42 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         lastEpochTime = _startTime.sub(6 hours);
     }
 
-    function setBoardroom(address _boardroom) external onlyOperator {
-        boardroom = _boardroom;
-        emit boardroomFundSet(boardroom);
-    }
-
     function setBoardroomSecond(address _boardroom2) external onlyOperator {
         boardroomSecond = _boardroom2;
-        emit secondBoardroomFundSet(boardroomSecond);
-    }
-
-    function setDollarOracle(address _CHIPOracle) external onlyOperator {
-        CHIPOracle = _CHIPOracle;
+        emit BoardroomSecondSet(_boardroom2);
     }
 
     function setDollarPriceCeiling(uint256 _CHIPPriceCeiling) external onlyOperator {
-        require(_CHIPPriceCeiling >= CHIPPriceOne && _CHIPPriceCeiling <= CHIPPriceOne.mul(120).div(100), "out of range");
+        require(_CHIPPriceCeiling >= CHIPPriceOne && _CHIPPriceCeiling <= CHIPPriceOne.mul(120).div(100), "out of range"); // [$1.0, $1.2]
         CHIPPriceCeiling = _CHIPPriceCeiling;
     }
 
     function setMaxSupplyExpansionPercents(uint256 _maxSupplyExpansionPercent, uint256 _maxSupplyExpansionPercentInDebtPhase) external onlyOperator {
-        require(_maxSupplyExpansionPercent >= 10 && _maxSupplyExpansionPercent <= 1000, "_maxSupplyExpansionPercent: out of range");
-        require(_maxSupplyExpansionPercentInDebtPhase >= 10 && _maxSupplyExpansionPercentInDebtPhase <= 1500, "_maxSupplyExpansionPercentInDebtPhase: out of range");
+        require(_maxSupplyExpansionPercent >= 10 && _maxSupplyExpansionPercent <= 1000, "_maxSupplyExpansionPercent: out of range"); // [0.1%, 10%]
+        require(_maxSupplyExpansionPercentInDebtPhase >= 10 && _maxSupplyExpansionPercentInDebtPhase <= 1500, "_maxSupplyExpansionPercentInDebtPhase: out of range"); // [0.1%, 15%]
         require(_maxSupplyExpansionPercent <= _maxSupplyExpansionPercentInDebtPhase, "_maxSupplyExpansionPercent is over _maxSupplyExpansionPercentInDebtPhase");
         maxSupplyExpansionPercent = _maxSupplyExpansionPercent;
         maxSupplyExpansionPercentInDebtPhase = _maxSupplyExpansionPercentInDebtPhase;
     }
 
     function setBondDepletionFloorPercent(uint256 _bondDepletionFloorPercent) external onlyOperator {
-        require(_bondDepletionFloorPercent >= 500 && _bondDepletionFloorPercent <= 10000, "out of range");
+        require(_bondDepletionFloorPercent >= 500 && _bondDepletionFloorPercent <= 10000, "out of range"); // [5%, 100%]
         bondDepletionFloorPercent = _bondDepletionFloorPercent;
     }
 
     function setMaxSupplyContractionPercent(uint256 _maxSupplyContractionPercent) external onlyOperator {
-        require(_maxSupplyContractionPercent >= 100 && _maxSupplyContractionPercent <= 1500, "out of range");
+        require(_maxSupplyContractionPercent >= 100 && _maxSupplyContractionPercent <= 1500, "out of range"); // [0.1%, 15%]
         maxSupplyContractionPercent = _maxSupplyContractionPercent;
     }
 
     function setMaxDeptRatioPercent(uint256 _maxDeptRatioPercent) external onlyOperator {
-        require(_maxDeptRatioPercent >= 1000 && _maxDeptRatioPercent <= 10000, "out of range");
+        require(_maxDeptRatioPercent >= 1000 && _maxDeptRatioPercent <= 10000, "out of range"); // [10%, 100%]
         maxDeptRatioPercent = _maxDeptRatioPercent;
     }
 
     function setBootstrapParams(uint256 _bootstrapEpochs, uint256 _bootstrapSupplyExpansionPercent) external onlyOperator {
-        require(_bootstrapEpochs <= 90, "_bootstrapSupplyExpansionPercent: out of range");
-        // <= 1 month
-        require(_bootstrapSupplyExpansionPercent >= 100 && _bootstrapSupplyExpansionPercent <= 1000, "_bootstrapSupplyExpansionPercent: out of range");
-        // [1%, 10%]
+        require(_bootstrapEpochs <= 90, "_bootstrapSupplyExpansionPercent: out of range"); // <= 1 month
+        require(_bootstrapSupplyExpansionPercent >= 100 && _bootstrapSupplyExpansionPercent <= 1000, "_bootstrapSupplyExpansionPercent: out of range"); // [1%, 10%]
         bootstrapEpochs = _bootstrapEpochs;
         bootstrapSupplyExpansionPercent = _bootstrapSupplyExpansionPercent;
     }
@@ -322,18 +321,17 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         uint256 _marketingFundSharedPercent
     ) external onlyOperator {
         require(_daoFund != address(0), "zero");
-        require(_daoFundSharedPercent <= 3500, "out of range");
+        require(_daoFundSharedPercent <= 3500, "out of range"); // <= 35%
         require(_secondBoardRoomFund != address(0), "zero");
-        require(_secondBoardRoomFundSharedPercent <= 1000, "out of range");
+        require(_secondBoardRoomFundSharedPercent <= 1000, "out of range"); // <= 10%
         require(_marketingFund != address(0), "zero");
-        require(_marketingFundSharedPercent <= 1000, "out of range");
+        require(_marketingFundSharedPercent <= 1000, "out of range"); // <= 10%
         daoFund = _daoFund;
         daoFundSharedPercent = _daoFundSharedPercent;
         secondBoardRoomFund = _secondBoardRoomFund;
         secondBoardRoomFundSharedPercent = _secondBoardRoomFundSharedPercent;
         marketingFund = _marketingFund;
         marketingFundSharedPercent = _marketingFundSharedPercent;
-        emit extraFundsFunded(_daoFund, _secondBoardRoomFund, _marketingFund);
     }
 
     function setAllocateSeigniorageSalary(uint256 _allocateSeigniorageSalary) external onlyOperator {
@@ -360,22 +358,24 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function setMintingFactorForPayingDebt(uint256 _mintingFactorForPayingDebt) external onlyOperator {
-        require(_mintingFactorForPayingDebt >= 10000 && _mintingFactorForPayingDebt <= 20000, "_mintingFactorForPayingDebt: out of range");
-        // [100%, 200%]
+        require(_mintingFactorForPayingDebt >= 10000 && _mintingFactorForPayingDebt <= 20000, "_mintingFactorForPayingDebt: out of range"); // [100%, 200%]
         mintingFactorForPayingDebt = _mintingFactorForPayingDebt;
     }
 
     function migrate(address target) external onlyOperator checkOperator {
         require(!migrated, "Treasury: migrated");
 
+        // CHIP
         Operator(CHIP).transferOperator(target);
         Operator(CHIP).transferOwnership(target);
         IERC20(CHIP).transfer(target, IERC20(CHIP).balanceOf(address(this)));
 
+        // MPEA
         Operator(MPEA).transferOperator(target);
         Operator(MPEA).transferOwnership(target);
         IERC20(MPEA).transfer(target, IERC20(MPEA).balanceOf(address(this)));
 
+        // FISH
         Operator(FISH).transferOperator(target);
         Operator(FISH).transferOwnership(target);
         IERC20(FISH).transfer(target, IERC20(FISH).balanceOf(address(this)));
@@ -384,6 +384,8 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         emit Migration(target);
     }
 
+    // Mutators.
+
     function _updateEthPrice() internal {
         try IOracle(CHIPOracle).update() {} catch {}
     }
@@ -391,10 +393,11 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     function buyBonds(uint256 _CHIPAmount, uint256 targetPrice) external override onlyOneBlock checkCondition checkOperator {
         require(_epoch >= bootstrapEpochs, "Treasury: still in boostrap");
         require(_CHIPAmount > 0, "Treasury: cannot purchase bonds with zero amount");
-
-        uint256 CHIPPrice = history[_epoch].epochPrice;
-
-        require(CHIPPrice < CHIPPriceCeiling, "Treasury: CHIP Price not eligible for bond purchase.");
+        uint256 CHIPPrice = history[_epoch - 1].epochPrice;
+        require(
+            CHIPPrice < CHIPPriceCeiling, // price < 1 ETH.
+            "Treasury: CHIP Price not eligible for bond purchase."
+        );
         require(_CHIPAmount <= epochSupplyContractionLeft, "Treasury: Not enough bond left to purchase.");
         uint256 _rate = getBondDiscountRate();
         require(_rate > 0, "Treasury: Invalid bond rate.");
@@ -406,15 +409,17 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         IBasisAsset(MPEA).mint(msg.sender, _bondAmount);
         epochSupplyContractionLeft = epochSupplyContractionLeft.sub(_CHIPAmount);
         _updateEthPrice();
-        history[_epoch].bonded = history[_epoch].bonded.add(_bondAmount);
+        history[_epoch - 1].bonded = history[_epoch - 1].bonded.add(_bondAmount);
         emit BoughtBonds(msg.sender, _CHIPAmount, _bondAmount);
     }
 
     function redeemBonds(uint256 _bondAmount, uint256 targetPrice) external override onlyOneBlock checkCondition checkOperator {
         require(_bondAmount > 0, "Treasury: Cannot redeem bonds with zero amount.");
-
-        uint256 CHIPPrice = history[_epoch].epochPrice;
-        require(CHIPPrice >= CHIPPriceCeiling, "Treasury: CHIP Price not eligible for bond purchase.");
+        uint256 CHIPPrice = history[_epoch - 1].epochPrice;
+        require(
+            CHIPPrice > CHIPPriceCeiling, // price > $1.01.
+            "Treasury: CHIP Price not eligible for bond purchase."
+        );
         uint256 _rate = getBondPremiumRate();
         require(_rate > 0, "Treasury: invalid bond rate");
         uint256 _CHIPAmount = _bondAmount.mul(_rate).div(1e18);
@@ -422,7 +427,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         seigniorageSaved = seigniorageSaved.sub(Math.min(seigniorageSaved, _CHIPAmount));
         IBasisAsset(MPEA).burnFrom(msg.sender, _bondAmount);
         IERC20(CHIP).safeTransfer(msg.sender, _CHIPAmount);
-        history[_epoch].redeemed = history[_epoch].redeemed.add(_CHIPAmount);
+        history[_epoch - 1].redeemed = history[_epoch - 1].redeemed.add(_CHIPAmount);
         _updateEthPrice();
         emit RedeemedBonds(msg.sender, _CHIPAmount, _bondAmount);
     }
@@ -458,65 +463,31 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         inDebtPhase = false;
         _updateEthPrice();
         previousEpochDollarPrice = getEthPrice();
-        history.push(epochHistory({epochID : _epoch.add(1), bonded : 0, redeemed : 0, expandedAmount : 0, epochPrice : previousEpochDollarPrice}));
+        history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: previousEpochDollarPrice}));
         uint256 CHIPSupply = IERC20(CHIP).totalSupply().sub(seigniorageSaved);
         uint256 ExpansionPercent;
-        if (CHIPSupply < 500 ether) {
-            ExpansionPercent = 300;
-        }
-        // 3%
-        else if (CHIPSupply >= 500 ether && CHIPSupply < 1000 ether) {
-            ExpansionPercent = 200;
-        }
-        // 2%
-        else if (CHIPSupply >= 1000 ether && CHIPSupply < 2000 ether) {
-            ExpansionPercent = 150;
-        }
-        // 1.5%
-        else if (CHIPSupply >= 2000 ether && CHIPSupply < 5000 ether) {
-            ExpansionPercent = 125;
-        }
-        // 1.25%
-        else if (CHIPSupply >= 5000 ether && CHIPSupply < 10000 ether) {
-            ExpansionPercent = 100;
-        }
-        // 1%
-        else if (CHIPSupply >= 10000 ether && CHIPSupply < 20000 ether) {
-            ExpansionPercent = 75;
-        }
-        // 0.75%
-        else if (CHIPSupply >= 20000 ether && CHIPSupply < 50000 ether) {
-            ExpansionPercent = 50;
-        }
-        // 0.5%
-        else if (CHIPSupply >= 50000 ether && CHIPSupply < 100000 ether) {
-            ExpansionPercent = 25;
-        }
-        // 0.25%
-        else if (CHIPSupply >= 100000 ether && CHIPSupply < 200000 ether) {
-            ExpansionPercent = 15;
-        }
-        // 0.15%
-        else {
-            ExpansionPercent = 10;
-        }
-        // 0.1%
+        if(CHIPSupply < 500 ether) ExpansionPercent = 300;                                      // 3%
+        else if(CHIPSupply >= 500 ether && CHIPSupply < 1000 ether) ExpansionPercent = 200;     // 2%
+        else if(CHIPSupply >= 1000 ether && CHIPSupply < 2000 ether) ExpansionPercent = 150;    // 1.5%
+        else if(CHIPSupply >= 2000 ether && CHIPSupply < 5000 ether) ExpansionPercent = 125;    // 1.25%
+        else if(CHIPSupply >= 5000 ether && CHIPSupply < 10000 ether) ExpansionPercent = 100;   // 1%
+        else if(CHIPSupply >= 10000 ether && CHIPSupply < 20000 ether) ExpansionPercent = 75;   // 0.75%
+        else if(CHIPSupply >= 20000 ether && CHIPSupply < 50000 ether) ExpansionPercent = 50;   // 0.5%
+        else if(CHIPSupply >= 50000 ether && CHIPSupply < 100000 ether) ExpansionPercent = 25;  // 0.25%
+        else if(CHIPSupply >= 100000 ether && CHIPSupply < 200000 ether) ExpansionPercent = 15; // 0.15%
+        else ExpansionPercent = 10;                                                             // 0.1%
         maxSupplyExpansionPercent = ExpansionPercent;
         if (_epoch < bootstrapEpochs) {
             // 3 first epochs expansion.
             _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
-            ChipSwapMechanism.unlockFish(6);
-            // When expansion phase, 6 hours worth fish will be unlocked.
-            fishPool.set(4, 0);
-            // Disable MPEA/CHIP pool when expansion phase.
-            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
+            ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
+            fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
+            history[_epoch].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
         } else {
             if (previousEpochDollarPrice > CHIPPriceCeiling) {
                 // Expansion ($CHIP Price > 1 ETH): there is some seigniorage to be allocated
-                fishPool.set(4, 0);
-                // Disable MPEA/CHIP pool when expansion phase.
-                ChipSwapMechanism.unlockFish(6);
-                // When expansion phase, 6 hours worth fish will be unlocked.
+                fishPool.set(4, 0); // Disable MPEA/CHIP pool when expansion phase.
+                ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
                 uint256 bondSupply = IERC20(MPEA).totalSupply();
                 uint256 _percentage = previousEpochDollarPrice.sub(CHIPPriceOne);
                 uint256 _savedForBond;
@@ -527,15 +498,14 @@ contract Treasury is ContractGuard, ITreasury, Operator {
                     if (_percentage > _mse) {
                         _percentage = _mse;
                     }
-
                     _savedForBoardRoom = CHIPSupply.mul(_percentage).div(1e18);
                     history[_epoch].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
                 } else {
+                    // Have not saved enough to pay dept, mint more.
                     uint256 _mse = ExpansionPercent.mul(1e14);
                     if (_percentage > _mse) {
                         _percentage = _mse;
                     }
-
                     uint256 _seigniorage = CHIPSupply.mul(_percentage).div(1e18);
                     history[_epoch].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
                     _savedForBoardRoom = _seigniorage.mul(seigniorageExpansionFloorPercent).div(10000);
@@ -548,17 +518,15 @@ contract Treasury is ContractGuard, ITreasury, Operator {
                 if (_savedForBoardRoom > 0) {
                     _sendToBoardRoom(_savedForBoardRoom);
                 }
-
                 if (_savedForBond > 0) {
                     seigniorageSaved = seigniorageSaved.add(_savedForBond);
                     IBasisAsset(CHIP).mint(address(this), _savedForBond);
                     emit TreasuryFunded(block.timestamp, _savedForBond);
                 }
             } else {
-                ChipSwapMechanism.unlockFish(4);
-                // When contraction phase, 4 hours worth fish will be unlocked.
-                fishPool.set(4, 3000);
-                // Enable MPEA/CHIP pool when contraction phase.
+                // Contraction phase.
+                ChipSwapMechanism.unlockFish(4); // When contraction phase, 4 hours worth fish will be unlocked.
+                fishPool.set(4, 3000); // Enable MPEA/CHIP pool when contraction phase.
                 maxSupplyExpansionPercent = 0;
             }
         }
@@ -567,12 +535,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         }
     }
 
-    function governanceRecoverUnsupported(IERC20 _token, uint256 _amount, address _to) external onlyOperator {
-        require(address(_token) != address(CHIP), "CHIP");
-        require(address(_token) != address(MPEA), "bond");
-        require(address(_token) != address(FISH), "share");
-        _token.safeTransfer(_to, _amount);
-    }
+    // Boardroom controls.
 
     function boardroomSetOperator(address _operator) external onlyOperator {
         IBoardroom(boardroom).setOperator(_operator);
@@ -586,10 +549,15 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         IBoardroom(boardroom).allocateSeigniorage(amount);
     }
 
-    function boardroomGovernanceRecoverUnsupported(address _token, uint256 _amount, address _to) external onlyOperator {
+    function boardroomGovernanceRecoverUnsupported(
+        address _token,
+        uint256 _amount,
+        address _to
+    ) external onlyOperator {
         IBoardroom(boardroom).governanceRecoverUnsupported(_token, _amount, _to);
     }
 
+    // ChipSwap controls.
     function swapChipToFish(uint256 ChipAmount) external {
         uint256 FishPricePerChip = getFishAmountPerChip();
         uint256 FishAmount = ChipAmount.mul(FishPricePerChip).div(1e18);
@@ -598,24 +566,22 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function getFishAmountPerChip() public view returns (uint256) {
-        uint256 ChipBalance = IERC20(CHIP).balanceOf(CHIP_BNB);
-        uint256 FishBalance = IERC20(FISH).balanceOf(FISH_BNB);
+        uint256 ChipBalance = IERC20(CHIP).balanceOf(CHIP_BNB);  // CHIP/BNB pool.
+        uint256 FishBalance = IERC20(FISH).balanceOf(FISH_BNB);  // FISH/BNB pool.
         uint256 rate1 = uint256(1e18).mul(ChipBalance).div(IERC20(BNB).balanceOf(CHIP_BNB));
         uint256 rate2 = uint256(1e18).mul(FishBalance).div(IERC20(BNB).balanceOf(FISH_BNB));
         return uint256(1e18).mul(rate2).div(rate1);
     }
 
-    function setChipswapMechanism(IChipSwap _chipswapMechanism) external onlyOperator {
-        ChipSwapMechanism = _chipswapMechanism;
-    }
-
-    function setFishRewardPool(IFishRewardPool _fishPool) external onlyOperator {
+    function setExtraContract(
+        IFishRewardPool _fishPool,
+        IChipSwap _chipswapMechanism,
+        address _CHIPOracle,
+        address _boardroom
+    ) external onlyOperator {
         fishPool = _fishPool;
-    }
-
-    function setTokenAddress(address _BNB, address _CHIP_BNB, address _FISH_BNB) external onlyOperator {
-        BNB = _BNB;
-        CHIP_BNB = _CHIP_BNB;
-        FISH_BNB = _FISH_BNB;
+        ChipSwapMechanism = _chipswapMechanism;
+        CHIPOracle = _CHIPOracle;
+        boardroom = _boardroom;
     }
 }
