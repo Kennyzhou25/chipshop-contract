@@ -33,7 +33,7 @@ contract Fish is ERC20Burnable, Operator {
     bool public chipSwapDistributed = false;
 
 
-    constructor() public ERC20("ChipShop Share", "FISH") {
+    constructor() ERC20("ChipShop Share", "FISH") {
         startTime = block.timestamp;
         endTime = startTime.add(VESTING_DURATION);
         teamFundLastClaimed = startTime;

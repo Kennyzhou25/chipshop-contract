@@ -19,7 +19,7 @@ import "./interfaces/IBoardroom.sol";
 import "./interfaces/IBasisAsset.sol";
 import "./interfaces/IFishRewardPool.sol";
 
-contract Treasury is ContractGuard, ITreasury, Operator {
+contract Treasury is ContractGuard, ITreasury, Operator{
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -56,9 +56,9 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     address public boardroomSecond;
     address public CHIPOracle;
 
-    address public BNB = address(0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd);
-    address public CHIP_BNB = address(0x1d7849432A840c9e088D5915af81e19f5E976B5E);
-    address public FISH_BNB = address(0x261332524aFC6D945dEa05E6c35Db1610d1B9C98);
+    address public ETH = address(0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335);
+    address public CHIP_ETH = address(0x1d7849432A840c9e088D5915af81e19f5E976B5E);
+    address public FISH_ETH = address(0x261332524aFC6D945dEa05E6c35Db1610d1B9C98);
 
     IChipSwap public ChipSwapMechanism;
     IFishRewardPool public fishPool;
@@ -536,7 +536,6 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     // Boardroom controls.
-
     function boardroomSetOperator(address _operator) external onlyOperator {
         IBoardroom(boardroom).setOperator(_operator);
     }
@@ -566,10 +565,10 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function getFishAmountPerChip() public view returns (uint256) {
-        uint256 ChipBalance = IERC20(CHIP).balanceOf(CHIP_BNB);  // CHIP/BNB pool.
-        uint256 FishBalance = IERC20(FISH).balanceOf(FISH_BNB);  // FISH/BNB pool.
-        uint256 rate1 = uint256(1e18).mul(ChipBalance).div(IERC20(BNB).balanceOf(CHIP_BNB));
-        uint256 rate2 = uint256(1e18).mul(FishBalance).div(IERC20(BNB).balanceOf(FISH_BNB));
+        uint256 ChipBalance = IERC20(CHIP).balanceOf(CHIP_ETH);  // CHIP/ETH pool.
+        uint256 FishBalance = IERC20(FISH).balanceOf(FISH_ETH);  // FISH/ETH pool.
+        uint256 rate1 = uint256(1e18).mul(ChipBalance).div(IERC20(ETH).balanceOf(CHIP_ETH));
+        uint256 rate2 = uint256(1e18).mul(FishBalance).div(IERC20(ETH).balanceOf(FISH_ETH));
         return uint256(1e18).mul(rate2).div(rate1);
     }
 

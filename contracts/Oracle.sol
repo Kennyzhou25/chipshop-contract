@@ -14,21 +14,20 @@ import "./interfaces/IPancakePair.sol";
 
 // Note: Fixed window oracle that recomputes the average price for the entire period once every period.
 // The price average is only guaranteed to be over at least 1 period, but may be over a longer period.
-
 contract Oracle is IEpoch, Operator {
     using FixedPoint for *;
     using SafeMath for uint256;
 
     address public CHIP;
-    address public ETH_BNB_LP;
+//    address public ETH_BNB_LP;
     address public ETH_BUSD_LP;
     IERC20 public ETH;
-    IERC20 public BNB;
+//    IERC20 public BNB;
     IERC20 public BUSD;
 
     bool public initialized = false;
 
-    IPancakePair public pair; // CHIP/BNB LP
+    IPancakePair public pair; // CHIP/ETH LP
     address public token0;
     address public token1;
 
@@ -79,21 +78,17 @@ contract Oracle is IEpoch, Operator {
 
     function setAddress(
         address _CHIP,
-        address _ETH_BNB_LP,
         address _ETH_BUSD_LP,
         IERC20 _ETH,
-        IERC20 _BNB,
         IERC20 _BUSD
     ) external onlyOperator {
         CHIP = _CHIP;
-        ETH_BNB_LP = _ETH_BNB_LP;
         ETH_BUSD_LP = _ETH_BUSD_LP;
         ETH = _ETH;
-        BNB = _BNB;
         BUSD = _BUSD;
     }
 
-    // _pair is CHIP/BNB LP, _pair_1 is CHIP/BUSD LP
+    // _pair is CHIP/ETH LP, _pair_1 is CHIP/BUSD LP
     function initialize(IPancakePair _pair, IPancakePair _pair_1) external onlyOperator notInitialized {
         pair = _pair;
         token0 = pair.token0();
@@ -126,7 +121,7 @@ contract Oracle is IEpoch, Operator {
 
     // Updates 1-day EMA price from pancakeswap.
     function update() external checkEpoch {
-        // CHIP/BNB LP
+        // CHIP/ETH LP
         (uint256 price0Cumulative, uint256 price1Cumulative, uint32 blockTimestamp) = PancakeswapOracleLibrary.currentCumulativePrices(address(pair));
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // Overflow is desired.
         if (timeElapsed == 0) {
@@ -159,7 +154,7 @@ contract Oracle is IEpoch, Operator {
     }
 
     // This will always return 0 before update has been called successfully for the first time.
-    // This function returns average of BNB-based and BUSD-based price of CHIP.
+    // This function returns average of ETH-based and BUSD-based price of CHIP.
     function consult(address _token, uint256 _amountIn) public view returns (uint144 _amountOut) {
         if (priceAppreciation > 0) {
             uint256 _added = _amountIn.mul(priceAppreciation).div(1e18);
@@ -180,22 +175,19 @@ contract Oracle is IEpoch, Operator {
             _amountOut2 = price1Average_1.mul(_amountIn).decode144();
         }
 
-        uint256 ETHBalance = ETH.balanceOf(ETH_BNB_LP);
-        uint256 BNBBalance = BNB.balanceOf(ETH_BNB_LP);
         uint256 tmp = uint256(_amountOut);
-        tmp = tmp.mul(ETHBalance).div(BNBBalance);
 
-        uint256 ETHBalance_1 = ETH.balanceOf(ETH_BUSD_LP);
+        uint256 ETHBalance = ETH.balanceOf(ETH_BUSD_LP);
         uint256 BUSDBalance = BUSD.balanceOf(ETH_BUSD_LP);
         uint256 tmp_1 = uint256(_amountOut2);
-        tmp_1 = tmp_1.mul(ETHBalance_1).div(BUSDBalance);
+        tmp_1 = tmp_1.mul(ETHBalance).div(BUSDBalance);
 
         tmp = tmp.add(tmp_1).div(2);
 
         _amountOut = uint144(tmp);
     }
 
-    // Twap of CHIP/BNB LP.
+    // Twap of CHIP/ETH LP.
     function twap_1(address _token, uint256 _amountIn) internal view returns (uint144 _amountOut) {
         if (priceAppreciation > 0) {
             uint256 _added = _amountIn.mul(priceAppreciation).div(1e18);
@@ -232,17 +224,12 @@ contract Oracle is IEpoch, Operator {
     }
 
     function twap(address _token, uint256 _amountIn) external view returns (uint256 _amountOut) {
-        // CHIP/BNB LP, BNB-based price of CHIP.
+        // CHIP/ETH LP, ETH-based price of CHIP.
         uint256 v1 = twap_1(_token, _amountIn);
-        // Get ETH-based BNB price.
-        uint256 ETHBalance = ETH.balanceOf(ETH_BNB_LP);
-        uint256 BNBBalance = BNB.balanceOf(ETH_BNB_LP);
-        uint256 ETHPricePerBNB = 1e18;
-        ETHPricePerBNB = ETHPricePerBNB.mul(ETHBalance).div(BNBBalance);
-        v1 = v1.mul(ETHPricePerBNB).div(1e18);
+
         // CHIP/BUSD LP, BUSD-based price of CHIP.
         uint256 v2 = twap_2(_token, _amountIn);
-        ETHBalance = ETH.balanceOf(ETH_BUSD_LP);
+        uint256 ETHBalance = ETH.balanceOf(ETH_BUSD_LP);
         uint256 BUSDBalance = BUSD.balanceOf(ETH_BUSD_LP);
         uint256 ETHPricePerBUSD = 1e18;
         ETHPricePerBUSD = ETHPricePerBUSD.mul(ETHBalance).div(BUSDBalance);

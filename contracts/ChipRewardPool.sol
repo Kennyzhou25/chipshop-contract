@@ -56,7 +56,7 @@ contract ChipRewardPool is Operator, ReentrancyGuard {
     event RewardPaid(address indexed user, uint256 amount);
 
 
-    constructor(address _CHIPS, uint256 _startBlock) public {
+    constructor(address _CHIPS, uint256 _startBlock) {
         require(block.number < _startBlock, "ChipRewardPool.constructor(): The current block is after the specified start block.");
         if (_CHIPS != address(0)) CHIPS = IERC20(_CHIPS);
         startBlock = _startBlock;

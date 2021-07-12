@@ -25,7 +25,7 @@ contract ChipSwapMechanism is Operator {
     event SwapExecuted(address indexed Address, uint256 chipAmount, uint256 fishAmount);
 
 
-    constructor(address _chips, address _fish) public {
+    constructor(address _chips, address _fish) {
         CHIPS = ERC20Burnable(_chips);
         FISH = ERC20Burnable(_fish);
     }

@@ -10,7 +10,7 @@ contract Operator is Context, Ownable {
 
     event OperatorTransferred(address indexed previousOperator, address indexed newOperator);
 
-    constructor() public {
+    constructor() {
         _operator = _msgSender();
         emit OperatorTransferred(address(0), _operator);
     }
