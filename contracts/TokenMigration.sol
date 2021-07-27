@@ -4,26 +4,24 @@ import "./interfaces/IBasisAsset.sol";
 
 contract TokenMigration {
 
-    IBasisAsset public oldChip = IBasisAsset(0x8d5728fe016A07743e18B54fBbE07E853BCa491c);
-    IBasisAsset public oldFish = IBasisAsset(0x4FAB296f67fBaC741D4A1b884a5cAb96974C7cd8);
-    IBasisAsset public oldMpea = IBasisAsset(0x117cC1e6C64C0830C587990b975612E2fcb9Ed22);
+    IBasisAsset public oldChip = IBasisAsset(0x7a4Feb21b86281F7D345dEDE500c9C51881b948B);
+    IBasisAsset public oldFish = IBasisAsset(0xD47c524ae4Cf0f941D0Dd03b44CD9C80dd4238d6);
+    IBasisAsset public oldMpea = IBasisAsset(0x23A47619f784F109582f07C01D8a72512ba9D0E1);
 
     IBasisAsset public newChip;
     IBasisAsset public newFish;
-    IBasisAsset public newMpea;
 
-    uint256 endTime;
+    uint256 public endTime;
 
     modifier canMigrate() {
-        require(endTime > block.timestamp, "TokenMigration: Migration is finished");
+        require(block.timestamp <= endTime, "TokenMigration: Migration is finished");
         _;
     }
 
-    constructor(IBasisAsset _newChip, IBasisAsset _newFish, IBasisAsset _newMpea, uint256 _endTime) {
+    constructor(IBasisAsset _newChip, IBasisAsset _newFish, uint256 _endTime) {
         require(_endTime > block.timestamp, "TokenMigration: Invalid end time");
         newChip = _newChip;
         newFish = _newFish;
-        newMpea = _newMpea;
 
         endTime = _endTime;
     }
@@ -44,5 +42,11 @@ contract TokenMigration {
         uint256 oldBalance = oldMpea.balanceOf(msg.sender);
         oldMpea.burnFrom(msg.sender, oldBalance);
         newChip.transfer(msg.sender, oldBalance);
+    }
+
+    function burn() external {
+        require(block.timestamp > endTime, "TokenMigration: not finished");
+        newChip.burn(newChip.balanceOf(address(this)));
+        newFish.burn(newFish.balanceOf(address(this)));
     }
 }
