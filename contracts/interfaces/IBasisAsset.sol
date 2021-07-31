@@ -14,4 +14,6 @@ interface IBasisAsset {
     function operator() external view returns (address);
 
     function balanceOf(address addr) external view returns (uint256);
+
+    function transfer(address recipient, uint256 amount) external;
 }
