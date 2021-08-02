@@ -48,7 +48,6 @@ contract FishRewardPool is Operator {
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event RewardPaid(address indexed user, uint256 amount);
 
-
     constructor(address _FISH, uint256 _startBlock) {
         require(block.number < _startBlock, "FishRewardPool.constructor(): The current block is after the specified start block.");
         if (_FISH != address(0)) FISH = IERC20(_FISH);

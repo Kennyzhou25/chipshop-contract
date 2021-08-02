@@ -19,7 +19,7 @@ import "./interfaces/IBoardroom.sol";
 import "./interfaces/IBasisAsset.sol";
 import "./interfaces/IFishRewardPool.sol";
 
-contract Treasury is ContractGuard, ITreasury, Operator{
+contract Treasury is ContractGuard, ITreasury, Operator {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -37,6 +37,7 @@ contract Treasury is ContractGuard, ITreasury, Operator{
         uint256 redeemed;
         uint256 expandedAmount;
         uint256 epochPrice;
+        uint256 endEpochPrice;
     }
 
     epochHistory[] public history;
@@ -56,9 +57,9 @@ contract Treasury is ContractGuard, ITreasury, Operator{
     address public boardroomSecond;
     address public CHIPOracle;
 
-    address public ETH = address(0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335);
-    address public CHIP_ETH = address(0x1d7849432A840c9e088D5915af81e19f5E976B5E);
-    address public FISH_ETH = address(0x261332524aFC6D945dEa05E6c35Db1610d1B9C98);
+    address public ETH = address(0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335);         // need to change
+    address public CHIP_ETH = address(0xaB5a4bFe8E7a5A2628cC690519bcC3481D66e9e0);
+    address public FISH_ETH = address(0x3715340BC619E5aDbca158Ab459F2EfFDa545675);
 
     IChipSwap public ChipSwapMechanism;
     IFishRewardPool public fishPool;
@@ -141,10 +142,10 @@ contract Treasury is ContractGuard, ITreasury, Operator{
     function nextEpochLength() public view override returns (uint256 _length) {
         if (_epoch <= bootstrapEpochs) {
             // 3 first epochs with 6h long.
-            _length = 6 hours;
+            _length = 15 minutes;
         } else {
             uint256 CHIPPrice = getEthPrice();
-            _length = (CHIPPrice > CHIPPriceCeiling) ? 6 hours : 4 hours;
+            _length = (CHIPPrice > CHIPPriceCeiling) ? 15 minutes : 10 minutes;
         }
     }
 
@@ -157,16 +158,7 @@ contract Treasury is ContractGuard, ITreasury, Operator{
         }
     }
 
-    function getEthUpdatedPrice() public view returns (uint256 _CHIPPrice) {
-        try IOracle(CHIPOracle).twap(CHIP, 1e18) returns (uint144 price) {
-            return uint256(price);
-        } catch {
-            revert("Treasury: failed to consult CHIP price from the oracle");
-        }
-    }
-
     // Budget.
-
     function getReserve() external view returns (uint256) {
         return seigniorageSaved;
     }
@@ -237,11 +229,13 @@ contract Treasury is ContractGuard, ITreasury, Operator{
         address _FISH,
         uint256 _startTime
     ) external onlyOperator notInitialized {
+
+        history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: 0, endEpochPrice: 0}));
         CHIP = _CHIP;
         MPEA = _MPEA;
         FISH = _FISH;
         startTime = _startTime;
-        lastEpochTime = _startTime.sub(6 hours);
+        lastEpochTime = _startTime.sub(15 minutes);
         CHIPPriceOne = 10**18;
         CHIPPriceCeiling = CHIPPriceOne.mul(10001).div(10000);
         maxSupplyExpansionPercent = 300; // Up to 3.0% supply for expansion.
@@ -269,7 +263,7 @@ contract Treasury is ContractGuard, ITreasury, Operator{
     function resetStartTime(uint256 _startTime) external onlyOperator {
         require(_epoch == 0, "already started");
         startTime = _startTime;
-        lastEpochTime = _startTime.sub(6 hours);
+        lastEpochTime = _startTime.sub(15 minutes);
     }
 
     function setBoardroomSecond(address _boardroom2) external onlyOperator {
@@ -393,7 +387,7 @@ contract Treasury is ContractGuard, ITreasury, Operator{
     function buyBonds(uint256 _CHIPAmount, uint256 targetPrice) external override onlyOneBlock checkCondition checkOperator {
         require(_epoch >= bootstrapEpochs, "Treasury: still in boostrap");
         require(_CHIPAmount > 0, "Treasury: cannot purchase bonds with zero amount");
-        uint256 CHIPPrice = history[_epoch - 1].epochPrice;
+        uint256 CHIPPrice = history[_epoch].epochPrice;
         require(
             CHIPPrice < CHIPPriceCeiling, // price < 1 ETH.
             "Treasury: CHIP Price not eligible for bond purchase."
@@ -409,13 +403,13 @@ contract Treasury is ContractGuard, ITreasury, Operator{
         IBasisAsset(MPEA).mint(msg.sender, _bondAmount);
         epochSupplyContractionLeft = epochSupplyContractionLeft.sub(_CHIPAmount);
         _updateEthPrice();
-        history[_epoch - 1].bonded = history[_epoch - 1].bonded.add(_bondAmount);
+        history[_epoch].bonded = history[_epoch].bonded.add(_bondAmount);
         emit BoughtBonds(msg.sender, _CHIPAmount, _bondAmount);
     }
 
     function redeemBonds(uint256 _bondAmount, uint256 targetPrice) external override onlyOneBlock checkCondition checkOperator {
         require(_bondAmount > 0, "Treasury: Cannot redeem bonds with zero amount.");
-        uint256 CHIPPrice = history[_epoch - 1].epochPrice;
+        uint256 CHIPPrice = history[_epoch].epochPrice;
         require(
             CHIPPrice > CHIPPriceCeiling, // price > $1.01.
             "Treasury: CHIP Price not eligible for bond purchase."
@@ -427,7 +421,7 @@ contract Treasury is ContractGuard, ITreasury, Operator{
         seigniorageSaved = seigniorageSaved.sub(Math.min(seigniorageSaved, _CHIPAmount));
         IBasisAsset(MPEA).burnFrom(msg.sender, _bondAmount);
         IERC20(CHIP).safeTransfer(msg.sender, _CHIPAmount);
-        history[_epoch - 1].redeemed = history[_epoch - 1].redeemed.add(_CHIPAmount);
+        history[_epoch].redeemed = history[_epoch].redeemed.add(_CHIPAmount);
         _updateEthPrice();
         emit RedeemedBonds(msg.sender, _CHIPAmount, _bondAmount);
     }
@@ -463,7 +457,9 @@ contract Treasury is ContractGuard, ITreasury, Operator{
         inDebtPhase = false;
         _updateEthPrice();
         previousEpochDollarPrice = getEthPrice();
-        history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: previousEpochDollarPrice}));
+        history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: previousEpochDollarPrice, endEpochPrice: 0}));
+        history[_epoch].endEpochPrice = previousEpochDollarPrice;
+
         uint256 CHIPSupply = IERC20(CHIP).totalSupply().sub(seigniorageSaved);
         uint256 ExpansionPercent;
         if(CHIPSupply < 500 ether) ExpansionPercent = 300;                                      // 3%
@@ -482,7 +478,7 @@ contract Treasury is ContractGuard, ITreasury, Operator{
             _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
             ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
             fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
-            history[_epoch].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
+            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
         } else {
             if (previousEpochDollarPrice > CHIPPriceCeiling) {
                 // Expansion ($CHIP Price > 1 ETH): there is some seigniorage to be allocated
@@ -499,7 +495,7 @@ contract Treasury is ContractGuard, ITreasury, Operator{
                         _percentage = _mse;
                     }
                     _savedForBoardRoom = CHIPSupply.mul(_percentage).div(1e18);
-                    history[_epoch].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
+                    history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
                 } else {
                     // Have not saved enough to pay dept, mint more.
                     uint256 _mse = ExpansionPercent.mul(1e14);
@@ -507,7 +503,7 @@ contract Treasury is ContractGuard, ITreasury, Operator{
                         _percentage = _mse;
                     }
                     uint256 _seigniorage = CHIPSupply.mul(_percentage).div(1e18);
-                    history[_epoch].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
+                    history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
                     _savedForBoardRoom = _seigniorage.mul(seigniorageExpansionFloorPercent).div(10000);
                     _savedForBond = _seigniorage.sub(_savedForBoardRoom);
                     if (mintingFactorForPayingDebt > 0) {

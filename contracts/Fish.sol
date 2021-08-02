@@ -26,12 +26,10 @@ contract Fish is ERC20Burnable, Operator {
     uint256 public endTime;
     uint256 public teamFundRewardRate = TEAM_FUND_POOL_ALLOCATION / VESTING_DURATION;
     uint256 public daoFundRewardRate = DAO_FUND_POOL_ALLOCATION / VESTING_DURATION;
-    address public chipswapFund;
     uint256 public teamFundLastClaimed;
     uint256 public daoFundLastClaimed;
     bool public rewardPoolDistributed = false;
     bool public chipSwapDistributed = false;
-
 
     constructor() ERC20("ChipShop Share", "FISH") {
         startTime = block.timestamp;
@@ -41,17 +39,18 @@ contract Fish is ERC20Burnable, Operator {
         // _mint(daoFund, 0.1 ether); // Send 0.1 ether to deployer.
     }
 
-
-    function setChipSwapFund(address _chipswapFund) external onlyOperator {
-        require(_chipswapFund != address(0x0), "FishToken.setChipSwapFund(): Invalid chipswap fund address.");
-        chipswapFund = _chipswapFund;
+    function mint(address recipient, uint256 amount) external onlyOperator returns (bool) {
+        uint256 balanceBefore = balanceOf(recipient);
+        _mint(recipient, amount);
+        uint256 balanceAfter = balanceOf(recipient);
+        return balanceAfter > balanceBefore;
     }
 
-    function distributeChipSwapFund() external onlyOperator {
+    function distributeChipSwapFund(address _chipswapFund) external onlyOperator {
         require(!chipSwapDistributed, "FishToken.distributeChipSwapFund(): Already distributed to chipswap mechanism.");
-        require(chipswapFund != address(0x0), "FishToken.distributeChipSwapFund(): Invalid chipswap fund address.");
+        require(_chipswapFund != address(0x0), "FishToken.distributeChipSwapFund(): Invalid chipswap fund address.");
         chipSwapDistributed = true;
-        _mint(chipswapFund, CHIPSWAP_ALLOCATION);
+        _mint(_chipswapFund, CHIPSWAP_ALLOCATION);
     }
 
     function unclaimedTeamFund() public view returns (uint256 _pending) {

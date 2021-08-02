@@ -235,11 +235,11 @@ contract Boardroom is ShareWrapper, ContractGuard, Operator {
         _token.safeTransfer(_to, _amount);
     }
 
-    function getClaimEpoch() external view returns (uint256) {
-        return directors[_msgSender()].epochTimerStart.add(rewardLockupEpochs);
+    function getClaimEpoch(address addr) external view returns (uint256) {
+        return directors[addr].epochTimerStart.add(rewardLockupEpochs);
     }
 
-    function getWithdrawEpoch() external view returns (uint256) {
-        return directors[_msgSender()].epochTimerStart.add(withdrawLockupEpochs);
+    function getWithdrawEpoch(address addr) external view returns (uint256) {
+        return directors[addr].epochTimerStart.add(withdrawLockupEpochs);
     }
 }

@@ -19,11 +19,8 @@ contract Oracle is IEpoch, Operator {
     using SafeMath for uint256;
 
     address public CHIP;
-//    address public ETH_BNB_LP;
-    address public ETH_BUSD_LP;
-    IERC20 public ETH;
-//    IERC20 public BNB;
-    IERC20 public BUSD;
+    address public ETH;
+    address public BUSD;
 
     bool public initialized = false;
 
@@ -46,6 +43,16 @@ contract Oracle is IEpoch, Operator {
     uint256 public price1CumulativeLast_1;
     FixedPoint.uq112x112 public price0Average_1;
     FixedPoint.uq112x112 public price1Average_1;
+
+    IPancakePair public pair_EB; // ETH/BUSD LP
+    address public token0_EB;
+    address public token1_EB;
+
+    uint32 public blockTimestampLast_EB;
+    uint256 public price0CumulativeLast_EB;
+    uint256 public price1CumulativeLast_EB;
+    FixedPoint.uq112x112 public price0Average_EB;
+    FixedPoint.uq112x112 public price1Average_EB;
 
     address public treasury;
     mapping(uint256 => uint256) public epochDollarPrice;
@@ -76,36 +83,44 @@ contract Oracle is IEpoch, Operator {
         return IEpoch(treasury).nextEpochLength();
     }
 
-    function setAddress(
-        address _CHIP,
-        address _ETH_BUSD_LP,
-        IERC20 _ETH,
-        IERC20 _BUSD
-    ) external onlyOperator {
+    function setAddress(address _CHIP, address _ETH, address _BUSD) external onlyOperator {
         CHIP = _CHIP;
-        ETH_BUSD_LP = _ETH_BUSD_LP;
         ETH = _ETH;
         BUSD = _BUSD;
     }
 
-    // _pair is CHIP/ETH LP, _pair_1 is CHIP/BUSD LP
-    function initialize(IPancakePair _pair, IPancakePair _pair_1) external onlyOperator notInitialized {
+    // _pair is CHIP/ETH LP, _pair_1 is CHIP/BUSD LP, pair_EB is ETH/BUSD LP
+    function initialize(IPancakePair _pair, IPancakePair _pair_1, IPancakePair _pair_EB) external onlyOperator notInitialized {
         pair = _pair;
         token0 = pair.token0();
         token1 = pair.token1();
-        price0CumulativeLast = pair.price0CumulativeLast(); // Fetch the current accumulated price value (1 / 0).
-        price1CumulativeLast = pair.price1CumulativeLast(); // Fetch the current accumulated price value (0 / 1).
+        price0CumulativeLast = pair.price0CumulativeLast();
+        price1CumulativeLast = pair.price1CumulativeLast();
         uint112 reserve0;
         uint112 reserve1;
         (reserve0, reserve1, blockTimestampLast) = pair.getReserves();
         require(reserve0 != 0 && reserve1 != 0, "Oracle: NO_RESERVES"); // Ensure that there's liquidity in the pair.
+
         pair_1 = _pair_1;
         token0_1 = pair_1.token0();
         token1_1 = pair_1.token1();
         price0CumulativeLast_1 = pair_1.price0CumulativeLast(); // Fetch the current accumulated price value (1 / 0).
         price1CumulativeLast_1 = pair_1.price1CumulativeLast(); // Fetch the current accumulated price value (0 / 1).
-        (reserve0, reserve1, blockTimestampLast_1) = pair_1.getReserves();
-        require(reserve0 != 0 && reserve1 != 0, "Oracle: NO_RESERVES"); // Ensure that there's liquidity in the pair.
+        uint112 reserve0_1;
+        uint112 reserve1_1;
+        (reserve0_1, reserve1_1, blockTimestampLast_1) = pair_1.getReserves();
+        require(reserve0_1 != 0 && reserve1_1 != 0, "Oracle: NO_RESERVES"); // Ensure that there's liquidity in the pair.
+
+        pair_EB = _pair_EB;
+        token0_EB = pair_EB.token0();
+        token1_EB = pair_EB.token1();
+        price0CumulativeLast_EB = pair_EB.price0CumulativeLast(); // Fetch the current accumulated price value (1 / 0).
+        price1CumulativeLast_EB = pair_EB.price1CumulativeLast(); // Fetch the current accumulated price value (0 / 1).
+        uint112 reserve0_EB;
+        uint112 reserve1_EB;
+        (reserve0_EB, reserve1_EB, blockTimestampLast_EB) = pair_EB.getReserves();
+        require(reserve0_EB != 0 && reserve1_EB != 0, "Oracle: NO_RESERVES"); // Ensure that there's liquidity in the pair.
+
         initialized = true;
         emit Initialized(msg.sender, block.number);
     }
@@ -136,6 +151,7 @@ contract Oracle is IEpoch, Operator {
         price1CumulativeLast = price1Cumulative;
         blockTimestampLast = blockTimestamp;
         epochDollarPrice[epoch()] = consult(CHIP, 1e18);
+
         // CHIP/BUSD LP
         (uint256 price0Cumulative_1, uint256 price1Cumulative_1, uint32 blockTimestamp_1) = PancakeswapOracleLibrary.currentCumulativePrices(address(pair_1));
         uint32 timeElapsed_1 = blockTimestamp_1 - blockTimestampLast_1; // overflow is desired
@@ -150,6 +166,22 @@ contract Oracle is IEpoch, Operator {
         price0CumulativeLast_1 = price0Cumulative_1;
         price1CumulativeLast_1 = price1Cumulative_1;
         blockTimestampLast_1 = blockTimestamp_1;
+
+        // ETH/BUSD LP
+        (uint256 price0Cumulative_EB, uint256 price1Cumulative_EB, uint32 blockTimestamp_EB) = PancakeswapOracleLibrary.currentCumulativePrices(address(pair_EB));
+        uint32 timeElapsed_EB = blockTimestamp_EB - blockTimestampLast_EB; // overflow is desired
+        if (timeElapsed_EB == 0) {
+            // Prevent divided by zero.
+            return;
+        }
+        // Overflow is desired, casting never truncates.
+        // Cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed.
+        price0Average_EB = FixedPoint.uq112x112(uint224((price0Cumulative_EB - price0CumulativeLast_EB) / timeElapsed_EB));
+        price1Average_EB = FixedPoint.uq112x112(uint224((price1Cumulative_EB - price1CumulativeLast_EB) / timeElapsed_EB));
+        price0CumulativeLast_EB = price0Cumulative_EB;
+        price1CumulativeLast_EB = price1Cumulative_EB;
+        blockTimestampLast_EB = blockTimestamp_EB;
+
         emit Updated(price0Cumulative, price1Cumulative);
     }
 
@@ -177,11 +209,7 @@ contract Oracle is IEpoch, Operator {
 
         uint256 tmp = uint256(_amountOut);
 
-        uint256 ETHBalance = ETH.balanceOf(ETH_BUSD_LP);
-        uint256 BUSDBalance = BUSD.balanceOf(ETH_BUSD_LP);
-        uint256 tmp_1 = uint256(_amountOut2);
-        tmp_1 = tmp_1.mul(ETHBalance).div(BUSDBalance);
-
+        uint256 tmp_1 = uint256(getETHPricePerBUSD());
         tmp = tmp.add(tmp_1).div(2);
 
         _amountOut = uint144(tmp);
@@ -195,7 +223,7 @@ contract Oracle is IEpoch, Operator {
         }
         (uint256 price0Cumulative, uint256 price1Cumulative, uint32 blockTimestamp) = PancakeswapOracleLibrary.currentCumulativePrices(address(pair));
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // Overflow is desired.
-        require(timeElapsed > 0, "Oracle : Elapsed time Error");
+        require(timeElapsed > 0, "Oracle : Elapsed time Error1");
         if (_token == token0) {
             require(price0Cumulative >= price0CumulativeLast, "Oracle : Price Calculation Error");
             _amountOut = FixedPoint.uq112x112(uint224((price0Cumulative - price0CumulativeLast) / timeElapsed)).mul(_amountIn).decode144();
@@ -213,7 +241,7 @@ contract Oracle is IEpoch, Operator {
         }
         (uint256 price0Cumulative, uint256 price1Cumulative, uint32 blockTimestamp) = PancakeswapOracleLibrary.currentCumulativePrices(address(pair_1));
         uint32 timeElapsed = blockTimestamp - blockTimestampLast_1; // Overflow is desired.
-        require(timeElapsed > 0, "Oracle : Elapsed time Error");
+        require(timeElapsed > 0, "Oracle : Elapsed time Error2");
         if (_token == token0_1) {
             require(price0Cumulative >= price0CumulativeLast_1, "Oracle : Price Calculation Error");
             _amountOut = FixedPoint.uq112x112(uint224((price0Cumulative - price0CumulativeLast_1) / timeElapsed)).mul(_amountIn).decode144();
@@ -224,16 +252,21 @@ contract Oracle is IEpoch, Operator {
     }
 
     function twap(address _token, uint256 _amountIn) external view returns (uint256 _amountOut) {
-        // CHIP/ETH LP, ETH-based price of CHIP.
-        uint256 v1 = twap_1(_token, _amountIn);
 
-        // CHIP/BUSD LP, BUSD-based price of CHIP.
-        uint256 v2 = twap_2(_token, _amountIn);
-        uint256 ETHBalance = ETH.balanceOf(ETH_BUSD_LP);
-        uint256 BUSDBalance = BUSD.balanceOf(ETH_BUSD_LP);
-        uint256 ETHPricePerBUSD = 1e18;
-        ETHPricePerBUSD = ETHPricePerBUSD.mul(ETHBalance).div(BUSDBalance);
+        uint256 v1 = twap_1(_token, _amountIn);     // CHIP/ETH LP, ETH-based price of CHIP.
+        uint256 v2 = twap_2(_token, _amountIn);     // CHIP/BUSD LP, BUSD-based price of CHIP.
+        uint256 ETHPricePerBUSD = uint256(getETHPricePerBUSD());
         v2 = v2.mul(ETHPricePerBUSD).div(1e18);
         _amountOut = v1.add(v2).div(2);
+    }
+
+    function getETHPricePerBUSD() public view returns (uint144 _amountOut) {
+        uint256 _amountIn = 1 ether;
+        if (BUSD == token0_EB) {
+            _amountOut = price0Average_EB.mul(_amountIn).decode144();
+        } else {
+            require(BUSD == token1_EB, "Oracle: INVALID_TOKEN");
+            _amountOut = price1Average_EB.mul(_amountIn).decode144();
+        }
     }
 }
