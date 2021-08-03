@@ -499,26 +499,29 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: previousEpochDollarPrice, endEpochPrice: 0}));
         history[_epoch].endEpochPrice = previousEpochDollarPrice;
 
-//        uint256 CHIPSupply = IERC20(CHIP).totalSupply().sub(seigniorageSaved);
-//        uint256 ExpansionPercent;
-//        if(CHIPSupply < 500 ether) ExpansionPercent = 300;                                      // 3%
-//        else if(CHIPSupply >= 500 ether && CHIPSupply < 1000 ether) ExpansionPercent = 200;     // 2%
-//        else if(CHIPSupply >= 1000 ether && CHIPSupply < 2000 ether) ExpansionPercent = 150;    // 1.5%
-//        else if(CHIPSupply >= 2000 ether && CHIPSupply < 5000 ether) ExpansionPercent = 125;    // 1.25%
-//        else if(CHIPSupply >= 5000 ether && CHIPSupply < 10000 ether) ExpansionPercent = 100;   // 1%
-//        else if(CHIPSupply >= 10000 ether && CHIPSupply < 20000 ether) ExpansionPercent = 75;   // 0.75%
-//        else if(CHIPSupply >= 20000 ether && CHIPSupply < 50000 ether) ExpansionPercent = 50;   // 0.5%
-//        else if(CHIPSupply >= 50000 ether && CHIPSupply < 100000 ether) ExpansionPercent = 25;  // 0.25%
-//        else if(CHIPSupply >= 100000 ether && CHIPSupply < 200000 ether) ExpansionPercent = 15; // 0.15%
-//        else ExpansionPercent = 10;                                                             // 0.1%
-//        maxSupplyExpansionPercent = ExpansionPercent;
-//        if (_epoch < bootstrapEpochs) {
-//            // 3 first epochs expansion.
-//            _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
-//            ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
-//            fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
-//            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
-//        } else {
+        uint256 CHIPSupply = IERC20(CHIP).totalSupply().sub(seigniorageSaved);
+        emit Debug("503", CHIPSupply);
+        uint256 ExpansionPercent;
+        if(CHIPSupply < 500 ether) ExpansionPercent = 300;                                      // 3%
+        else if(CHIPSupply >= 500 ether && CHIPSupply < 1000 ether) ExpansionPercent = 200;     // 2%
+        else if(CHIPSupply >= 1000 ether && CHIPSupply < 2000 ether) ExpansionPercent = 150;    // 1.5%
+        else if(CHIPSupply >= 2000 ether && CHIPSupply < 5000 ether) ExpansionPercent = 125;    // 1.25%
+        else if(CHIPSupply >= 5000 ether && CHIPSupply < 10000 ether) ExpansionPercent = 100;   // 1%
+        else if(CHIPSupply >= 10000 ether && CHIPSupply < 20000 ether) ExpansionPercent = 75;   // 0.75%
+        else if(CHIPSupply >= 20000 ether && CHIPSupply < 50000 ether) ExpansionPercent = 50;   // 0.5%
+        else if(CHIPSupply >= 50000 ether && CHIPSupply < 100000 ether) ExpansionPercent = 25;  // 0.25%
+        else if(CHIPSupply >= 100000 ether && CHIPSupply < 200000 ether) ExpansionPercent = 15; // 0.15%
+        else ExpansionPercent = 10;                                                             // 0.1%
+        maxSupplyExpansionPercent = ExpansionPercent;
+        emit Debug("516", maxSupplyExpansionPercent);
+        if (_epoch < bootstrapEpochs) {
+            // 3 first epochs expansion.
+            _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
+            ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
+            fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
+            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
+            emit Debug("523", CHIPSupply.mul(ExpansionPercent).div(10000));
+        } else {
 //            if (previousEpochDollarPrice > CHIPPriceCeiling) {
 //                // Expansion ($CHIP Price > 1 ETH): there is some seigniorage to be allocated
 //                fishPool.set(4, 0); // Disable MPEA/CHIP pool when expansion phase.
@@ -564,10 +567,10 @@ contract Treasury is ContractGuard, ITreasury, Operator {
 //                fishPool.set(4, 3000); // Enable MPEA/CHIP pool when contraction phase.
 //                maxSupplyExpansionPercent = 0;
 //            }
-//        }
-//        if (allocateSeigniorageSalary > 0) {
-//            IBasisAsset(CHIP).mint(address(msg.sender), allocateSeigniorageSalary);
-//        }
+        }
+        if (allocateSeigniorageSalary > 0) {
+            IBasisAsset(CHIP).mint(address(msg.sender), allocateSeigniorageSalary);
+        }
     }
 
     // Boardroom controls.
