@@ -137,7 +137,8 @@ async function afterMigration(deployer, network) {
   await oracleContract.update();
 
   const treasuryContract = await Treasury.deployed();
-  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, new Date().getTime() / 1000 + beginEpochAfter);
+  const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
+  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, epochStartTime);
   await treasuryContract.setExtraContract(FishRewardPool.address, ChipSwapMechanism.address, Oracle.address, Boardroom.address);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
 
@@ -224,7 +225,8 @@ async function test(deployer, network) {
   await oracleContract.update();
 
   const treasuryContract = await Treasury.deployed();
-  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, new Date().getTime() / 1000 + beginEpochAfter);
+  const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
+  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, epochStartTime);
   await treasuryContract.setExtraContract(fishRewardPoolAddress, chipSwapMechanismAddress, Oracle.address, Boardroom.address);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
 
