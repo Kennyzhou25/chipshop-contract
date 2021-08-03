@@ -481,14 +481,15 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         emit BoardroomFunded(block.timestamp, _amount);
     }
 
-    function allocateSeigniorage(uint256 previousEpochDollarPrice) external onlyOneBlock checkCondition checkOperator {
-        uint256 _nextEpochPoint = nextEpochPointWithTwap(previousEpochDollarPrice);
+    function allocateSeigniorage(uint256 twapPrice) external onlyOneBlock checkCondition checkOperator {
+        uint256 _nextEpochPoint = nextEpochPointWithTwap(twapPrice);
         require(block.timestamp >= _nextEpochPoint, "Treasury: Not opened yet.");
         lastEpochTime = _nextEpochPoint;
         _epoch = _epoch.add(1);
-        epochSupplyContractionLeft = (previousEpochDollarPrice > CHIPPriceCeiling) ? 0 : IERC20(CHIP).totalSupply().mul(maxSupplyContractionPercent).div(10000);
+        epochSupplyContractionLeft = (twapPrice > CHIPPriceCeiling) ? 0 : IERC20(CHIP).totalSupply().mul(maxSupplyContractionPercent).div(10000);
         inDebtPhase = false;
         _updateEthPrice();
+        previousEpochDollarPrice = twapPrice;
         history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: previousEpochDollarPrice, endEpochPrice: 0}));
         history[_epoch].endEpochPrice = previousEpochDollarPrice;
 
