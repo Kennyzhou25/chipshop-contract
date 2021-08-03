@@ -116,6 +116,7 @@ async function afterMigration(deployer, network) {
   const fishContract = await Fish.at(fishAddress);
   await fishContract.distributeReward(FishRewardPool.address);
   await fishContract.distributeChipSwapFund(ChipSwapMechanism.address);
+  console.log('fish operation is finished.');
 
   const fishRewardPoolContract = await FishRewardPool.deployed();
   await fishRewardPoolContract.add(3000, chipBusdLpAddress);
@@ -123,11 +124,13 @@ async function afterMigration(deployer, network) {
   await fishRewardPoolContract.add(4000, fishEthLpAddress);
   await fishRewardPoolContract.add(4000, fishBusdLpAddress);
   await fishRewardPoolContract.add(0, mpeaChipLpAddress);
+  console.log('fishRewardPool operation is finished.');
 
   const boardroomContract = await Boardroom.deployed();
   await boardroomContract.initialize(chipAddress, fishAddress, Treasury.address);
   await fishContract.approve(boardroomContract, MaxUint256);
   await boardroomContract.stake(10000);
+  console.log('boardroom operation is finished.');
 
   const oracleContract = await Oracle.deployed();
   await oracleContract.initialize(chipEthLpAddress, chipBusdLpAddress, ethBusdLpAddress);
@@ -135,12 +138,14 @@ async function afterMigration(deployer, network) {
   await oracleContract.setPriceAppreciation(10000);
   await oracleContract.setTreasury(Treasury.address);
   await oracleContract.update();
+  console.log('oracle operation is finished.');
 
   const treasuryContract = await Treasury.deployed();
   const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
   await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, epochStartTime);
   await treasuryContract.setExtraContract(FishRewardPool.address, ChipSwapMechanism.address, Oracle.address, Boardroom.address);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
+  console.log('treasury operation is finished.');
 
   const chipContract = await Chip.at(chipAddress);
   const mpeaContract = await Mpea.at(mpeaAdress);
@@ -149,9 +154,12 @@ async function afterMigration(deployer, network) {
   await chipContract.transferOperator(Treasury.address);
   await mpeaContract.transferOperator(Treasury.address);
   await fishContract.transferOperator(Treasury.address);
+  await fishRewardPoolContract.transferOperator(Treasury.address);
   await chipSwapMechanismContract.transferOperator(Treasury.address);
   await boardroomContract.transferOperator(Treasury.address);
   await oracleContract.transferOperator(Treasury.address);
+
+  console.log('transferOperators are finished.');
 }
 
 async function test(deployer, network) {
@@ -216,6 +224,7 @@ async function test(deployer, network) {
   const fishContract = await Fish.at(fishAddress);
   await fishContract.approve(Boardroom.address, MaxUint256);
   await boardroomContract.stake(10000);
+  console.log('boardroom operation is finished.');
 
   const oracleContract = await Oracle.deployed();
   await oracleContract.initialize(chipEthLpAddress, chipBusdLpAddress, ethBusdLpAddress);
@@ -223,12 +232,14 @@ async function test(deployer, network) {
   await oracleContract.setPriceAppreciation(10000);
   await oracleContract.setTreasury(Treasury.address);
   await oracleContract.update();
+  console.log('oracle operation is finished.');
 
   const treasuryContract = await Treasury.deployed();
   const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
   await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, epochStartTime);
   await treasuryContract.setExtraContract(fishRewardPoolAddress, chipSwapMechanismAddress, Oracle.address, Boardroom.address);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
+  console.log('treasury operation is finished.');
 
   const chipContract = await Chip.at(chipAddress);
   const mpeaContract = await Mpea.at(mpeaAdress);
@@ -242,6 +253,8 @@ async function test(deployer, network) {
   await chipSwapMechanismContract.transferOperator(Treasury.address);
   await boardroomContract.transferOperator(Treasury.address);
   await oracleContract.transferOperator(Treasury.address);
+
+  console.log('transferOperators are finished.');
 }
 
 module.exports = async function(deployer, network) {
