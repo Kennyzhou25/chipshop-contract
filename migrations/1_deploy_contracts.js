@@ -150,6 +150,6 @@ async function afterMigration(deployer, network) {
 }
 
 module.exports = async function(deployer, network) {
-  await beforeMigration(deployer, network);
+  // await beforeMigration(deployer, network);
   await afterMigration(deployer, network);
 };
