@@ -24,6 +24,8 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     using Address for address;
     using SafeMath for uint256;
 
+    event Debug(string lineNumber, uint256 value);
+
     // State variables.
 
     bool public migrated = false;
@@ -483,85 +485,89 @@ contract Treasury is ContractGuard, ITreasury, Operator {
 
     function allocateSeigniorage(uint256 twapPrice) external onlyOneBlock checkCondition checkOperator {
         uint256 _nextEpochPoint = nextEpochPointWithTwap(twapPrice);
+        emit Debug("488", _nextEpochPoint);
         require(block.timestamp >= _nextEpochPoint, "Treasury: Not opened yet.");
         lastEpochTime = _nextEpochPoint;
         _epoch = _epoch.add(1);
+        emit Debug("492", _epoch);
         epochSupplyContractionLeft = (twapPrice > CHIPPriceCeiling) ? 0 : IERC20(CHIP).totalSupply().mul(maxSupplyContractionPercent).div(10000);
+        emit Debug("494", epochSupplyContractionLeft);
         inDebtPhase = false;
         _updateEthPrice();
         previousEpochDollarPrice = twapPrice;
+        emit Debug("498", previousEpochDollarPrice);
         history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: previousEpochDollarPrice, endEpochPrice: 0}));
         history[_epoch].endEpochPrice = previousEpochDollarPrice;
 
-        uint256 CHIPSupply = IERC20(CHIP).totalSupply().sub(seigniorageSaved);
-        uint256 ExpansionPercent;
-        if(CHIPSupply < 500 ether) ExpansionPercent = 300;                                      // 3%
-        else if(CHIPSupply >= 500 ether && CHIPSupply < 1000 ether) ExpansionPercent = 200;     // 2%
-        else if(CHIPSupply >= 1000 ether && CHIPSupply < 2000 ether) ExpansionPercent = 150;    // 1.5%
-        else if(CHIPSupply >= 2000 ether && CHIPSupply < 5000 ether) ExpansionPercent = 125;    // 1.25%
-        else if(CHIPSupply >= 5000 ether && CHIPSupply < 10000 ether) ExpansionPercent = 100;   // 1%
-        else if(CHIPSupply >= 10000 ether && CHIPSupply < 20000 ether) ExpansionPercent = 75;   // 0.75%
-        else if(CHIPSupply >= 20000 ether && CHIPSupply < 50000 ether) ExpansionPercent = 50;   // 0.5%
-        else if(CHIPSupply >= 50000 ether && CHIPSupply < 100000 ether) ExpansionPercent = 25;  // 0.25%
-        else if(CHIPSupply >= 100000 ether && CHIPSupply < 200000 ether) ExpansionPercent = 15; // 0.15%
-        else ExpansionPercent = 10;                                                             // 0.1%
-        maxSupplyExpansionPercent = ExpansionPercent;
-        if (_epoch < bootstrapEpochs) {
-            // 3 first epochs expansion.
-            _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
-            ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
-            fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
-            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
-        } else {
-            if (previousEpochDollarPrice > CHIPPriceCeiling) {
-                // Expansion ($CHIP Price > 1 ETH): there is some seigniorage to be allocated
-                fishPool.set(4, 0); // Disable MPEA/CHIP pool when expansion phase.
-                ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
-                uint256 bondSupply = IERC20(MPEA).totalSupply();
-                uint256 _percentage = previousEpochDollarPrice.sub(CHIPPriceOne);
-                uint256 _savedForBond;
-                uint256 _savedForBoardRoom;
-                if (seigniorageSaved >= bondSupply.mul(bondDepletionFloorPercent).div(10000)) {
-                    // Saved enough to pay dept, mint as usual rate.
-                    uint256 _mse = ExpansionPercent.mul(1e14);
-                    if (_percentage > _mse) {
-                        _percentage = _mse;
-                    }
-                    _savedForBoardRoom = CHIPSupply.mul(_percentage).div(1e18);
-                    history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
-                } else {
-                    // Have not saved enough to pay dept, mint more.
-                    uint256 _mse = ExpansionPercent.mul(1e14);
-                    if (_percentage > _mse) {
-                        _percentage = _mse;
-                    }
-                    uint256 _seigniorage = CHIPSupply.mul(_percentage).div(1e18);
-                    history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
-                    _savedForBoardRoom = _seigniorage.mul(seigniorageExpansionFloorPercent).div(10000);
-                    _savedForBond = _seigniorage.sub(_savedForBoardRoom);
-                    if (mintingFactorForPayingDebt > 0) {
-                        inDebtPhase = true;
-                        _savedForBond = _savedForBond.mul(mintingFactorForPayingDebt).div(10000);
-                    }
-                }
-                if (_savedForBoardRoom > 0) {
-                    _sendToBoardRoom(_savedForBoardRoom);
-                }
-                if (_savedForBond > 0) {
-                    seigniorageSaved = seigniorageSaved.add(_savedForBond);
-                    IBasisAsset(CHIP).mint(address(this), _savedForBond);
-                    emit TreasuryFunded(block.timestamp, _savedForBond);
-                }
-            } else {
-                // Contraction phase.
-                ChipSwapMechanism.unlockFish(4); // When contraction phase, 4 hours worth fish will be unlocked.
-                fishPool.set(4, 3000); // Enable MPEA/CHIP pool when contraction phase.
-                maxSupplyExpansionPercent = 0;
-            }
-        }
-        if (allocateSeigniorageSalary > 0) {
-            IBasisAsset(CHIP).mint(address(msg.sender), allocateSeigniorageSalary);
-        }
+//        uint256 CHIPSupply = IERC20(CHIP).totalSupply().sub(seigniorageSaved);
+//        uint256 ExpansionPercent;
+//        if(CHIPSupply < 500 ether) ExpansionPercent = 300;                                      // 3%
+//        else if(CHIPSupply >= 500 ether && CHIPSupply < 1000 ether) ExpansionPercent = 200;     // 2%
+//        else if(CHIPSupply >= 1000 ether && CHIPSupply < 2000 ether) ExpansionPercent = 150;    // 1.5%
+//        else if(CHIPSupply >= 2000 ether && CHIPSupply < 5000 ether) ExpansionPercent = 125;    // 1.25%
+//        else if(CHIPSupply >= 5000 ether && CHIPSupply < 10000 ether) ExpansionPercent = 100;   // 1%
+//        else if(CHIPSupply >= 10000 ether && CHIPSupply < 20000 ether) ExpansionPercent = 75;   // 0.75%
+//        else if(CHIPSupply >= 20000 ether && CHIPSupply < 50000 ether) ExpansionPercent = 50;   // 0.5%
+//        else if(CHIPSupply >= 50000 ether && CHIPSupply < 100000 ether) ExpansionPercent = 25;  // 0.25%
+//        else if(CHIPSupply >= 100000 ether && CHIPSupply < 200000 ether) ExpansionPercent = 15; // 0.15%
+//        else ExpansionPercent = 10;                                                             // 0.1%
+//        maxSupplyExpansionPercent = ExpansionPercent;
+//        if (_epoch < bootstrapEpochs) {
+//            // 3 first epochs expansion.
+//            _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
+//            ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
+//            fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
+//            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
+//        } else {
+//            if (previousEpochDollarPrice > CHIPPriceCeiling) {
+//                // Expansion ($CHIP Price > 1 ETH): there is some seigniorage to be allocated
+//                fishPool.set(4, 0); // Disable MPEA/CHIP pool when expansion phase.
+//                ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
+//                uint256 bondSupply = IERC20(MPEA).totalSupply();
+//                uint256 _percentage = previousEpochDollarPrice.sub(CHIPPriceOne);
+//                uint256 _savedForBond;
+//                uint256 _savedForBoardRoom;
+//                if (seigniorageSaved >= bondSupply.mul(bondDepletionFloorPercent).div(10000)) {
+//                    // Saved enough to pay dept, mint as usual rate.
+//                    uint256 _mse = ExpansionPercent.mul(1e14);
+//                    if (_percentage > _mse) {
+//                        _percentage = _mse;
+//                    }
+//                    _savedForBoardRoom = CHIPSupply.mul(_percentage).div(1e18);
+//                    history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
+//                } else {
+//                    // Have not saved enough to pay dept, mint more.
+//                    uint256 _mse = ExpansionPercent.mul(1e14);
+//                    if (_percentage > _mse) {
+//                        _percentage = _mse;
+//                    }
+//                    uint256 _seigniorage = CHIPSupply.mul(_percentage).div(1e18);
+//                    history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(_percentage).div(1e18);
+//                    _savedForBoardRoom = _seigniorage.mul(seigniorageExpansionFloorPercent).div(10000);
+//                    _savedForBond = _seigniorage.sub(_savedForBoardRoom);
+//                    if (mintingFactorForPayingDebt > 0) {
+//                        inDebtPhase = true;
+//                        _savedForBond = _savedForBond.mul(mintingFactorForPayingDebt).div(10000);
+//                    }
+//                }
+//                if (_savedForBoardRoom > 0) {
+//                    _sendToBoardRoom(_savedForBoardRoom);
+//                }
+//                if (_savedForBond > 0) {
+//                    seigniorageSaved = seigniorageSaved.add(_savedForBond);
+//                    IBasisAsset(CHIP).mint(address(this), _savedForBond);
+//                    emit TreasuryFunded(block.timestamp, _savedForBond);
+//                }
+//            } else {
+//                // Contraction phase.
+//                ChipSwapMechanism.unlockFish(4); // When contraction phase, 4 hours worth fish will be unlocked.
+//                fishPool.set(4, 3000); // Enable MPEA/CHIP pool when contraction phase.
+//                maxSupplyExpansionPercent = 0;
+//            }
+//        }
+//        if (allocateSeigniorageSalary > 0) {
+//            IBasisAsset(CHIP).mint(address(msg.sender), allocateSeigniorageSalary);
+//        }
     }
 
     // Boardroom controls.
