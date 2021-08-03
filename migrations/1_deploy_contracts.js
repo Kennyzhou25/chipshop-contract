@@ -43,6 +43,10 @@ async function beforeMigration(deployer, network) {
     }
   }
   await deployer.deploy(TokenMigration, oldChipAddress, oldFishAddress, oldMpeaAddress, Chip.address, Fish.address, new Date().getTime() / 1000 + migrationDuration);
+  const chipContract = await Chip.deployed();
+  const fishContract = await Fish.deployed();
+  await chipContract._mint(TokenMigration.address, 100);
+  await fishContract._mint(TokenMigration.address, 100);
 }
 
 async function afterMigration(deployer, network) {
