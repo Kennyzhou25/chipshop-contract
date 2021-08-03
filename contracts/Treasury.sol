@@ -467,10 +467,9 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         emit BoardroomFunded(block.timestamp, _amount);
     }
 
-    function allocateSeigniorage() external onlyOneBlock checkCondition checkEpoch checkOperator {
+    function allocateSeigniorage(uint256 previousEpochDollarPrice) external onlyOneBlock checkCondition checkEpoch checkOperator {
         inDebtPhase = false;
         _updateEthPrice();
-        previousEpochDollarPrice = getTwapPrice();
         history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: previousEpochDollarPrice, endEpochPrice: 0}));
         history[_epoch].endEpochPrice = previousEpochDollarPrice;
 
