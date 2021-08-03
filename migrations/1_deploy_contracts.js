@@ -106,23 +106,23 @@ async function afterMigration(deployer, network) {
 
   const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
 
-  // await deployer.deploy(FishRewardPool, fishAddress, fishStartBlock);
-  // await deployer.deploy(ChipSwapMechanism, chipAddress, fishAddress);
+  await deployer.deploy(FishRewardPool, fishAddress, fishStartBlock);
+  await deployer.deploy(ChipSwapMechanism, chipAddress, fishAddress);
 
   await deployer.deploy(Boardroom);
   await deployer.deploy(Oracle);
   await deployer.deploy(Treasury);
 
-  // const fishContract = await Fish.at(fishAddress);
-  // await fishContract.distributeReward(FishRewardPool.address);
-  // await fishContract.distributeChipSwapFund(ChipSwapMechanism.address);
+  const fishContract = await Fish.at(fishAddress);
+  await fishContract.distributeReward(FishRewardPool.address);
+  await fishContract.distributeChipSwapFund(ChipSwapMechanism.address);
 
-  // const fishRewardPoolContract = await FishRewardPool.deployed();
-  // await fishRewardPoolContract.add(3000, chipBusdLpAddress);
-  // await fishRewardPoolContract.add(3000, chipEthLpAddress);
-  // await fishRewardPoolContract.add(4000, fishEthLpAddress);
-  // await fishRewardPoolContract.add(4000, fishBusdLpAddress);
-  // await fishRewardPoolContract.add(0, mpeaChipLpAddress);
+  const fishRewardPoolContract = await FishRewardPool.deployed();
+  await fishRewardPoolContract.add(3000, chipBusdLpAddress);
+  await fishRewardPoolContract.add(3000, chipEthLpAddress);
+  await fishRewardPoolContract.add(4000, fishEthLpAddress);
+  await fishRewardPoolContract.add(4000, fishBusdLpAddress);
+  await fishRewardPoolContract.add(0, mpeaChipLpAddress);
 
   const boardroomContract = new Boardroom.deployed();
   await boardroomContract.initialize(chipAddress, fishAddress, Treasury.address);
