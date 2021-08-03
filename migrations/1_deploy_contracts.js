@@ -98,7 +98,7 @@ async function afterMigration(deployer, network) {
   }
 
   const web3 = new Web3(provider);
-  const currentBlock = await w3.eth.getBlockNumber();
+  const currentBlock = await web3.eth.getBlockNumber();
 
   await deployer.deploy(ChipSwapMechanism, chipAddress, fishAddress);
 
