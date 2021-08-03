@@ -519,7 +519,8 @@ contract Treasury is ContractGuard, ITreasury, Operator {
             emit Debug("519", CHIPSupply.mul(ExpansionPercent).div(10000));
             _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
             emit Debug("521", CHIPSupply.mul(ExpansionPercent).div(10000));
-//            ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
+            ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
+            emit Debug("521", CHIPSupply.mul(ExpansionPercent).div(10000));
 //            fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
 //            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
 //            emit Debug("523", CHIPSupply.mul(ExpansionPercent).div(10000));
