@@ -28,7 +28,8 @@
     "@openzeppelin/contracts-ethereum-package": "^3.0.0",
     "@openzeppelin/contracts-upgradeable": "^3.3.0",
     "@uniswap/lib": "^1.1.2",
-    "@uniswap/v2-core": "^1.0.1"
+    "@uniswap/v2-core": "^1.0.1",
+    "web3": "^1.5.0"
   },
   "devDependencies": {
     "@ethereum-waffle/chai": "^3.0.2",
@@ -49,7 +50,7 @@
     "bignumber.js": "^9.0.1",
     "chai": "^4.2.0",
     "decimal.js": "^10.2.1",
-    "dotenv": "^8.2.0",
+    "dotenv": "^10.0.0",
     "eslint-config-airbnb": "^18.2.1",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-jsx-a11y": "^6.4.1",

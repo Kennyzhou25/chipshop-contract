@@ -4,9 +4,9 @@ import "./interfaces/IBasisAsset.sol";
 
 contract TokenMigration {
 
-    IBasisAsset public oldChip = IBasisAsset(0x8d5728fe016A07743e18B54fBbE07E853BCa491c);
-    IBasisAsset public oldFish = IBasisAsset(0x4FAB296f67fBaC741D4A1b884a5cAb96974C7cd8);
-    IBasisAsset public oldMpea = IBasisAsset(0x117cC1e6C64C0830C587990b975612E2fcb9Ed22);
+    IBasisAsset public oldChip;
+    IBasisAsset public oldFish;
+    IBasisAsset public oldMpea;
 
     IBasisAsset public newChip;
     IBasisAsset public newFish;
@@ -18,11 +18,13 @@ contract TokenMigration {
         _;
     }
 
-    constructor(IBasisAsset _newChip, IBasisAsset _newFish, uint256 _endTime) {
+    constructor(IBasisAsset _oldChip, IBasisAsset _oldFish, IBasisAsset _oldMpea, IBasisAsset _newChip, IBasisAsset _newFish, uint256 _endTime) {
         require(_endTime > block.timestamp, "TokenMigration: Invalid end time");
+        oldChip = _oldChip;
+        oldFish = _oldFish;
+        oldMpea = _oldMpea;
         newChip = _newChip;
         newFish = _newFish;
-
         endTime = _endTime;
     }
 

@@ -57,9 +57,9 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     address public boardroomSecond;
     address public CHIPOracle;
 
-    address public ETH = address(0x2170Ed0880ac9A755fd29B2688956BD959F933F8);
-    address public CHIP_ETH = address(0xaCc6a43f7D20E4460877ACBD5d5e5C716aA371B1);
-    address public FISH_ETH = address(0x6566A15973a67202356e4AFF1BB0B575b8945c18);
+    address public ETH = address(0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335);         // need to change
+    address public CHIP_ETH = address(0xaB5a4bFe8E7a5A2628cC690519bcC3481D66e9e0);
+    address public FISH_ETH = address(0x3715340BC619E5aDbca158Ab459F2EfFDa545675);
 
     IChipSwap public ChipSwapMechanism;
     IFishRewardPool public fishPool;
@@ -116,7 +116,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         _;
         lastEpochTime = _nextEpochPoint;
         _epoch = _epoch.add(1);
-        epochSupplyContractionLeft = (getEthPrice() > CHIPPriceCeiling) ? 0 : IERC20(CHIP).totalSupply().mul(maxSupplyContractionPercent).div(10000);
+        epochSupplyContractionLeft = (getTwapPrice() > CHIPPriceCeiling) ? 0 : IERC20(CHIP).totalSupply().mul(maxSupplyContractionPercent).div(10000);
     }
 
     modifier checkOperator {
@@ -144,24 +144,35 @@ contract Treasury is ContractGuard, ITreasury, Operator {
             // 3 first epochs with 6h long.
             _length = 15 minutes;
         } else {
-            uint256 CHIPPrice = getEthPrice();
+            uint256 CHIPPrice = getTwapPrice();
             _length = (CHIPPrice > CHIPPriceCeiling) ? 15 minutes : 10 minutes;
         }
     }
 
     // Oracle.
     function getEthPrice() public view override returns (uint256 CHIPPrice) {
-        CHIPPrice = IOracle(CHIPOracle).twap(CHIP, 1e18);
+        try IOracle(CHIPOracle).consult(CHIP, 1e18) returns (uint144 price) {
+            return uint256(price);
+        } catch {
+            revert("Treasury: Failed to consult CHIP price from the oracle.");
+        }
+    }
+
+    function getTwapPrice() public view returns (uint256 CHIPPrice) {
+        try IOracle(CHIPOracle).twap(CHIP, 1e18) returns (uint144 price) {
+            return uint256(price);
+        } catch {
+            revert("Treasury: Failed to twap CHIP price from the oracle.");
+        }
     }
 
     // Budget.
-
     function getReserve() external view returns (uint256) {
         return seigniorageSaved;
     }
 
     function getBurnableDollarLeft() external view returns (uint256 _burnableDollarLeft) {
-        uint256 _CHIPPrice = getEthPrice();
+        uint256 _CHIPPrice = getTwapPrice();
         if (_CHIPPrice <= CHIPPriceOne) {
             uint256 _CHIPSupply = IERC20(CHIP).totalSupply();
             uint256 _bondMaxSupply = _CHIPSupply.mul(maxDeptRatioPercent).div(10000);
@@ -175,7 +186,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function getRedeemableBonds() external view returns (uint256 _redeemableBonds) {
-        uint256 _CHIPPrice = getEthPrice();
+        uint256 _CHIPPrice = getTwapPrice();
         if (_CHIPPrice > CHIPPriceCeiling) {
             uint256 _totalDollar = IERC20(CHIP).balanceOf(address(this));
             uint256 _rate = getBondPremiumRate();
@@ -186,7 +197,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function getBondDiscountRate() public view returns (uint256 _rate) {
-        uint256 _CHIPPrice = getEthPrice();
+        uint256 _CHIPPrice = getTwapPrice();
         if (_CHIPPrice <= CHIPPriceOne) {
             if (discountPercent == 0) {
                 // No discount.
@@ -203,7 +214,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function getBondPremiumRate() public view returns (uint256 _rate) {
-        uint256 _CHIPPrice = getEthPrice();
+        uint256 _CHIPPrice = getTwapPrice();
         if (_CHIPPrice > CHIPPriceCeiling) {
             if (premiumPercent == 0) {
                 // No premium bonus.
@@ -453,7 +464,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     function allocateSeigniorage() external onlyOneBlock checkCondition checkEpoch checkOperator {
         inDebtPhase = false;
         _updateEthPrice();
-        previousEpochDollarPrice = getEthPrice();
+        previousEpochDollarPrice = getTwapPrice();
         history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: previousEpochDollarPrice, endEpochPrice: 0}));
         history[_epoch].endEpochPrice = previousEpochDollarPrice;
 

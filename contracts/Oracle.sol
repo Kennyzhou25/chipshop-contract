@@ -209,7 +209,7 @@ contract Oracle is IEpoch, Operator {
 
         uint256 tmp = uint256(_amountOut);
 
-        uint256 tmp_1 = uint256(getETHPricePerBUSD());
+        uint256 tmp_1 = uint256(getETHPricePerBUSD()).mul(uint256(_amountOut2));
         tmp = tmp.add(tmp_1).div(2);
 
         _amountOut = uint144(tmp);
@@ -251,13 +251,14 @@ contract Oracle is IEpoch, Operator {
         }
     }
 
-    function twap(address _token, uint256 _amountIn) external view returns (uint256 _amountOut) {
+    function twap(address _token, uint256 _amountIn) external view returns (uint144 _amountOut) {
 
         uint256 v1 = twap_1(_token, _amountIn);     // CHIP/ETH LP, ETH-based price of CHIP.
         uint256 v2 = twap_2(_token, _amountIn);     // CHIP/BUSD LP, BUSD-based price of CHIP.
         uint256 ETHPricePerBUSD = uint256(getETHPricePerBUSD());
         v2 = v2.mul(ETHPricePerBUSD).div(1e18);
-        _amountOut = v1.add(v2).div(2);
+        uint256 amountOut = v1.add(v2).div(2);
+        _amountOut = FixedPoint.uq112x112(uint224(amountOut)).mul(1).decode144();
     }
 
     function getETHPricePerBUSD() public view returns (uint144 _amountOut) {

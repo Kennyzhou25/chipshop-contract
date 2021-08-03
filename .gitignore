@@ -6,7 +6,6 @@ build/
 coverage/
 coverage.json
 hardhat.config.ts
-truffle-config.js
 yarn.lock
 package-lock.json
 *.log

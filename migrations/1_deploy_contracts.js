@@ -1,9 +1,9 @@
-const fs = require("fs");
+const Web3 = require('web3');
+const BigNumber = require('bignumber.js');
 
 const Chip = artifacts.require("Chip");
 const Fish = artifacts.require("Fish");
 const Mpea = artifacts.require("Mpea");
-// const ChipRewardPool = artifacts.require("ChipRewardPool");
 const FishRewardPool = artifacts.require("FishRewardPool");
 const Boardroom = artifacts.require("Boardroom");
 const ChipSwapMechanism = artifacts.require("ChipSwapMechanism");
@@ -11,47 +11,145 @@ const Oracle = artifacts.require("Oracle");
 const Treasury = artifacts.require("Treasury");
 const TokenMigration = artifacts.require("TokenMigration");
 
-// const chipAddress = "0xedDD4bB8Fa49A815bb0B7F15875117308393d76b";
-// const fishAddress = "0xbAA0eE13b1371a0Ce9B631AB06A2BFBB4B667bE8";
+const MaxUint256 = (/*#__PURE__*/BigNumber("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+const averageBlockTime = 3;
+const beginRewardsAfter = 2 * 60 * 60;
+const migrationDuration = 48 * 60 * 60;
+const beginEpochAfter = 10 * 60;
 
-const chipStartBlock = 8009960;
-const fishStartBlock = 10464233;
+async function beforeMigration(deployer, network) {
+  await deployer.deploy(Chip);
+  await deployer.deploy(Fish);
+  await deployer.deploy(Mpea);
+  let oldChipAddress = '';
+  let oldFishAddress = '';
+  let oldMpeaAddress = '';
+  switch (network) {
+    case 'bscTestNet': {
+      oldChipAddress = '0x8d5728fe016A07743e18B54fBbE07E853BCa491c';
+      oldFishAddress = '0x4FAB296f67fBaC741D4A1b884a5cAb96974C7cd8`';
+      oldMpeaAddress = '0x117cC1e6C64C0830C587990b975612E2fcb9Ed22';
+      break;
+    }
+    case 'bsc': {
+      oldChipAddress = '0x7a4Feb21b86281F7D345dEDE500c9C51881b948B';
+      oldFishAddress = '0xD47c524ae4Cf0f941D0Dd03b44CD9C80dd4238d6';
+      oldMpeaAddress = '0x23A47619f784F109582f07C01D8a72512ba9D0E1';
+      break;
+    }
+    default: {
+      console.log('Error - Unregistered network type');
+      return;
+    }
+  }
+  await deployer.deploy(TokenMigration, oldChipAddress, oldFishAddress, oldMpeaAddress, Chip.address, Fish.address, new Date().getTime() / 1000 + migrationDuration);
+}
 
-module.exports = async function(deployer) {
-  // deployer.deploy(Chip).then(() => {
-  //   console.log(`Chip Address: ${ Chip.address }`);
-  //   // deployer.deploy(ChipRewardPool, Chip.address, chipStartBlock).then(() => {
-  //   //   console.log(`ChipRewardPool Address: ${ ChipRewardPool.address }`);
-  //   // });
-  //   deployer.deploy(Fish).then(() => {
-  //     console.log(`Fish Address: ${ Fish.address }`);
-  //     deployer.deploy(FishRewardPool, Fish.address, fishStartBlock).then(() => {
-  //       console.log(`FishRewardPool Address: ${ FishRewardPool.address }`);
-  //     });
-  //     deployer.deploy(ChipSwapMechanism, Chip.address, Fish.address).then(() => {
-  //       console.log(`ChipSwapMechanism Address: ${ ChipSwapMechanism.address }`);
-  //     });
-  //     deployer.deploy(Mpea).then(() => {
-  //       console.log(`Mpea Address: ${ Mpea.address }`);
-  //       deployer.deploy(TokenMigration, Chip.address, Fish.address, Mpea.address).then(() =>{
-  //         console.log(`TokenMigration Address: ${ TokenMigration.address }`);
-  //       });
-  //     });
-  //   });
-  // });
+async function afterMigration(deployer, network) {
+  const daoAddresss = '0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f';
+  let provider = '';
+  let chipAddress = '';
+  let fishAddress = '';
+  let mpeaAdress = '';
+  let busdAddres = '';
+  let ethAddress = '';
+  let chipBusdLpAddress = '';
+  let chipEthLpAddress = '';
+  let fishEthLpAddress = '';
+  let fishBusdLpAddress = '';
+  let mpeaChipLpAddress = '';
+  let ethBusdLpAddress = '';
 
-  // deployer.deploy(Boardroom).then(() => {
-  //   console.log(`Boardroom Address: ${ Boardroom.address }`);
-  // });
-  // deployer.deploy(Oracle).then(() => {
-  //   console.log(`Oracle Address: ${ Oracle.address }`);
-  // });
-  // deployer.deploy(Treasury).then(() => {
-  //   console.log(`Treasury Address: ${ Treasury.address }`);
-  // });
-  const treasuryAddress = await deployer.deploy(Treasury);
-  console.log('treasuryAddress: ', treasuryAddress);
-  // deployer.deploy(Chip).then(() => {
-  //   console.log(`Chip Address: ${ Chip.address }`);
-  // });
+  switch (network) {
+    case 'bscTestNet': {
+      provider = 'https://data-seed-prebsc-1-s1.binance.org:8545';
+      busdAddres = '0xb82b5086df3bC61D019457B9De2FF4124368CFFF';
+      ethAddress = '0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335';
+      chipAddress = '0xb051a24b1a325008B817595B2E23915AFfF5a4a2';
+      fishAddress = '0x4170E5AC7f25Df7c21937D476ad1002891550b0B';
+      mpeaAdress = '0xe57508ab678440cd4d87effc523AF6e348a97202';
+      chipBusdLpAddress = '0xaf4528018d6351490c6303bbfb352ffd8d1bcb05';
+      chipEthLpAddress = '0xaB5a4bFe8E7a5A2628cC690519bcC3481D66e9e0';
+      fishEthLpAddress = '0x3715340BC619E5aDbca158Ab459F2EfFDa545675';
+      fishBusdLpAddress = '0xcd489eac7137463b2757c4dc2cb03f679f9cad31';
+      mpeaChipLpAddress = '0x18aeeca391db2913feb5659cc46d1f0bd906f2aa';
+      ethBusdLpAddress = '0xD14eA0A4beF5aeD665eB26447Aaa7100193994cf';
+      break;
+    }
+    case 'bsc': {
+      provider = 'https://bsc-dataseed1.binance.org';
+      busdAddres = '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56';
+      ethAddress = '0x2170Ed0880ac9A755fd29B2688956BD959F933F8';
+      chipAddress = '';
+      fishAddress = '';
+      mpeaAdress = '';
+      chipBusdLpAddress = '';
+      chipEthLpAddress = '';
+      fishEthLpAddress = '';
+      fishBusdLpAddress = '';
+      mpeaChipLpAddress = '';
+      ethBusdLpAddress = '0x7213a321F1855CF1779f42c0CD85d3D95291D34C';
+      break;
+    }
+    default: {
+      console.log('Error - Unregistered network type');
+      return;
+    }
+  }
+
+  const web3 = new Web3(provider);
+  const currentBlock = await w3.eth.getBlockNumber();
+
+  await deployer.deploy(ChipSwapMechanism, chipAddress, fishAddress);
+
+  const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
+  await deployer.deploy(FishRewardPool, fishAddress, fishStartBlock);
+
+  await deployer.deploy(Boardroom);
+  await deployer.deploy(Oracle);
+  await deployer.deploy(Treasury);
+
+  const fishContract = await Fish.at(fishAddress);
+  await fishContract.distributeReward(FishRewardPool.address);
+  await fishContract.distributeChipSwapFund(ChipSwapMechanism.address);
+
+  const fishRewardPoolContract = await FishRewardPool.deployed();
+  await fishRewardPoolContract.add(3000, chipBusdLpAddress);
+  await fishRewardPoolContract.add(3000, chipEthLpAddress);
+  await fishRewardPoolContract.add(4000, fishEthLpAddress);
+  await fishRewardPoolContract.add(4000, fishBusdLpAddress);
+  await fishRewardPoolContract.add(0, mpeaChipLpAddress);
+
+  const boardroomContract = new Boardroom.deployed();
+  await boardroomContract.initialize(chipAddress, fishAddress, Treasury.address);
+  await fishContract.approve(boardroomContract, MaxUint256);
+  await boardroomContract.stake(10000);
+
+  const oracleContract = new Oracle.deployed();
+  await oracleContract.initialize(chipEthLpAddress, chipBusdLpAddress, ethBusdLpAddress);
+  await oracleContract.setAddress(chipAddress, ethAddress, busdAddres);
+  await oracleContract.setPriceAppreciation(10000);
+  await oracleContract.setTreasury(Treasury.address);
+  await oracleContract.update();
+
+  const treasuryContract = new Treasury.deployed();
+  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, new Date().getTime() / 1000 + beginEpochAfter);
+  await treasuryContract.setExtraContract(FishRewardPool.address, ChipSwapMechanism.address, Oracle.address, Boardroom.address);
+  await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
+
+  const chipContract = await Chip.at(chipAddress);
+  const mpeaContract = await Mpea.at(mpeaAdress);
+  const chipSwapMechanismContract = await ChipSwapMechanism.deployed();
+
+  await chipContract.transferOperator(Treasury.address);
+  await mpeaContract.transferOperator(Treasury.address);
+  await fishContract.transferOperator(Treasury.address);
+  await chipSwapMechanismContract.transferOperator(Treasury.address);
+  await boardroomContract.transferOperator(Treasury.address);
+  await oracleContract.transferOperator(Treasury.address);
+}
+
+module.exports = async function(deployer, network) {
+  await beforeMigration(deployer, network);
+  await afterMigration(deployer, network);
 };
