@@ -139,12 +139,26 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         return lastEpochTime.add(nextEpochLength());
     }
 
+    function nextEpochPointWithTwap(uint256 twapPrice) public view returns (uint256) {
+        return lastEpochTime.add(nextEpochLengthWithTwap(twapPrice));
+    }
+
     function nextEpochLength() public view override returns (uint256 _length) {
         if (_epoch <= bootstrapEpochs) {
             // 3 first epochs with 6h long.
             _length = 15 minutes;
         } else {
             uint256 CHIPPrice = getTwapPrice();
+            _length = (CHIPPrice > CHIPPriceCeiling) ? 15 minutes : 10 minutes;
+        }
+    }
+
+    function nextEpochLengthWithTwap(uint256 twapPrice) public view returns (uint256 _length) {
+        if (_epoch <= bootstrapEpochs) {
+            // 3 first epochs with 6h long.
+            _length = 15 minutes;
+        } else {
+            uint256 CHIPPrice = twapPrice;
             _length = (CHIPPrice > CHIPPriceCeiling) ? 15 minutes : 10 minutes;
         }
     }
@@ -467,7 +481,12 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         emit BoardroomFunded(block.timestamp, _amount);
     }
 
-    function allocateSeigniorage(uint256 previousEpochDollarPrice) external onlyOneBlock checkCondition checkEpoch checkOperator {
+    function allocateSeigniorage(uint256 previousEpochDollarPrice) external onlyOneBlock checkCondition checkOperator {
+        uint256 _nextEpochPoint = nextEpochPointWithTwap(previousEpochDollarPrice);
+        require(block.timestamp >= _nextEpochPoint, "Treasury: Not opened yet.");
+        lastEpochTime = _nextEpochPoint;
+        _epoch = _epoch.add(1);
+        epochSupplyContractionLeft = (previousEpochDollarPrice > CHIPPriceCeiling) ? 0 : IERC20(CHIP).totalSupply().mul(maxSupplyContractionPercent).div(10000);
         inDebtPhase = false;
         _updateEthPrice();
         history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: previousEpochDollarPrice, endEpochPrice: 0}));
