@@ -244,7 +244,7 @@ async function test(deployer, network) {
   const chipContract = await Chip.at(chipAddress);
   const mpeaContract = await Mpea.at(mpeaAdress);
   const chipSwapMechanismContract = await ChipSwapMechanism.at(chipSwapMechanismAddress);
-  const fishRewardPoolContract = await FishRewardPool.atan(fishRewardPoolAddress);
+  const fishRewardPoolContract = await FishRewardPool.at(fishRewardPoolAddress);
 
   await chipContract.transferOperator(Treasury.address);
   await mpeaContract.transferOperator(Treasury.address);
