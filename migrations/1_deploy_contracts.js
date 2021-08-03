@@ -124,19 +124,19 @@ async function afterMigration(deployer, network) {
   await fishRewardPoolContract.add(4000, fishBusdLpAddress);
   await fishRewardPoolContract.add(0, mpeaChipLpAddress);
 
-  const boardroomContract = new Boardroom.deployed();
+  const boardroomContract = await Boardroom.deployed();
   await boardroomContract.initialize(chipAddress, fishAddress, Treasury.address);
   await fishContract.approve(boardroomContract, MaxUint256);
   await boardroomContract.stake(10000);
 
-  const oracleContract = new Oracle.deployed();
+  const oracleContract = await Oracle.deployed();
   await oracleContract.initialize(chipEthLpAddress, chipBusdLpAddress, ethBusdLpAddress);
   await oracleContract.setAddress(chipAddress, ethAddress, busdAddres);
   await oracleContract.setPriceAppreciation(10000);
   await oracleContract.setTreasury(Treasury.address);
   await oracleContract.update();
 
-  const treasuryContract = new Treasury.deployed();
+  const treasuryContract = await Treasury.deployed();
   await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, new Date().getTime() / 1000 + beginEpochAfter);
   await treasuryContract.setExtraContract(FishRewardPool.address, ChipSwapMechanism.address, Oracle.address, Boardroom.address);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
@@ -210,20 +210,20 @@ async function test(deployer, network) {
   await deployer.deploy(Oracle);
   await deployer.deploy(Treasury);
 
-  const boardroomContract = new Boardroom.deployed();
+  const boardroomContract = await Boardroom.deployed();
   await boardroomContract.initialize(chipAddress, fishAddress, Treasury.address);
   const fishContract = await Fish.at(fishAddress);
   await fishContract.approve(Boardroom.address, MaxUint256);
   await boardroomContract.stake(10000);
 
-  const oracleContract = new Oracle.deployed();
+  const oracleContract = await Oracle.deployed();
   await oracleContract.initialize(chipEthLpAddress, chipBusdLpAddress, ethBusdLpAddress);
   await oracleContract.setAddress(chipAddress, ethAddress, busdAddres);
   await oracleContract.setPriceAppreciation(10000);
   await oracleContract.setTreasury(Treasury.address);
   await oracleContract.update();
 
-  const treasuryContract = new Treasury.deployed();
+  const treasuryContract = await Treasury.deployed();
   await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, new Date().getTime() / 1000 + beginEpochAfter);
   await treasuryContract.setExtraContract(fishRewardPoolAddress, chipSwapMechanismAddress, Oracle.address, Boardroom.address);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
