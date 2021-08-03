@@ -223,7 +223,7 @@ contract Oracle is IEpoch, Operator {
         }
         (uint256 price0Cumulative, uint256 price1Cumulative, uint32 blockTimestamp) = PancakeswapOracleLibrary.currentCumulativePrices(address(pair));
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // Overflow is desired.
-        require(timeElapsed > 0, "Oracle : Elapsed time Error1");
+
         if (_token == token0) {
             require(price0Cumulative >= price0CumulativeLast, "Oracle : Price Calculation Error");
             _amountOut = FixedPoint.uq112x112(uint224((price0Cumulative - price0CumulativeLast) / timeElapsed)).mul(_amountIn).decode144();
@@ -241,7 +241,7 @@ contract Oracle is IEpoch, Operator {
         }
         (uint256 price0Cumulative, uint256 price1Cumulative, uint32 blockTimestamp) = PancakeswapOracleLibrary.currentCumulativePrices(address(pair_1));
         uint32 timeElapsed = blockTimestamp - blockTimestampLast_1; // Overflow is desired.
-        require(timeElapsed > 0, "Oracle : Elapsed time Error2");
+
         if (_token == token0_1) {
             require(price0Cumulative >= price0CumulativeLast_1, "Oracle : Price Calculation Error");
             _amountOut = FixedPoint.uq112x112(uint224((price0Cumulative - price0CumulativeLast_1) / timeElapsed)).mul(_amountIn).decode144();
@@ -253,8 +253,8 @@ contract Oracle is IEpoch, Operator {
 
     function twap(address _token, uint256 _amountIn) external view returns (uint144 _amountOut) {
 
-        uint256 v1 = twap_1(_token, _amountIn);     // CHIP/ETH LP, ETH-based price of CHIP.
-        uint256 v2 = twap_2(_token, _amountIn);     // CHIP/BUSD LP, BUSD-based price of CHIP.
+        uint256 v1 = uint256(twap_1(_token, _amountIn));     // CHIP/ETH LP, ETH-based price of CHIP.
+        uint256 v2 = uint256(twap_2(_token, _amountIn));     // CHIP/BUSD LP, BUSD-based price of CHIP.
         uint256 ETHPricePerBUSD = uint256(getETHPricePerBUSD());
         v2 = v2.mul(ETHPricePerBUSD).div(1e18);
         uint256 amountOut = v1.add(v2).div(2);
