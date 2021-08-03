@@ -522,9 +522,9 @@ contract Treasury is ContractGuard, ITreasury, Operator {
             ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
             emit Debug("523", CHIPSupply.mul(ExpansionPercent).div(10000));
             fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
-            emit Debug("525", CHIPSupply.mul(ExpansionPercent).div(10000));
-//            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
-//            emit Debug("523", CHIPSupply.mul(ExpansionPercent).div(10000));
+            emit Debug("525", _epoch.add(1));
+            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
+            emit Debug("527", CHIPSupply.mul(ExpansionPercent).div(10000));
         } else {
 //            if (previousEpochDollarPrice > CHIPPriceCeiling) {
 //                // Expansion ($CHIP Price > 1 ETH): there is some seigniorage to be allocated
