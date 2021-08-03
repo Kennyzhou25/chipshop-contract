@@ -142,7 +142,7 @@ async function afterMigration(deployer, network) {
 
   const treasuryContract = await Treasury.deployed();
   const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
-  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, epochStartTime);
+  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, epochStartTime);
   await treasuryContract.setExtraContract(FishRewardPool.address, ChipSwapMechanism.address, Oracle.address, Boardroom.address);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
   console.log('treasury operation is finished.');
@@ -236,7 +236,7 @@ async function test(deployer, network) {
 
   const treasuryContract = await Treasury.deployed();
   const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
-  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, epochStartTime);
+  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, epochStartTime);
   await treasuryContract.setExtraContract(fishRewardPoolAddress, chipSwapMechanismAddress, Oracle.address, Boardroom.address);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
   console.log('treasury operation is finished.');

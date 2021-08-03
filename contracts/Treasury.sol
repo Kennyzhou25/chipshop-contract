@@ -57,9 +57,9 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     address public boardroomSecond;
     address public CHIPOracle;
 
-    address public ETH = address(0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335);         // need to change
-    address public CHIP_ETH = address(0xaB5a4bFe8E7a5A2628cC690519bcC3481D66e9e0);
-    address public FISH_ETH = address(0x3715340BC619E5aDbca158Ab459F2EfFDa545675);
+    address public ETH;
+    address public CHIP_ETH;
+    address public FISH_ETH;
 
     IChipSwap public ChipSwapMechanism;
     IFishRewardPool public fishPool;
@@ -159,7 +159,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function getTwapPrice() public view returns (uint256 CHIPPrice) {
-        try IOracle(CHIPOracle).twap(CHIP, 1e18) returns (uint144 price) {
+        try IOracle(CHIPOracle).twap(CHIP, 1e18) returns (uint256 price) {
             return uint256(price);
         } catch {
             revert("Treasury: Failed to twap CHIP price from the oracle.");
@@ -235,6 +235,9 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         address _CHIP,
         address _MPEA,
         address _FISH,
+        address _eth,
+        address _chipEth,
+        address _fishEth,
         uint256 _startTime
     ) external onlyOperator notInitialized {
 
@@ -242,6 +245,9 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         CHIP = _CHIP;
         MPEA = _MPEA;
         FISH = _FISH;
+        ETH = _eth;
+        CHIP_ETH = _chipEth;
+        FISH_ETH = _fishEth;
         startTime = _startTime;
         lastEpochTime = _startTime.sub(15 minutes);
         CHIPPriceOne = 10**18;
