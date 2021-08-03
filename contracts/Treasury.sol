@@ -514,14 +514,14 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         else ExpansionPercent = 10;                                                             // 0.1%
         maxSupplyExpansionPercent = ExpansionPercent;
         emit Debug("516", maxSupplyExpansionPercent);
-        if (_epoch < bootstrapEpochs) {
-            // 3 first epochs expansion.
-            _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
-            ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
-            fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
-            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
-            emit Debug("523", CHIPSupply.mul(ExpansionPercent).div(10000));
-        } else {
+//        if (_epoch < bootstrapEpochs) {
+//            // 3 first epochs expansion.
+//            _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
+//            ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
+//            fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
+//            history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
+//            emit Debug("523", CHIPSupply.mul(ExpansionPercent).div(10000));
+//        } else {
 //            if (previousEpochDollarPrice > CHIPPriceCeiling) {
 //                // Expansion ($CHIP Price > 1 ETH): there is some seigniorage to be allocated
 //                fishPool.set(4, 0); // Disable MPEA/CHIP pool when expansion phase.
@@ -567,7 +567,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
 //                fishPool.set(4, 3000); // Enable MPEA/CHIP pool when contraction phase.
 //                maxSupplyExpansionPercent = 0;
 //            }
-        }
+//        }
         if (allocateSeigniorageSalary > 0) {
             IBasisAsset(CHIP).mint(address(msg.sender), allocateSeigniorageSalary);
         }
