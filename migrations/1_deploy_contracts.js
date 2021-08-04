@@ -15,7 +15,7 @@ const MaxUint256 = (/*#__PURE__*/BigNumber("0xffffffffffffffffffffffffffffffffff
 const averageBlockTime = 3;
 const beginRewardsAfter = 2 * 60 * 60;
 const migrationDuration = 48 * 60 * 60;
-const beginEpochAfter = 10 * 60;
+const beginEpochAfter = 20 * 60;
 
 async function beforeMigration(deployer, network) {
   await deployer.deploy(Chip);
@@ -235,7 +235,7 @@ async function test(deployer, network) {
   console.log('oracle operation is finished.');
 
   const treasuryContract = await Treasury.deployed();
-  const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter / 10).toString();
+  const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
   await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, epochStartTime);
   await treasuryContract.setExtraContract(fishRewardPoolAddress, chipSwapMechanismAddress, Oracle.address, Boardroom.address);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
