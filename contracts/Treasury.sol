@@ -485,17 +485,15 @@ contract Treasury is ContractGuard, ITreasury, Operator {
 
     function allocateSeigniorage(uint256 twapPrice) external onlyOneBlock checkCondition checkOperator {
         uint256 _nextEpochPoint = nextEpochPointWithTwap(twapPrice);
-        emit Debug("488", _nextEpochPoint);
         require(block.timestamp >= _nextEpochPoint, "Treasury: Not opened yet.");
+
         inDebtPhase = false;
         _updateEthPrice();
         previousEpochDollarPrice = twapPrice;
-        emit Debug("493", previousEpochDollarPrice);
         history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: previousEpochDollarPrice, endEpochPrice: 0}));
         history[_epoch].endEpochPrice = previousEpochDollarPrice;
 
         uint256 CHIPSupply = IERC20(CHIP).totalSupply().sub(seigniorageSaved);
-        emit Debug("498", CHIPSupply);
         uint256 ExpansionPercent;
         if(CHIPSupply < 500 ether) ExpansionPercent = 300;                                      // 3%
         else if(CHIPSupply >= 500 ether && CHIPSupply < 1000 ether) ExpansionPercent = 200;     // 2%
@@ -508,17 +506,12 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         else if(CHIPSupply >= 100000 ether && CHIPSupply < 200000 ether) ExpansionPercent = 15; // 0.15%
         else ExpansionPercent = 10;                                                             // 0.1%
         maxSupplyExpansionPercent = ExpansionPercent;
-        emit Debug("511", maxSupplyExpansionPercent);
         if (_epoch < bootstrapEpochs) {
             // 3 first epochs expansion.
-            emit Debug("514", CHIPSupply.mul(ExpansionPercent).div(10000));
             _sendToBoardRoom(CHIPSupply.mul(ExpansionPercent).div(10000));
-            emit Debug("516", CHIPSupply.mul(ExpansionPercent).div(10000));
             ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
-            emit Debug("518", CHIPSupply.mul(ExpansionPercent).div(10000));
             fishPool.set(4, 0);           // Disable MPEA/CHIP pool when expansion phase.
             history[_epoch.add(1)].expandedAmount = CHIPSupply.mul(ExpansionPercent).div(10000);
-            emit Debug("521", CHIPSupply.mul(ExpansionPercent).div(10000));
         } else {
             if (previousEpochDollarPrice > CHIPPriceCeiling) {
                 // Expansion ($CHIP Price > 1 ETH): there is some seigniorage to be allocated
@@ -569,11 +562,10 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         if (allocateSeigniorageSalary > 0) {
             IBasisAsset(CHIP).mint(address(msg.sender), allocateSeigniorageSalary);
         }
+
         lastEpochTime = _nextEpochPoint;
         _epoch = _epoch.add(1);
-        emit Debug("575", _epoch);
         epochSupplyContractionLeft = (twapPrice > CHIPPriceCeiling) ? 0 : IERC20(CHIP).totalSupply().mul(maxSupplyContractionPercent).div(10000);
-        emit Debug("577", epochSupplyContractionLeft);
     }
 
     // Boardroom controls.
