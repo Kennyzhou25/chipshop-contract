@@ -486,13 +486,11 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     function allocateSeigniorage(uint256 twapPrice) external onlyOneBlock checkCondition checkOperator {
         uint256 _nextEpochPoint = nextEpochPointWithTwap(twapPrice);
         require(block.timestamp >= _nextEpochPoint, "Treasury: Not opened yet.");
-
         inDebtPhase = false;
         _updateEthPrice();
         previousEpochDollarPrice = twapPrice;
         history.push(epochHistory({bonded: 0, redeemed: 0, expandedAmount: 0, epochPrice: previousEpochDollarPrice, endEpochPrice: 0}));
         history[_epoch].endEpochPrice = previousEpochDollarPrice;
-
         uint256 CHIPSupply = IERC20(CHIP).totalSupply().sub(seigniorageSaved);
         uint256 ExpansionPercent;
         if(CHIPSupply < 500 ether) ExpansionPercent = 300;                                      // 3%
@@ -562,7 +560,6 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         if (allocateSeigniorageSalary > 0) {
             IBasisAsset(CHIP).mint(address(msg.sender), allocateSeigniorageSalary);
         }
-
         lastEpochTime = _nextEpochPoint;
         _epoch = _epoch.add(1);
         epochSupplyContractionLeft = (twapPrice > CHIPPriceCeiling) ? 0 : IERC20(CHIP).totalSupply().mul(maxSupplyContractionPercent).div(10000);
