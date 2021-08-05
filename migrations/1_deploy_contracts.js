@@ -271,7 +271,7 @@ async function test(deployer, network) {
 }
 
 module.exports = async function(deployer, network) {
-  await beforeMigration(deployer, network);
-  // await afterMigration(deployer, network);
+  // await beforeMigration(deployer, network);
+  await afterMigration(deployer, network);
   // await test(deployer, network);
 };
