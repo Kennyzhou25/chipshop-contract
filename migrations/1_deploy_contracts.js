@@ -144,7 +144,7 @@ async function afterMigration(deployer, network) {
   const fishContract = await Fish.at(fishAddress);
   const boardroomContract = await Boardroom.at(boardroomAddress)
   // await boardroomContract.initialize(chipAddress, fishAddress, treasuryAddress);
-  await chipContract.mint('0x0197aBAbE51C04FE2Be6D78331e4c9F20AE467DA', 100000);
+  await fishContract.mint('0x0197aBAbE51C04FE2Be6D78331e4c9F20AE467DA', 100000);
   await fishContract.approve(boardroomAddress, MaxUint256);
   await boardroomContract.stake(10000);
   console.log('boardroom operation is finished.');
