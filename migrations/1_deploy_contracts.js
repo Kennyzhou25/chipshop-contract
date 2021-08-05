@@ -102,6 +102,8 @@ async function afterMigration(deployer, network, accounts) {
       fishBusdLpAddress = '0x8982037A9e4dcD5Efec53F2E35057ddD6a18C4f8';
       mpeaChipLpAddress = '0x5a5e9e7d8b47774aefb60496e49e0f634b52090c';
       ethBusdLpAddress = '0x7213a321F1855CF1779f42c0CD85d3D95291D34C';
+      expansionDuration = 5 * 60;
+      contractionDuration = 5 * 60;
       break;
     }
     default: {
@@ -149,17 +151,17 @@ async function afterMigration(deployer, network, accounts) {
   // await boardroomContract.stake(10000);
   // console.log('boardroom operation is finished.');
 
-  const oracleContract = await Oracle.at(oracleAddress);
-  await oracleContract.initialize(chipEthLpAddress, chipBusdLpAddress, ethBusdLpAddress);
-  await oracleContract.setAddress(chipAddress, ethAddress, busdAddres);
-  await oracleContract.setPriceAppreciation(10000);
-  await oracleContract.setTreasury(treasuryAddress);
-  await oracleContract.update();
-  console.log('oracle operation is finished.');
+  // const oracleContract = await Oracle.at(oracleAddress);
+  // await oracleContract.initialize(chipEthLpAddress, chipBusdLpAddress, ethBusdLpAddress);
+  // await oracleContract.setAddress(chipAddress, ethAddress, busdAddres);
+  // await oracleContract.setPriceAppreciation(10000);
+  // await oracleContract.setTreasury(treasuryAddress);
+  // await oracleContract.update();
+  // console.log('oracle operation is finished.');
 
   const treasuryContract = await Treasury.at(treasuryAddress);
   const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
-  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, epochStartTime);
+  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, expansionDuration, contractionDuration, epochStartTime);
   await treasuryContract.setExtraContract(fishRewardPoolAddress, chipSwapMechanismAddress, oracleAddress, boardroomAddress);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
   console.log('treasury operation is finished.');
