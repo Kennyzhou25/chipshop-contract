@@ -144,7 +144,7 @@ async function afterMigration(deployer, network, accounts) {
   // console.log('fishRewardPool operation is finished.');
 
   const fishContract = await Fish.at(fishAddress);
-  // const boardroomContract = await Boardroom.at(boardroomAddress)
+  const boardroomContract = await Boardroom.at(boardroomAddress)
   // // await boardroomContract.initialize(chipAddress, fishAddress, treasuryAddress);
   // await fishContract.mint(accounts[0], 100000);
   // await fishContract.approve(boardroomAddress, MaxUint256);
@@ -173,8 +173,8 @@ async function afterMigration(deployer, network, accounts) {
   // await chipContract.transferOperator(treasuryAddress);
   // await mpeaContract.transferOperator(treasuryAddress);
   // await fishContract.transferOperator(treasuryAddress);
-  await fishRewardPoolContract.transferOperator(treasuryAddress);
-  await chipSwapMechanismContract.transferOperator(treasuryAddress);
+  // await fishRewardPoolContract.transferOperator(treasuryAddress);
+  // await chipSwapMechanismContract.transferOperator(treasuryAddress);
   await boardroomContract.transferOperator(treasuryAddress);
   await oracleContract.transferOperator(treasuryAddress);
 
