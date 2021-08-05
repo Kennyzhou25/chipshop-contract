@@ -110,24 +110,30 @@ async function afterMigration(deployer, network) {
     }
   }
 
-  const web3 = new Web3(provider);
-  const currentBlock = await web3.eth.getBlockNumber();
+  // const web3 = new Web3(provider);
+  // const currentBlock = await web3.eth.getBlockNumber();
+  //
+  // const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
+  //
+  // await deployer.deploy(FishRewardPool, fishAddress, fishStartBlock);
+  // await deployer.deploy(ChipSwapMechanism, chipAddress, fishAddress);
+  //
+  // await deployer.deploy(Boardroom);
+  // await deployer.deploy(Oracle);
+  // await deployer.deploy(Treasury);
+  //
+  // const fishContract = await Fish.at(fishAddress);
+  // await fishContract.distributeReward(FishRewardPool.address);
+  // await fishContract.distributeChipSwapFund(ChipSwapMechanism.address);
+  // console.log('fish operation is finished.');
 
-  const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
+  const fishRewardPoolAddress= '0x33AA449476fE4e64240213C4D7AEA1FE1a173F99';
+  const chipSwapMechanismAddress = '0x221C84C77aeebF9cc4420C7bFF7eea4659ef0d7A';
+  const boardroomAddress= '0xA46F2a7497723804821c78dbb4271Edd75c94F78';
+  const oracleAddress= '0x8A95A203589A885Ee70267561EcC07FFf4913ee2';
+  const treasuryAddress= '0xe31324E97410889985AA91688800C218b87b53A4';
 
-  await deployer.deploy(FishRewardPool, fishAddress, fishStartBlock);
-  await deployer.deploy(ChipSwapMechanism, chipAddress, fishAddress);
-
-  await deployer.deploy(Boardroom);
-  await deployer.deploy(Oracle);
-  await deployer.deploy(Treasury);
-
-  const fishContract = await Fish.at(fishAddress);
-  await fishContract.distributeReward(FishRewardPool.address);
-  await fishContract.distributeChipSwapFund(ChipSwapMechanism.address);
-  console.log('fish operation is finished.');
-
-  const fishRewardPoolContract = await FishRewardPool.deployed();
+  const fishRewardPoolContract = await FishRewardPool.at(fishRewardPoolAddress);
   await fishRewardPoolContract.add(3000, chipBusdLpAddress, true, 0);
   await fishRewardPoolContract.add(3000, chipEthLpAddress, true, 0);
   await fishRewardPoolContract.add(4000, fishEthLpAddress, true, 0);
@@ -135,38 +141,38 @@ async function afterMigration(deployer, network) {
   await fishRewardPoolContract.add(0, mpeaChipLpAddress, true, 0);
   console.log('fishRewardPool operation is finished.');
 
-  const boardroomContract = await Boardroom.deployed();
-  await boardroomContract.initialize(chipAddress, fishAddress, Treasury.address);
+  const boardroomContract = await Boardroom.at(boardroomAddress);
+  await boardroomContract.initialize(chipAddress, fishAddress, treasuryAddress);
   await fishContract.approve(boardroomContract, MaxUint256);
   await boardroomContract.stake(10000);
   console.log('boardroom operation is finished.');
 
-  const oracleContract = await Oracle.deployed();
+  const oracleContract = await Oracle.at(oracleAddress);
   await oracleContract.initialize(chipEthLpAddress, chipBusdLpAddress, ethBusdLpAddress);
   await oracleContract.setAddress(chipAddress, ethAddress, busdAddres);
   await oracleContract.setPriceAppreciation(10000);
-  await oracleContract.setTreasury(Treasury.address);
+  await oracleContract.setTreasury(treasuryAddress);
   await oracleContract.update();
   console.log('oracle operation is finished.');
 
-  const treasuryContract = await Treasury.deployed();
+  const treasuryContract = await Treasury.at(treasuryAddress);
   const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
   await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, epochStartTime);
-  await treasuryContract.setExtraContract(FishRewardPool.address, ChipSwapMechanism.address, Oracle.address, Boardroom.address);
+  await treasuryContract.setExtraContract(fishRewardPoolAddress, chipSwapMechanismAddress, oracleAddress, boardroomAddress);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
   console.log('treasury operation is finished.');
 
   const chipContract = await Chip.at(chipAddress);
   const mpeaContract = await Mpea.at(mpeaAdress);
-  const chipSwapMechanismContract = await ChipSwapMechanism.deployed();
+  const chipSwapMechanismContract = await ChipSwapMechanism.at(chipSwapMechanismAddress);
 
-  await chipContract.transferOperator(Treasury.address);
-  await mpeaContract.transferOperator(Treasury.address);
-  await fishContract.transferOperator(Treasury.address);
-  await fishRewardPoolContract.transferOperator(Treasury.address);
-  await chipSwapMechanismContract.transferOperator(Treasury.address);
-  await boardroomContract.transferOperator(Treasury.address);
-  await oracleContract.transferOperator(Treasury.address);
+  await chipContract.transferOperator(treasuryAddress);
+  await mpeaContract.transferOperator(treasuryAddress);
+  await fishContract.transferOperator(treasuryAddress);
+  await fishRewardPoolContract.transferOperator(treasuryAddress);
+  await chipSwapMechanismContract.transferOperator(treasuryAddress);
+  await boardroomContract.transferOperator(treasuryAddress);
+  await oracleContract.transferOperator(treasuryAddress);
 
   console.log('transferOperators are finished.');
 }
