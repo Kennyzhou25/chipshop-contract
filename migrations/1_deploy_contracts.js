@@ -135,7 +135,7 @@ async function afterMigration(deployer, network, accounts) {
   const oracleAddress= '0x8A95A203589A885Ee70267561EcC07FFf4913ee2';
   const treasuryAddress= '0xe31324E97410889985AA91688800C218b87b53A4';
 
-  // const fishRewardPoolContract = await FishRewardPool.at(fishRewardPoolAddress);
+  const fishRewardPoolContract = await FishRewardPool.at(fishRewardPoolAddress);
   // await fishRewardPoolContract.add(3000, chipBusdLpAddress, true, 0);
   // await fishRewardPoolContract.add(3000, chipEthLpAddress, true, 0);
   // await fishRewardPoolContract.add(4000, fishEthLpAddress, true, 0);
@@ -170,9 +170,9 @@ async function afterMigration(deployer, network, accounts) {
   const mpeaContract = await Mpea.at(mpeaAdress);
   const chipSwapMechanismContract = await ChipSwapMechanism.at(chipSwapMechanismAddress);
 
-  await chipContract.transferOperator(treasuryAddress);
-  await mpeaContract.transferOperator(treasuryAddress);
-  await fishContract.transferOperator(treasuryAddress);
+  // await chipContract.transferOperator(treasuryAddress);
+  // await mpeaContract.transferOperator(treasuryAddress);
+  // await fishContract.transferOperator(treasuryAddress);
   await fishRewardPoolContract.transferOperator(treasuryAddress);
   await chipSwapMechanismContract.transferOperator(treasuryAddress);
   await boardroomContract.transferOperator(treasuryAddress);
