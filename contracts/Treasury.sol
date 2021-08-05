@@ -92,6 +92,8 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     uint256 public secondBoardRoomFundSharedPercent;
     address public marketingFund;
     uint256 public marketingFundSharedPercent;
+    uint256 private expansionDuration;
+    uint256 private contractionDuration;
 
     // Events.
 
@@ -148,20 +150,20 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     function nextEpochLength() public view override returns (uint256 _length) {
         if (_epoch <= bootstrapEpochs) {
             // 3 first epochs with 6h long.
-            _length = 15 minutes;
+            _length = expansionDuration;
         } else {
             uint256 CHIPPrice = getTwapPrice();
-            _length = (CHIPPrice > CHIPPriceCeiling) ? 15 minutes : 10 minutes;
+            _length = (CHIPPrice > CHIPPriceCeiling) ? expansionDuration : contractionDuration;
         }
     }
 
     function nextEpochLengthWithTwap(uint256 twapPrice) public view returns (uint256 _length) {
         if (_epoch <= bootstrapEpochs) {
             // 3 first epochs with 6h long.
-            _length = 15 minutes;
+            _length = expansionDuration;
         } else {
             uint256 CHIPPrice = twapPrice;
-            _length = (CHIPPrice > CHIPPriceCeiling) ? 15 minutes : 10 minutes;
+            _length = (CHIPPrice > CHIPPriceCeiling) ? expansionDuration : contractionDuration;
         }
     }
 
@@ -254,6 +256,8 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         address _eth,
         address _chipEth,
         address _fishEth,
+        uint256 _expansionDuration,
+        uint256 _contractionDuration,
         uint256 _startTime
     ) external onlyOperator notInitialized {
 
@@ -264,8 +268,10 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         ETH = _eth;
         CHIP_ETH = _chipEth;
         FISH_ETH = _fishEth;
+        expansionDuration = _expansionDuration;
+        contractionDuration = _contractionDuration;
         startTime = _startTime;
-        lastEpochTime = _startTime.sub(15 minutes);
+        lastEpochTime = _startTime.sub(expansionDuration);
         CHIPPriceOne = 10**18;
         CHIPPriceCeiling = CHIPPriceOne.mul(10001).div(10000);
         maxSupplyExpansionPercent = 300; // Up to 3.0% supply for expansion.
@@ -293,7 +299,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     function resetStartTime(uint256 _startTime) external onlyOperator {
         require(_epoch == 0, "already started");
         startTime = _startTime;
-        lastEpochTime = _startTime.sub(15 minutes);
+        lastEpochTime = _startTime.sub(expansionDuration);
     }
 
     function setBoardroomSecond(address _boardroom2) external onlyOperator {

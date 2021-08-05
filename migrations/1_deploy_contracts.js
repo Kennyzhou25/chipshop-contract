@@ -63,6 +63,8 @@ async function afterMigration(deployer, network) {
   let fishBusdLpAddress = '';
   let mpeaChipLpAddress = '';
   let ethBusdLpAddress = '';
+  let expansionDuration = 6 * 60 * 60;
+  let contractionDuration = 4 * 60 * 60;
 
   switch (network) {
     case 'bscTestNet': {
@@ -78,6 +80,8 @@ async function afterMigration(deployer, network) {
       fishBusdLpAddress = '0xcd489eac7137463b2757c4dc2cb03f679f9cad31';
       mpeaChipLpAddress = '0x18aeeca391db2913feb5659cc46d1f0bd906f2aa';
       ethBusdLpAddress = '0xD14eA0A4beF5aeD665eB26447Aaa7100193994cf';
+      expansionDuration = 15 * 60;
+      contractionDuration = 10 * 60;
       break;
     }
     case 'bsc': {
@@ -178,6 +182,8 @@ async function test(deployer, network) {
   let fishBusdLpAddress = '';
   let mpeaChipLpAddress = '';
   let ethBusdLpAddress = '';
+  let expansionDuration = 6 * 60 * 60;
+  let contractionDuration = 4 * 60 * 60;
 
   switch (network) {
     case 'bscTestNet': {
@@ -193,6 +199,8 @@ async function test(deployer, network) {
       fishBusdLpAddress = '0xcd489eac7137463b2757c4dc2cb03f679f9cad31';
       mpeaChipLpAddress = '0x18aeeca391db2913feb5659cc46d1f0bd906f2aa';
       ethBusdLpAddress = '0xD14eA0A4beF5aeD665eB26447Aaa7100193994cf';
+      expansionDuration = 15 * 60;
+      contractionDuration = 10 * 60;
       break;
     }
     case 'bsc': {
@@ -236,7 +244,7 @@ async function test(deployer, network) {
 
   const treasuryContract = await Treasury.deployed();
   const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
-  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, epochStartTime);
+  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, expansionDuration, contractionDuration, epochStartTime);
   await treasuryContract.setExtraContract(fishRewardPoolAddress, chipSwapMechanismAddress, Oracle.address, Boardroom.address);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
   console.log('treasury operation is finished.');
@@ -258,7 +266,7 @@ async function test(deployer, network) {
 }
 
 module.exports = async function(deployer, network) {
-  // await beforeMigration(deployer, network);
+  await beforeMigration(deployer, network);
   // await afterMigration(deployer, network);
-  await test(deployer, network);
+  // await test(deployer, network);
 };
