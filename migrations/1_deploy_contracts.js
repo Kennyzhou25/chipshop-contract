@@ -128,11 +128,11 @@ async function afterMigration(deployer, network) {
   console.log('fish operation is finished.');
 
   const fishRewardPoolContract = await FishRewardPool.deployed();
-  await fishRewardPoolContract.add(3000, chipBusdLpAddress);
-  await fishRewardPoolContract.add(3000, chipEthLpAddress);
-  await fishRewardPoolContract.add(4000, fishEthLpAddress);
-  await fishRewardPoolContract.add(4000, fishBusdLpAddress);
-  await fishRewardPoolContract.add(0, mpeaChipLpAddress);
+  await fishRewardPoolContract.add(3000, chipBusdLpAddress, true, 0);
+  await fishRewardPoolContract.add(3000, chipEthLpAddress, true, 0);
+  await fishRewardPoolContract.add(4000, fishEthLpAddress, true, 0);
+  await fishRewardPoolContract.add(4000, fishBusdLpAddress, true, 0);
+  await fishRewardPoolContract.add(0, mpeaChipLpAddress, true, 0);
   console.log('fishRewardPool operation is finished.');
 
   const boardroomContract = await Boardroom.deployed();
