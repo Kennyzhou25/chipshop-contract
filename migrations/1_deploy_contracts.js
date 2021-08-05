@@ -151,7 +151,7 @@ async function afterMigration(deployer, network, accounts) {
   // await boardroomContract.stake(10000);
   // console.log('boardroom operation is finished.');
 
-  // const oracleContract = await Oracle.at(oracleAddress);
+  const oracleContract = await Oracle.at(oracleAddress);
   // await oracleContract.initialize(chipEthLpAddress, chipBusdLpAddress, ethBusdLpAddress);
   // await oracleContract.setAddress(chipAddress, ethAddress, busdAddres);
   // await oracleContract.setPriceAppreciation(10000);
