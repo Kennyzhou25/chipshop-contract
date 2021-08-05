@@ -47,8 +47,8 @@ async function beforeMigration(deployer, network) {
   console.log('Token Migration is finished');
   const chipContract = await Chip.deployed();
   const fishContract = await Fish.deployed();
-  await chipContract._mint(TokenMigration.address, 100);
-  await fishContract._mint(TokenMigration.address, 100);
+  await chipContract.mint(TokenMigration.address, 100);
+  await fishContract.mint(TokenMigration.address, 100);
 }
 
 async function afterMigration(deployer, network) {
