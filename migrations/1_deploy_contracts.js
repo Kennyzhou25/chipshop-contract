@@ -54,7 +54,7 @@ async function beforeMigration(deployer, network) {
   await fishContract.mint(TokenMigration.address, Number(fishAllocationAmount * ethUnit));
 }
 
-async function afterMigration(deployer, network) {
+async function afterMigration(deployer, network, accounts) {
   const daoAddresss = '0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f';
   let provider = '';
   let chipAddress = '';
@@ -141,13 +141,13 @@ async function afterMigration(deployer, network) {
   // await fishRewardPoolContract.add(0, mpeaChipLpAddress, true, 0);
   // console.log('fishRewardPool operation is finished.');
 
-  const fishContract = await Fish.at(fishAddress);
-  const boardroomContract = await Boardroom.at(boardroomAddress)
-  // await boardroomContract.initialize(chipAddress, fishAddress, treasuryAddress);
-  await fishContract.mint('0x0197aBAbE51C04FE2Be6D78331e4c9F20AE467DA', 100000);
-  await fishContract.approve(boardroomAddress, MaxUint256);
-  await boardroomContract.stake(10000);
-  console.log('boardroom operation is finished.');
+  // const fishContract = await Fish.at(fishAddress);
+  // const boardroomContract = await Boardroom.at(boardroomAddress)
+  // // await boardroomContract.initialize(chipAddress, fishAddress, treasuryAddress);
+  // await fishContract.mint(accounts[0], 100000);
+  // await fishContract.approve(boardroomAddress, MaxUint256);
+  // await boardroomContract.stake(10000);
+  // console.log('boardroom operation is finished.');
 
   const oracleContract = await Oracle.at(oracleAddress);
   await oracleContract.initialize(chipEthLpAddress, chipBusdLpAddress, ethBusdLpAddress);
