@@ -143,7 +143,7 @@ async function afterMigration(deployer, network, accounts) {
   // await fishRewardPoolContract.add(0, mpeaChipLpAddress, true, 0);
   // console.log('fishRewardPool operation is finished.');
 
-  // const fishContract = await Fish.at(fishAddress);
+  const fishContract = await Fish.at(fishAddress);
   // const boardroomContract = await Boardroom.at(boardroomAddress)
   // // await boardroomContract.initialize(chipAddress, fishAddress, treasuryAddress);
   // await fishContract.mint(accounts[0], 100000);
@@ -159,12 +159,12 @@ async function afterMigration(deployer, network, accounts) {
   // await oracleContract.update();
   // console.log('oracle operation is finished.');
 
-  const treasuryContract = await Treasury.at(treasuryAddress);
-  const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
-  await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, expansionDuration, contractionDuration, epochStartTime);
-  await treasuryContract.setExtraContract(fishRewardPoolAddress, chipSwapMechanismAddress, oracleAddress, boardroomAddress);
-  await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
-  console.log('treasury operation is finished.');
+  // const treasuryContract = await Treasury.at(treasuryAddress);
+  // const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
+  // await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, expansionDuration, contractionDuration, epochStartTime);
+  // await treasuryContract.setExtraContract(fishRewardPoolAddress, chipSwapMechanismAddress, oracleAddress, boardroomAddress);
+  // await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
+  // console.log('treasury operation is finished.');
 
   const chipContract = await Chip.at(chipAddress);
   const mpeaContract = await Mpea.at(mpeaAdress);
