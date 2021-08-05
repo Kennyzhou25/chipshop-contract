@@ -13,9 +13,12 @@ const TokenMigration = artifacts.require("TokenMigration");
 
 const MaxUint256 = (/*#__PURE__*/BigNumber("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
 const averageBlockTime = 3;
-const beginRewardsAfter = 2 * 60 * 60;
+const beginRewardsAfter = 20 * 60;
 const migrationDuration = 48 * 60 * 60;
-const beginEpochAfter = 20 * 60;
+const beginEpochAfter = 30 * 60;
+const chipAllocationAmount = 0.01;
+const fishAllocationAmount = 0.02;
+const ethUnit = 1000000000000000000;
 
 async function beforeMigration(deployer, network) {
   await deployer.deploy(Chip);
@@ -47,8 +50,8 @@ async function beforeMigration(deployer, network) {
   console.log('Token Migration is finished');
   const chipContract = await Chip.deployed();
   const fishContract = await Fish.deployed();
-  await chipContract.mint(TokenMigration.address, 100);
-  await fishContract.mint(TokenMigration.address, 100);
+  await chipContract.mint(TokenMigration.address, Number(chipAllocationAmount * ethUnit));
+  await fishContract.mint(TokenMigration.address, Number(fishAllocationAmount * ethUnit));
 }
 
 async function afterMigration(deployer, network) {
@@ -65,8 +68,8 @@ async function afterMigration(deployer, network) {
   let fishBusdLpAddress = '';
   let mpeaChipLpAddress = '';
   let ethBusdLpAddress = '';
-  let expansionDuration = 6 * 60 * 60;
-  let contractionDuration = 4 * 60 * 60;
+  let expansionDuration = 5 * 60;
+  let contractionDuration = 5 * 60;
 
   switch (network) {
     case 'bscTestNet': {
@@ -90,14 +93,14 @@ async function afterMigration(deployer, network) {
       provider = 'https://bsc-dataseed1.binance.org';
       busdAddres = '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56';
       ethAddress = '0x2170Ed0880ac9A755fd29B2688956BD959F933F8';
-      chipAddress = '';
-      fishAddress = '';
-      mpeaAdress = '';
-      chipBusdLpAddress = '';
-      chipEthLpAddress = '';
-      fishEthLpAddress = '';
-      fishBusdLpAddress = '';
-      mpeaChipLpAddress = '';
+      chipAddress = '0xEEf106c1910720533ad28fa34751B95dDC8D262F';
+      fishAddress = '0x32bd7d3CaBd7422DE15a9e5FB53541d637DC0E83';
+      mpeaAdress = '0xa736D652A4cF3cf8548fA944a238f34c2Aa3EBc4';
+      chipBusdLpAddress = '0xe97eeab6bdf49b479b9109c3ad8eb8e2e3e98cd3';
+      chipEthLpAddress = '0x015addd0bd0d415559f68d6e4624209594796aa9';
+      fishEthLpAddress = '0x8b18c0d1c33307b488cc4f1253b3b92c5fc3638d';
+      fishBusdLpAddress = '0x8982037A9e4dcD5Efec53F2E35057ddD6a18C4f8';
+      mpeaChipLpAddress = '0x5a5e9e7d8b47774aefb60496e49e0f634b52090c';
       ethBusdLpAddress = '0x7213a321F1855CF1779f42c0CD85d3D95291D34C';
       break;
     }
