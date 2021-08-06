@@ -120,10 +120,6 @@ async function afterMigration(deployer, network) {
   await deployer.deploy(FishRewardPool, fishAddress, fishStartBlock);
   await deployer.deploy(ChipSwapMechanism, chipAddress, fishAddress);
 
-  await deployer.deploy(Boardroom);
-  await deployer.deploy(Oracle);
-  await deployer.deploy(Treasury);
-
   const fishContract = await Fish.at(fishAddress);
   await fishContract.distributeReward(FishRewardPool.address);
   await fishContract.distributeChipSwapFund(ChipSwapMechanism.address);
@@ -137,10 +133,14 @@ async function afterMigration(deployer, network) {
   await fishRewardPoolContract.add(0, mpeaChipLpAddress, true, 0);
   console.log('fishRewardPool operation is finished.');
 
+  await deployer.deploy(Boardroom);
+  await deployer.deploy(Oracle);
+  await deployer.deploy(Treasury);
+
   const boardroomContract = await Boardroom.deployed();
   await boardroomContract.initialize(chipAddress, fishAddress, Treasury.address);
   await fishContract.mint(accounts[0], 100000);
-  await fishContract.approve(boardroomContract, MaxUint256);
+  await fishContract.approve(Boardroom.address, MaxUint256);
   await boardroomContract.stake(10000);
   console.log('boardroom operation is finished.');
 
@@ -180,8 +180,6 @@ async function test(deployer, network) {
   let chipAddress = '';
   let fishAddress = '';
   let mpeaAdress = '';
-  let chipSwapMechanismAddress = '0x6Ebc41FdB7Ee57f4b3D6e119E397efF08dDbBD17';
-  let fishRewardPoolAddress = '0x7D01d68b652Dc6AC4E68cA4ef0B7DC70Bab66fd8';
   let busdAddres = '';
   let ethAddress = '';
   let chipBusdLpAddress = '';
@@ -190,8 +188,11 @@ async function test(deployer, network) {
   let fishBusdLpAddress = '';
   let mpeaChipLpAddress = '';
   let ethBusdLpAddress = '';
-  let expansionDuration = 6 * 60 * 60;
-  let contractionDuration = 4 * 60 * 60;
+  let expansionDuration = 5 * 60;
+  let contractionDuration = 5 * 60;
+
+  const chipSwapMechanismAddress = '0x221C84C77aeebF9cc4420C7bFF7eea4659ef0d7A';
+  const fishRewardPoolAddress = '0x33AA449476fE4e64240213C4D7AEA1FE1a173F99';
 
   switch (network) {
     case 'bscTestNet': {
@@ -215,15 +216,17 @@ async function test(deployer, network) {
       provider = 'https://bsc-dataseed1.binance.org';
       busdAddres = '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56';
       ethAddress = '0x2170Ed0880ac9A755fd29B2688956BD959F933F8';
-      chipAddress = '';
-      fishAddress = '';
-      mpeaAdress = '';
-      chipBusdLpAddress = '';
-      chipEthLpAddress = '';
-      fishEthLpAddress = '';
-      fishBusdLpAddress = '';
-      mpeaChipLpAddress = '';
+      chipAddress = '0xEEf106c1910720533ad28fa34751B95dDC8D262F';
+      fishAddress = '0x32bd7d3CaBd7422DE15a9e5FB53541d637DC0E83';
+      mpeaAdress = '0xa736D652A4cF3cf8548fA944a238f34c2Aa3EBc4';
+      chipBusdLpAddress = '0xe97eeab6bdf49b479b9109c3ad8eb8e2e3e98cd3';
+      chipEthLpAddress = '0x015addd0bd0d415559f68d6e4624209594796aa9';
+      fishEthLpAddress = '0x8b18c0d1c33307b488cc4f1253b3b92c5fc3638d';
+      fishBusdLpAddress = '0x8982037A9e4dcD5Efec53F2E35057ddD6a18C4f8';
+      mpeaChipLpAddress = '0x5a5e9e7d8b47774aefb60496e49e0f634b52090c';
       ethBusdLpAddress = '0x7213a321F1855CF1779f42c0CD85d3D95291D34C';
+      expansionDuration = 5 * 60;
+      contractionDuration = 5 * 60;
       break;
     }
     default: {
@@ -275,6 +278,6 @@ async function test(deployer, network) {
 
 module.exports = async function(deployer, network) {
   // await beforeMigration(deployer, network);
-  await afterMigration(deployer, network);
-  // await test(deployer, network);
+  // await afterMigration(deployer, network);
+  await test(deployer, network);
 };
