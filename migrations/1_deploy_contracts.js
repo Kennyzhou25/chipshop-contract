@@ -254,7 +254,7 @@ async function test(deployer, network) {
   console.log('oracle operation is finished.');
 
   const treasuryContract = await Treasury.deployed();
-  const epochStartTime = '1628322930';
+  const epochStartTime = '1628317530';
   await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, expansionDuration, contractionDuration, epochStartTime);
   await treasuryContract.setExtraContract(fishRewardPoolAddress, chipSwapMechanismAddress, Oracle.address, Boardroom.address);
   await treasuryContract.setExtraFunds(daoAddresss, 3500, daoAddresss, 0, daoAddresss, 0);
