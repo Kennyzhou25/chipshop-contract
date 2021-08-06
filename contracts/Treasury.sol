@@ -247,6 +247,22 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         }
     }
 
+    function getBondPremiumRateWithTwap(uint256 twapPrice) internal returns (uint256 _rate) {
+        uint256 _CHIPPrice = twapPrice;
+        if (_CHIPPrice > CHIPPriceCeiling) {
+            if (premiumPercent == 0) {
+                // No premium bonus.
+                _rate = CHIPPriceOne;
+            } else {
+                uint256 _premiumAmount = _CHIPPrice.sub(CHIPPriceOne).mul(premiumPercent).div(10000);
+                _rate = CHIPPriceOne.add(_premiumAmount);
+                if (maxDiscountRate > 0 && _rate > maxDiscountRate) {
+                    _rate = maxDiscountRate;
+                }
+            }
+        }
+    }
+
     // Governance.
 
     function initialize(
@@ -548,7 +564,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
                         _savedForBond = _savedForBond.mul(mintingFactorForPayingDebt).div(10000);
                     }
                 }
-                uint256 rate = getBondPremiumRate();
+                uint256 rate = getBondPremiumRateWithTwap(twapPrice);
                 uint256 chipBalance = IBasisAsset(CHIP).balanceOf(address(this));
                 if (chipBalance >= bondSupply.mul(rate)) {
                     _savedForBoardRoom = _savedForBond.add(_savedForBond);
