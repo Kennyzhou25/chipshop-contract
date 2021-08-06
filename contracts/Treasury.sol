@@ -548,6 +548,18 @@ contract Treasury is ContractGuard, ITreasury, Operator {
                         _savedForBond = _savedForBond.mul(mintingFactorForPayingDebt).div(10000);
                     }
                 }
+                uint256 rate = getBondPremiumRate();
+                uint256 chipBalance = IBasisAsset(CHIP).balanceOf(address(this));
+                if (chipBalance >= bondSupply.mul(rate)) {
+                    _savedForBoardRoom = _savedForBond.add(_savedForBond);
+                    _savedForBond = 0;
+                } else {
+                    uint256 rest = bondSupply.mul(rate).sub(chipBalance);
+                    if (rest < _savedForBond) {
+                        _savedForBoardRoom = _savedForBoardRoom.add(_savedForBond).sub(rest);
+                        _savedForBond = rest;
+                    }
+                }
                 if (_savedForBoardRoom > 0) {
                     _sendToBoardRoom(_savedForBoardRoom);
                 }
