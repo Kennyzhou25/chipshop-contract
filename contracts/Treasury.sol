@@ -381,7 +381,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function setAllocateSeigniorageSalary(uint256 _allocateSeigniorageSalary) external onlyOperator {
-        require(_allocateSeigniorageSalary <= 100 ether, "Treasury: dont pay too much");
+        require(_allocateSeigniorageSalary <= 300 ether, "Treasury: dont pay too much");
         allocateSeigniorageSalary = _allocateSeigniorageSalary;
     }
 
@@ -505,7 +505,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         emit BoardroomFunded(block.timestamp, _amount);
     }
 
-    function allocateSeigniorage(uint256 twapPrice) external onlyOneBlock checkCondition checkOperator {
+    function allocateSeigniorage(uint256 twapPrice) external onlyOneBlock checkCondition checkOperator onlyOperator {
         uint256 _nextEpochPoint = nextEpochPointWithTwap(twapPrice);
         require(block.timestamp >= _nextEpochPoint, "Treasury: Not opened yet.");
         inDebtPhase = false;
