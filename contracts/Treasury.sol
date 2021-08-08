@@ -381,7 +381,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
     }
 
     function setAllocateSeigniorageSalary(uint256 _allocateSeigniorageSalary) external onlyOperator {
-        require(_allocateSeigniorageSalary <= 300 ether, "Treasury: dont pay too much");
+        require(_allocateSeigniorageSalary <= 0.001 ether, "Treasury: dont pay too much");
         allocateSeigniorageSalary = _allocateSeigniorageSalary;
     }
 
