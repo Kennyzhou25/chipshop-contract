@@ -184,6 +184,14 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         }
     }
 
+    function getTwapPriceInternal() internal view returns (uint256 CHIPPrice) {
+        try IOracle(CHIPOracle).twap(CHIP, 1e18) returns (uint256 price) {
+            return uint256(price);
+        } catch {
+            revert("Treasury: Failed to twap CHIP price from the oracle.");
+        }
+    }
+
     // Budget.
     function getReserve() external view returns (uint256) {
         return seigniorageSaved;
@@ -505,7 +513,8 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         emit BoardroomFunded(block.timestamp, _amount);
     }
 
-    function allocateSeigniorage(uint256 twapPrice) external onlyOneBlock checkCondition checkOperator onlyOperator {
+    function allocateSeigniorage() external onlyOneBlock checkCondition checkOperator onlyOperator {
+        uint256 twapPrice = getTwapPriceInternal();
         uint256 _nextEpochPoint = nextEpochPointWithTwap(twapPrice);
         require(block.timestamp >= _nextEpochPoint, "Treasury: Not opened yet.");
         inDebtPhase = false;
@@ -539,7 +548,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
                 ChipSwapMechanism.unlockFish(6); // When expansion phase, 6 hours worth fish will be unlocked.
                 uint256 bondSupply = IERC20(MPEA).totalSupply();
                 uint256 _percentage = previousEpochDollarPrice.sub(CHIPPriceOne);
-                uint256 _savedForBond;
+                uint256 _savedForBond = 0;
                 uint256 _savedForBoardRoom;
                 if (seigniorageSaved >= bondSupply.mul(bondDepletionFloorPercent).div(10000)) {
                     // Saved enough to pay dept, mint as usual rate.
@@ -567,7 +576,9 @@ contract Treasury is ContractGuard, ITreasury, Operator {
                 uint256 rate = getBondPremiumRateWithTwap(twapPrice);
                 uint256 chipBalance = IBasisAsset(CHIP).balanceOf(address(this));
                 if (chipBalance >= bondSupply.mul(rate)) {
-                    _savedForBoardRoom = _savedForBond.add(_savedForBond);
+                    if(_savedForBond > 0) {
+                        _savedForBoardRoom = _savedForBond.add(_savedForBond);
+                    }
                     _savedForBond = 0;
                 } else {
                     uint256 rest = bondSupply.mul(rate).sub(chipBalance);
