@@ -8,4 +8,6 @@ interface IOracle {
     function consult(address _token, uint256 _amountIn) external view returns (uint144 amountOut);
 
     function twap(address _token, uint256 _amountIn) external view returns (uint256 _amountOut);
+
+    function twapInternal(address _token, uint256 _amountIn) internal returns (uint256 _amountOut);
 }

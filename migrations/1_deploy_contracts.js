@@ -114,7 +114,7 @@ async function afterMigration(deployer, network) {
 
   const web3 = new Web3(provider);
   const currentBlock = await web3.eth.getBlockNumber();
-
+  //
   const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
 
   await deployer.deploy(FishRewardPool, fishAddress, fishStartBlock);
@@ -279,5 +279,5 @@ async function test(deployer, network) {
 module.exports = async function(deployer, network) {
   // await beforeMigration(deployer, network);
   // await afterMigration(deployer, network);
-  await test(deployer, network);
+  // await test(deployer, network);
 };

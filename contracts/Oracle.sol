@@ -251,6 +251,14 @@ contract Oracle is IEpoch, Operator {
         }
     }
 
+    function twapInternal(address _token, uint256 _amountIn) internal returns (uint256 _amountOut) {
+        uint256 v1 = twap_1(_token, _amountIn);     // CHIP/ETH LP, ETH-based price of CHIP.
+        uint256 v2 = twap_2(_token, _amountIn);     // CHIP/BUSD LP, BUSD-based price of CHIP.
+        uint256 ETHPricePerBUSD = uint256(getETHPricePerBUSD());
+        v2 = v2.mul(ETHPricePerBUSD).div(1e18);
+        _amountOut = v1.add(v2).div(2);
+    }
+
     function twap(address _token, uint256 _amountIn) external view returns (uint256 _amountOut) {
 
         uint256 v1 = twap_1(_token, _amountIn);     // CHIP/ETH LP, ETH-based price of CHIP.
