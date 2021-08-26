@@ -9,5 +9,5 @@ interface IOracle {
 
     function twap(address _token, uint256 _amountIn) external view returns (uint256 _amountOut);
 
-    function twapInternal(address _token, uint256 _amountIn) internal returns (uint256 _amountOut);
+    function twapPrice(address _token, uint256 _amountIn) external returns (uint256 _amountOut);
 }
