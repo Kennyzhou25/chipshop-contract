@@ -184,7 +184,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         }
     }
 
-    function getTwapPriceInternal() internal view returns (uint256 CHIPPrice) {
+    function getTwapPriceInternal() internal returns (uint256 CHIPPrice) {
         try IOracle(CHIPOracle).twapPrice(CHIP, 1e18) returns (uint256 price) {
             return uint256(price);
         } catch {
