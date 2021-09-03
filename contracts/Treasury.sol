@@ -513,7 +513,7 @@ contract Treasury is ContractGuard, ITreasury, Operator {
         emit BoardroomFunded(block.timestamp, _amount);
     }
 
-    function allocateSeigniorage() external onlyOneBlock checkCondition checkOperator onlyOperator {
+    function allocateSeigniorage() external onlyOneBlock checkCondition {
         uint256 twapPrice = getTwapPriceInternal();
         uint256 _nextEpochPoint = nextEpochPointWithTwap(twapPrice);
         require(block.timestamp >= _nextEpochPoint, "Treasury: Not opened yet.");
