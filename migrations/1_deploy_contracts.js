@@ -191,9 +191,6 @@ async function test(deployer, network) {
   let expansionDuration = 5 * 60;
   let contractionDuration = 5 * 60;
 
-  const chipSwapMechanismAddress = '0x221C84C77aeebF9cc4420C7bFF7eea4659ef0d7A';
-  const fishRewardPoolAddress = '0x33AA449476fE4e64240213C4D7AEA1FE1a173F99';
-
   switch (network) {
     case 'bscTestNet': {
       provider = 'https://data-seed-prebsc-1-s1.binance.org:8545';
@@ -253,6 +250,17 @@ async function test(deployer, network) {
   await oracleContract.update();
   console.log('oracle operation is finished.');
 
+  await deployer.deploy(ChipSwapMechanism, chipAddress, fishAddress);
+  const chipSwapMechanismContract = await ChipSwapMechanism.deployed();
+  const chipSwapMechanismAddress = ChipSwapMechanism.address;
+
+
+  const web3 = new Web3(provider);
+  const currentBlock = await web3.eth.getBlockNumber();
+  const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
+  await deployer.deploy(FishRewardPool, fishAddress, fishStartBlock);
+  const fishRewardPoolAddress = FishRewardPool.address;
+
   const treasuryContract = await Treasury.deployed();
   const epochStartTime = (Math.floor(new Date().getTime() / 1000) + beginEpochAfter).toString();
   await treasuryContract.initialize(chipAddress, mpeaAdress, fishAddress, ethAddress, chipEthLpAddress, fishEthLpAddress, expansionDuration, contractionDuration, epochStartTime);
@@ -262,7 +270,7 @@ async function test(deployer, network) {
 
   const chipContract = await Chip.at(chipAddress);
   const mpeaContract = await Mpea.at(mpeaAdress);
-  const chipSwapMechanismContract = await ChipSwapMechanism.at(chipSwapMechanismAddress);
+
   const fishRewardPoolContract = await FishRewardPool.at(fishRewardPoolAddress);
 
   await chipContract.transferOperator(Treasury.address);
@@ -279,5 +287,5 @@ async function test(deployer, network) {
 module.exports = async function(deployer, network) {
   // await beforeMigration(deployer, network);
   // await afterMigration(deployer, network);
-  // await test(deployer, network);
+  await test(deployer, network);
 };
