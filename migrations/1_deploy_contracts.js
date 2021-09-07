@@ -18,7 +18,7 @@ const migrationDuration = 48 * 60 * 60;
 const beginEpochAfter = 20 * 60;
 const chipAllocationAmount = 0.01;
 const fishAllocationAmount = 0.02;
-const ethUnit = 1000000000000000000;
+const ethUnit = new BigNumber(1000000000000000000);
 
 async function beforeMigration(deployer, network) {
   await deployer.deploy(Chip);
@@ -30,7 +30,7 @@ async function beforeMigration(deployer, network) {
   switch (network) {
     case 'bscTestNet': {
       oldChipAddress = '0x8d5728fe016A07743e18B54fBbE07E853BCa491c';
-      oldFishAddress = '0x4FAB296f67fBaC741D4A1b884a5cAb96974C7cd8`';
+      oldFishAddress = '0x4FAB296f67fBaC741D4A1b884a5cAb96974C7cd8';
       oldMpeaAddress = '0x117cC1e6C64C0830C587990b975612E2fcb9Ed22';
       break;
     }
@@ -50,8 +50,8 @@ async function beforeMigration(deployer, network) {
   console.log('Token Migration is finished');
   const chipContract = await Chip.deployed();
   const fishContract = await Fish.deployed();
-  await chipContract.mint(TokenMigration.address, Number(chipAllocationAmount * ethUnit));
-  await fishContract.mint(TokenMigration.address, Number(fishAllocationAmount * ethUnit));
+  await chipContract.mint(TokenMigration.address, ethUnit.times(chipAllocationAmount));
+  await fishContract.mint(TokenMigration.address, ethUnit.times(fishAllocationAmount));
 }
 
 async function afterMigration(deployer, network) {
@@ -285,7 +285,7 @@ async function test(deployer, network) {
 }
 
 module.exports = async function(deployer, network) {
-  // await beforeMigration(deployer, network);
+  await beforeMigration(deployer, network);
   // await afterMigration(deployer, network);
-  await test(deployer, network);
+  // await test(deployer, network);
 };
