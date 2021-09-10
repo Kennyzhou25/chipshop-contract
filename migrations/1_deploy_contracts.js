@@ -76,9 +76,9 @@ async function afterMigration(deployer, network) {
       provider = 'https://data-seed-prebsc-1-s1.binance.org:8545';
       busdAddres = '0xb82b5086df3bC61D019457B9De2FF4124368CFFF';
       ethAddress = '0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335';
-      chipAddress = '0xb051a24b1a325008B817595B2E23915AFfF5a4a2';
-      fishAddress = '0x4170E5AC7f25Df7c21937D476ad1002891550b0B';
-      mpeaAdress = '0xe57508ab678440cd4d87effc523AF6e348a97202';
+      chipAddress = '0xC741e51e65a582d10dc632c33AC3fB7D661320EC';
+      fishAddress = '0xFF89A1882cA0037B5b0B40C976a945D98b23AD30';
+      mpeaAdress = '0x2fE1ab3Ad4446F7d1a75ca500f052686ae0567DA';
       chipBusdLpAddress = '0xaf4528018d6351490c6303bbfb352ffd8d1bcb05';
       chipEthLpAddress = '0xaB5a4bFe8E7a5A2628cC690519bcC3481D66e9e0';
       fishEthLpAddress = '0x3715340BC619E5aDbca158Ab459F2EfFDa545675';
@@ -196,9 +196,9 @@ async function test(deployer, network) {
       provider = 'https://data-seed-prebsc-1-s1.binance.org:8545';
       busdAddres = '0xb82b5086df3bC61D019457B9De2FF4124368CFFF';
       ethAddress = '0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335';
-      chipAddress = '0xb051a24b1a325008B817595B2E23915AFfF5a4a2';
-      fishAddress = '0x4170E5AC7f25Df7c21937D476ad1002891550b0B';
-      mpeaAdress = '0xe57508ab678440cd4d87effc523AF6e348a97202';
+      chipAddress = '0xC741e51e65a582d10dc632c33AC3fB7D661320EC';
+      fishAddress = '0xFF89A1882cA0037B5b0B40C976a945D98b23AD30';
+      mpeaAdress = '0x2fE1ab3Ad4446F7d1a75ca500f052686ae0567DA';
       chipBusdLpAddress = '0xaf4528018d6351490c6303bbfb352ffd8d1bcb05';
       chipEthLpAddress = '0xaB5a4bFe8E7a5A2628cC690519bcC3481D66e9e0';
       fishEthLpAddress = '0x3715340BC619E5aDbca158Ab459F2EfFDa545675';
@@ -285,7 +285,7 @@ async function test(deployer, network) {
 }
 
 module.exports = async function(deployer, network) {
-  await beforeMigration(deployer, network);
-  // await afterMigration(deployer, network);
+  // await beforeMigration(deployer, network);
+  await afterMigration(deployer, network);
   // await test(deployer, network);
 };
