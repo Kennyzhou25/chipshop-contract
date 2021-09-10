@@ -76,9 +76,9 @@ async function afterMigration(deployer, network, accounts) {
       provider = 'https://data-seed-prebsc-1-s1.binance.org:8545';
       busdAddres = '0xb82b5086df3bC61D019457B9De2FF4124368CFFF';
       ethAddress = '0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335';
-      chipAddress = '0xC741e51e65a582d10dc632c33AC3fB7D661320EC';
-      fishAddress = '0xFF89A1882cA0037B5b0B40C976a945D98b23AD30';
-      mpeaAdress = '0x2fE1ab3Ad4446F7d1a75ca500f052686ae0567DA';
+      chipAddress = '0x13cd7b98Cd9279d0DBfd71EC4797f37508207F80';
+      fishAddress = '0x8BbEE8554476cD4Cad7211aA272b96f4d357Ab97';
+      mpeaAdress = '0x19B49a64Ae9Fb94bCDC438B534353040c1305825';
       chipBusdLpAddress = '0xaf4528018d6351490c6303bbfb352ffd8d1bcb05';
       chipEthLpAddress = '0xaB5a4bFe8E7a5A2628cC690519bcC3481D66e9e0';
       fishEthLpAddress = '0x3715340BC619E5aDbca158Ab459F2EfFDa545675';
