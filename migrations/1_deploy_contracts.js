@@ -114,8 +114,10 @@ async function afterMigration(deployer, network, accounts) {
 
   const web3 = new Web3(provider);
   const currentBlock = await web3.eth.getBlockNumber();
+  const getAccounts = await web3.eth.getAccounts();
   console.log('current block number: ', currentBlock);
   console.log('accounts: ', accounts);
+  console.log('getaAccounts: ', getAccounts);
   // //
   // const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
   //
