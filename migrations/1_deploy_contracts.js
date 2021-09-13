@@ -54,7 +54,7 @@ async function beforeMigration(deployer, network) {
   await fishContract.mint(TokenMigration.address, ethUnit.times(fishAllocationAmount));
 }
 
-async function afterMigration(deployer, network) {
+async function afterMigration(deployer, network, accounts) {
   const daoAddresss = '0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f';
   let provider = '';
   let chipAddress = '';
@@ -114,6 +114,7 @@ async function afterMigration(deployer, network) {
 
   const web3 = new Web3(provider);
   const currentBlock = await web3.eth.getBlockNumber();
+  console.log('current block number: ', currentBlock);
   console.log('accounts: ', accounts);
   // //
   // const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
