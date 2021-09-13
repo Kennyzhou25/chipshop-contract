@@ -54,7 +54,9 @@ async function beforeMigration(deployer, network) {
   await fishContract.mint(TokenMigration.address, ethUnit.times(fishAllocationAmount));
 }
 
-async function afterMigration(deployer, network, accounts) {
+async function afterMigration(deployer, network) {
+  const web3 = new Web3(provider);
+  let accounts = await web3.eth.getAccounts();
   console.log("account test: ", accounts);
   // const daoAddresss = '0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f';
   // let provider = '';
