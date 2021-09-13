@@ -117,7 +117,8 @@ async function afterMigration(deployer, network, accounts) {
   const getAccounts = web3.eth.getAccounts();
   console.log('current block number: ', currentBlock);
   console.log('accounts: ', accounts);
-  console.log('getaAccounts: ', getAccounts);
+  web3.eth.getAccounts().then(function(acc){ accounts = acc; console.log('getAccounts: ', accounts) });
+  // console.log('getaAccounts: ', getAccounts);
   // //
   // const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
   //
