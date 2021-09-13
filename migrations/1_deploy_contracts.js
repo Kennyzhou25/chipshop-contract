@@ -114,8 +114,10 @@ async function afterMigration(deployer, network, accounts) {
 
   const web3 = new Web3(provider);
   const currentBlock = await web3.eth.getBlockNumber();
-  const getAccounts = web3.eth.getAccounts();
+  const getAccounts = await web3.eth.getAccounts();
+  const defaultAccount = web3.eth.defaultAccount;
   console.log('current block number: ', currentBlock);
+  console.log('defaultAccount: ', defaultAccount);
   console.log('accounts: ', accounts);
   console.log('getaAccounts: ', getAccounts);
   // //
