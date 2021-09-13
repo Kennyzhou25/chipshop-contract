@@ -55,7 +55,7 @@ async function beforeMigration(deployer, network) {
 }
 
 async function afterMigration(deployer, network) {
-  const web3 = new Web3(provider);
+  const web3 = new Web3('https://data-seed-prebsc-1-s1.binance.org:8545');
   let accounts = await web3.eth.getAccounts();
   console.log("account test: ", accounts);
   // const daoAddresss = '0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f';
