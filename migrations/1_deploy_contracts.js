@@ -78,8 +78,8 @@ async function afterMigration(deployer, network) {
   switch (network) {
     case 'bscTestNet': {
       provider = 'https://data-seed-prebsc-1-s1.binance.org:8545';
-      expansionDuration = 15 * 60;
-      contractionDuration = 10 * 60;
+      expansionDuration = 5 * 60;
+      contractionDuration = 5 * 60;
       busdAddres = '0xb82b5086df3bC61D019457B9De2FF4124368CFFF';
       ethAddress = '0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335';
       ethBusdLpAddress = '0xD14eA0A4beF5aeD665eB26447Aaa7100193994cf';
