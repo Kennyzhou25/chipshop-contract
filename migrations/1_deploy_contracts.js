@@ -59,7 +59,7 @@ async function beforeMigration(deployer, network) {
 }
 
 async function afterMigration(deployer, network) {
-  const daoAddresss = '0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f';
+  let daoAddresss = '';
   let provider = '';
   let chipAddress = '';
   let fishAddress = '';
@@ -77,6 +77,7 @@ async function afterMigration(deployer, network) {
 
   switch (network) {
     case 'bscTestNet': {
+      daoAddresss = '0x4D11eEB5473424a04c35f340950D4EBE005CF780'
       provider = 'https://data-seed-prebsc-1-s1.binance.org:8545';
       expansionDuration = 5 * 60;
       contractionDuration = 5 * 60;
@@ -95,6 +96,7 @@ async function afterMigration(deployer, network) {
       break;
     }
     case 'bsc': {
+      daoAddresss = '0x1C3dF661182c1f9cc8afE226915e5f91E93d1A6f'
       provider = 'https://bsc-dataseed1.binance.org';
       expansionDuration = 5 * 60;
       contractionDuration = 5 * 60;
@@ -176,7 +178,8 @@ async function afterMigration(deployer, network) {
   await chipSwapMechanismContract.transferOperator(Treasury.address);
   await boardroomContract.transferOperator(Treasury.address);
   await oracleContract.transferOperator(Treasury.address);
-
+  await treasuryContract.transferOperator(daoAddresss);
+  await treasuryContract.transferOwnership(daoAddresss);
   console.log('transferOperators are finished.');
 }
 
