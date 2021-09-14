@@ -78,25 +78,30 @@ async function afterMigration(deployer, network) {
   switch (network) {
     case 'bscTestNet': {
       provider = 'https://data-seed-prebsc-1-s1.binance.org:8545';
-      busdAddres = '0xb82b5086df3bC61D019457B9De2FF4124368CFFF';
-      ethAddress = '0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335';
-      chipAddress = '0x13cd7b98Cd9279d0DBfd71EC4797f37508207F80';
-      fishAddress = '0x8BbEE8554476cD4Cad7211aA272b96f4d357Ab97';
-      mpeaAdress = '0x19B49a64Ae9Fb94bCDC438B534353040c1305825';
-      chipBusdLpAddress = '0xaf4528018d6351490c6303bbfb352ffd8d1bcb05';
-      chipEthLpAddress = '0xaB5a4bFe8E7a5A2628cC690519bcC3481D66e9e0';
-      fishEthLpAddress = '0x3715340BC619E5aDbca158Ab459F2EfFDa545675';
-      fishBusdLpAddress = '0xcd489eac7137463b2757c4dc2cb03f679f9cad31';
-      mpeaChipLpAddress = '0x18aeeca391db2913feb5659cc46d1f0bd906f2aa';
-      ethBusdLpAddress = '0xD14eA0A4beF5aeD665eB26447Aaa7100193994cf';
       expansionDuration = 15 * 60;
       contractionDuration = 10 * 60;
+      busdAddres = '0xb82b5086df3bC61D019457B9De2FF4124368CFFF';
+      ethAddress = '0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335';
+      ethBusdLpAddress = '0xD14eA0A4beF5aeD665eB26447Aaa7100193994cf';
+
+      chipAddress = '0xbc05190f547BBa3b038BFdf653Ede632F61Bb8F9';
+      fishAddress = '0xD768a411059816B861D6AA7db4EB14fa03De8B8e';
+      mpeaAdress = '0x9f84e2924018ccBf9ab57917eAB0e6F51f79727C';
+      chipBusdLpAddress = '0x45304dd1a01a8c5f5b056238dd47bac21dd97fec';
+      chipEthLpAddress = '0x1772bc04d4751e94da945f4b7630f1d5f012ec2a';
+      fishEthLpAddress = '0x511d7a3d0ce15c06345ffc7a47008ace1923d75b';
+      fishBusdLpAddress = '0x04b3481338b51f40396599d1bb6efbc41fe1de28';
+      mpeaChipLpAddress = '0x4faa2ae1cd2e9919a8f5bd70614538f56573f9b6';
       break;
     }
     case 'bsc': {
       provider = 'https://bsc-dataseed1.binance.org';
+      expansionDuration = 5 * 60;
+      contractionDuration = 5 * 60;
       busdAddres = '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56';
       ethAddress = '0x2170Ed0880ac9A755fd29B2688956BD959F933F8';
+      ethBusdLpAddress = '0x7213a321F1855CF1779f42c0CD85d3D95291D34C';
+
       chipAddress = '0xEEf106c1910720533ad28fa34751B95dDC8D262F';
       fishAddress = '0x32bd7d3CaBd7422DE15a9e5FB53541d637DC0E83';
       mpeaAdress = '0xa736D652A4cF3cf8548fA944a238f34c2Aa3EBc4';
@@ -105,9 +110,6 @@ async function afterMigration(deployer, network) {
       fishEthLpAddress = '0x8b18c0d1c33307b488cc4f1253b3b92c5fc3638d';
       fishBusdLpAddress = '0x8982037A9e4dcD5Efec53F2E35057ddD6a18C4f8';
       mpeaChipLpAddress = '0x5a5e9e7d8b47774aefb60496e49e0f634b52090c';
-      ethBusdLpAddress = '0x7213a321F1855CF1779f42c0CD85d3D95291D34C';
-      expansionDuration = 5 * 60;
-      contractionDuration = 5 * 60;
       break;
     }
     default: {
@@ -118,7 +120,7 @@ async function afterMigration(deployer, network) {
 
   const web3 = new Web3(provider);
   const currentBlock = await web3.eth.getBlockNumber();
-  //
+
   const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
 
   await deployer.deploy(FishRewardPool, fishAddress, fishStartBlock);
@@ -198,8 +200,12 @@ async function test(deployer, network) {
   switch (network) {
     case 'bscTestNet': {
       provider = 'https://data-seed-prebsc-1-s1.binance.org:8545';
+      expansionDuration = 15 * 60;
+      contractionDuration = 10 * 60;
       busdAddres = '0xb82b5086df3bC61D019457B9De2FF4124368CFFF';
       ethAddress = '0xEb8250680Fd67c0C9FE2C015AC702C8EdF02F335';
+      ethBusdLpAddress = '0xD14eA0A4beF5aeD665eB26447Aaa7100193994cf';
+
       chipAddress = '0xC741e51e65a582d10dc632c33AC3fB7D661320EC';
       fishAddress = '0xFF89A1882cA0037B5b0B40C976a945D98b23AD30';
       mpeaAdress = '0x2fE1ab3Ad4446F7d1a75ca500f052686ae0567DA';
@@ -208,15 +214,16 @@ async function test(deployer, network) {
       fishEthLpAddress = '0x3715340BC619E5aDbca158Ab459F2EfFDa545675';
       fishBusdLpAddress = '0xcd489eac7137463b2757c4dc2cb03f679f9cad31';
       mpeaChipLpAddress = '0x18aeeca391db2913feb5659cc46d1f0bd906f2aa';
-      ethBusdLpAddress = '0xD14eA0A4beF5aeD665eB26447Aaa7100193994cf';
-      expansionDuration = 15 * 60;
-      contractionDuration = 10 * 60;
       break;
     }
     case 'bsc': {
       provider = 'https://bsc-dataseed1.binance.org';
+      expansionDuration = 5 * 60;
+      contractionDuration = 5 * 60;
       busdAddres = '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56';
       ethAddress = '0x2170Ed0880ac9A755fd29B2688956BD959F933F8';
+      ethBusdLpAddress = '0x7213a321F1855CF1779f42c0CD85d3D95291D34C';
+
       chipAddress = '0xEEf106c1910720533ad28fa34751B95dDC8D262F';
       fishAddress = '0x32bd7d3CaBd7422DE15a9e5FB53541d637DC0E83';
       mpeaAdress = '0xa736D652A4cF3cf8548fA944a238f34c2Aa3EBc4';
@@ -225,9 +232,6 @@ async function test(deployer, network) {
       fishEthLpAddress = '0x8b18c0d1c33307b488cc4f1253b3b92c5fc3638d';
       fishBusdLpAddress = '0x8982037A9e4dcD5Efec53F2E35057ddD6a18C4f8';
       mpeaChipLpAddress = '0x5a5e9e7d8b47774aefb60496e49e0f634b52090c';
-      ethBusdLpAddress = '0x7213a321F1855CF1779f42c0CD85d3D95291D34C';
-      expansionDuration = 5 * 60;
-      contractionDuration = 5 * 60;
       break;
     }
     default: {
