@@ -121,7 +121,7 @@ async function afterMigration(deployer, network) {
   const web3 = new Web3(provider);
   const currentBlock = await web3.eth.getBlockNumber();
 
-  const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
+  const fishStartBlock = currentBlock + Math.floor(beginRewardsAfter / averageBlockTime);
 
   await deployer.deploy(FishRewardPool, fishAddress, fishStartBlock);
   await deployer.deploy(ChipSwapMechanism, chipAddress, fishAddress);
@@ -265,7 +265,7 @@ async function test(deployer, network) {
 
   const web3 = new Web3(provider);
   const currentBlock = await web3.eth.getBlockNumber();
-  const fishStartBlock = currentBlock +  Math.floor(beginRewardsAfter / averageBlockTime);
+  const fishStartBlock = currentBlock + Math.floor(beginRewardsAfter / averageBlockTime);
   await deployer.deploy(FishRewardPool, fishAddress, fishStartBlock);
   const fishRewardPoolAddress = FishRewardPool.address;
 
