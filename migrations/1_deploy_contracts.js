@@ -20,8 +20,8 @@ const averageBlockTime = 3;
 const beginRewardsAfter = 20 * 60;
 const migrationDuration = 48 * 60 * 60;
 const beginEpochAfter = 20 * 60;
-const chipAllocationAmount = 0.01;
-const fishAllocationAmount = 0.02;
+const chipAllocationAmount = 0.02;
+const fishAllocationAmount = 0.01;
 const ethUnit = new BigNumber(1000000000000000000);
 
 async function beforeMigration(deployer, network) {
