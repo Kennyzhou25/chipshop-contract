@@ -11,21 +11,24 @@ contract TokenMigration {
     IBasisAsset public newChip;
     IBasisAsset public newFish;
 
-    uint256 public endTime;
+    uint256 public startBlock;
+    uint256 public endBlock;
 
     modifier canMigrate() {
-        require(block.timestamp <= endTime, "TokenMigration: Migration is finished");
+        require(block.number >= startBlock, "TokenMigration: Migration is not started.");
+        require(block.number <= endBlock, "TokenMigration: Migration is finished.");
         _;
     }
 
-    constructor(IBasisAsset _oldChip, IBasisAsset _oldFish, IBasisAsset _oldMpea, IBasisAsset _newChip, IBasisAsset _newFish, uint256 _endTime) {
-        require(_endTime > block.timestamp, "TokenMigration: Invalid end time");
+    constructor(IBasisAsset _oldChip, IBasisAsset _oldFish, IBasisAsset _oldMpea, IBasisAsset _newChip, IBasisAsset _newFish, uint256 startBlock, uint256 _endBlock) {
+        require(block.number <= endBlock, "TokenMigration: Invalid end time.");
         oldChip = _oldChip;
         oldFish = _oldFish;
         oldMpea = _oldMpea;
         newChip = _newChip;
         newFish = _newFish;
-        endTime = _endTime;
+        startBlock = _startBlock;
+        endBlock = _endBlock;
     }
 
     function migrateChip() external canMigrate {
@@ -47,7 +50,7 @@ contract TokenMigration {
     }
 
     function burn() external {
-        require(block.timestamp > endTime, "TokenMigration: not finished");
+        require(block.number > endBlock, "TokenMigration: not finished");
         newChip.burn(newChip.balanceOf(address(this)));
         newFish.burn(newFish.balanceOf(address(this)));
     }
